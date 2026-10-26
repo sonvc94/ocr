@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    platform: linux/amd64
+    ports:
+      - "8000:8000"
+    environment:
+      # server = more accurate, mobile = faster on CPU
+      OCR_MODEL_SIZE: ${OCR_MODEL_SIZE:-server}
+      # 1 = append full results (contains personal data from the card) to logs/extract.jsonl
+      LOG_RESPONSES: ${LOG_RESPONSES:-1}
+      # 1 = also save each uploaded image (personal data) to logs/images/<request_id>_*.{ext}
+      DEBUG_SAVE_IMAGES: ${DEBUG_SAVE_IMAGES:-1}
+      # PaddleOCR-VL service (vl_service/, run natively on the host), used when /api/extract is called with engine=vl
+      VL_URL: ${VL_URL:-http://host.docker.internal:8011}
+    volumes:
+      - ./samples:/app/samples
+      - ./logs:/app/logs

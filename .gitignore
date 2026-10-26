@@ -1,0 +1,8 @@
+# Logs contain personal data from uploaded cards (extract.jsonl, images/)
+logs/
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store

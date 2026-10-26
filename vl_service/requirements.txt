@@ -1,0 +1,5 @@
+paddlepaddle==3.3.1  # PaddleOCR-VL needs >= 3.3; kept apart from the main app, which needs 3.2.x for PP-OCRv5
+paddleocr[doc-parser]==3.7.0
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+python-multipart==0.0.20

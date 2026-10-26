@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Residence Card OCR</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>在留カード OCR <span class="tag">demo</span></h1>
+    <p class="sub">Upload ảnh mặt trước thẻ cư trú → trích xuất thông tin dạng JSON.</p>
+    <nav id="views" class="views">
+      <button data-view="upload" class="active">Thử ảnh của bạn</button>
+      <button data-view="samples">Mẫu chính thức (ISA)</button>
+    </nav>
+  </header>
+
+  <div id="view-samples" class="samples-view" hidden>
+    <div id="samples"><p class="status loading">Đang tải…</p></div>
+  </div>
+
+  <main id="view-upload">
+    <section class="left">
+      <label id="drop" class="drop" tabindex="0">
+        <input id="file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <div class="drop-hint">
+          <strong>Kéo thả ảnh vào đây</strong> hoặc bấm để chọn file
+          <small>JPEG / PNG / WEBP, tối đa 10MB</small>
+        </div>
+      </label>
+      <div class="options">
+        <label><input id="crop" type="checkbox" checked> Tự cắt &amp; nắn thẻ</label>
+        <label><input id="showBoxes" type="checkbox" checked> Hiện khung OCR</label>
+        <label>Engine
+          <select id="engine">
+            <option value="ppocr">PP-OCRv5 (nhanh)</option>
+            <option value="vl">PaddleOCR-VL (chậm, thử nghiệm)</option>
+          </select>
+        </label>
+      </div>
+      <div id="viewer" class="viewer" hidden>
+        <div class="stage">
+          <img id="preview" alt="Ảnh đã xử lý">
+          <svg id="overlay"></svg>
+        </div>
+        <p id="meta" class="meta"></p>
+      </div>
+    </section>
+
+    <section class="right">
+      <div id="status" class="status">Chưa có ảnh.</div>
+      <div id="warnings"></div>
+      <div class="tabs" id="tabs" hidden>
+        <button data-tab="fields" class="active">Thông tin</button>
+        <button data-tab="json">JSON</button>
+        <button data-tab="lines">Dòng OCR</button>
+      </div>
+      <div id="tab-fields" class="tab"></div>
+      <div id="tab-json" class="tab" hidden>
+        <div class="json-actions">
+          <button id="copyJson">Copy</button>
+          <button id="downloadJson">Tải .json</button>
+        </div>
+        <pre id="json"></pre>
+      </div>
+      <div id="tab-lines" class="tab" hidden></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
