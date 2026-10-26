@@ -8,17 +8,13 @@ from __future__ import annotations
 
 import http.client
 import json
-import os
 import urllib.error
 import urllib.request
 import uuid
 
-from .preprocess import encode_jpeg
-from .residence_card import OcrBox
-
-VL_URL = os.getenv("VL_URL", "http://localhost:8011")
-VL_MODE = os.getenv("VL_MODE", "layout")
-TIMEOUT_S = float(os.getenv("VL_TIMEOUT_S", "600"))
+from .. import config
+from ..preprocess import encode_jpeg
+from .types import OcrBox
 
 
 class VlUnavailable(RuntimeError):
@@ -32,15 +28,15 @@ def _post_image(jpeg: bytes, mode: str) -> dict:
         "Content-Type: image/jpeg\r\n\r\n"
     ).encode() + jpeg + f"\r\n--{boundary}--\r\n".encode()
     req = urllib.request.Request(
-        f"{VL_URL}/ocr?mode={mode}", data=body, method="POST",
+        f"{config.VL_URL}/ocr?mode={mode}", data=body, method="POST",
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
+        with urllib.request.urlopen(req, timeout=config.VL_TIMEOUT_S) as resp:
             return json.load(resp)
     # RemoteDisconnected etc. (service crashed or restarting mid-request) are not URLErrors
     except (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError) as exc:
-        raise VlUnavailable(f"Không gọi được PaddleOCR-VL ({VL_URL}): {exc}") from exc
+        raise VlUnavailable(f"Không gọi được PaddleOCR-VL ({config.VL_URL}): {exc}") from exc
 
 
 def blocks_to_boxes(blocks: list[dict], image_size: tuple[int, int]) -> list[OcrBox]:
@@ -65,5 +61,5 @@ def blocks_to_boxes(blocks: list[dict], image_size: tuple[int, int]) -> list[Ocr
 def run_vl(img, mode: str | None = None) -> tuple[list[OcrBox], dict]:
     """Return the OCR lines and the raw service response (blocks, timing)."""
     h, w = img.shape[:2]
-    resp = _post_image(encode_jpeg(img, quality=95), mode or VL_MODE)
+    resp = _post_image(encode_jpeg(img, quality=95), mode or config.VL_MODE)
     return blocks_to_boxes(resp["blocks"], (w, h)), resp

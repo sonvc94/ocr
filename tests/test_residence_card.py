@@ -1,6 +1,13 @@
 """Parser tests on hand-written OCR output (no Paddle needed)."""
 
-from app.residence_card import OcrBox, group_rows, parse_residence_card
+import json
+import math
+from pathlib import Path
+
+from app.ocr.types import OcrBox
+from app.residence_card import group_rows, parse_residence_card
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def line(text: str, x: float, y: float, score: float = 0.98, w: float = 300, h: float = 40) -> OcrBox:
@@ -36,6 +43,12 @@ CARD = [
     line("2024年06月30日", 930, 798),
     line("このカードは2029年06月30日まで有効です。", 60, 900, w=900),
 ]
+
+
+def parse_fixture(name: str) -> dict:
+    """Parse real PP-OCRv5 output saved in tests/fixtures/."""
+    lines = json.loads((FIXTURES / name).read_text())
+    return parse_residence_card([OcrBox(l["text"], l["score"], tuple(l["box"])) for l in lines])
 
 
 def values(result: dict) -> dict:
@@ -106,8 +119,6 @@ def test_group_rows_orders_left_to_right():
 
 def rotated(boxes: list[OcrBox], degrees: float) -> list[OcrBox]:
     """Axis-aligned boxes of the card photographed with a tilt (what OCR returns as rec_boxes)."""
-    import math
-
     a = math.radians(degrees)
     out = []
     for b in boxes:
@@ -150,11 +161,7 @@ def test_ocr_confusables():
 
 def test_moj_specimen_card():
     """Real PP-OCRv5 output for the Ministry of Justice specimen card (見本, TURNER ELIZABETH)."""
-    import json
-    from pathlib import Path
-
-    lines = json.loads((Path(__file__).parent / "fixtures/moj_specimen_ocr.json").read_text())
-    r = parse_residence_card([OcrBox(l["text"], l["score"], tuple(l["box"])) for l in lines])
+    r = parse_fixture("moj_specimen_ocr.json")
     assert values(r) == {
         "card_number": "AB12345678CD",
         "name": "TURNER ELIZABETH",
@@ -176,11 +183,7 @@ def test_moj_specimen_card():
 
 def test_low_quality_image_uses_english_anchors_and_flags_quality():
     """Real OCR output of a blurry/watermarked specimen image where every kanji label is garbled."""
-    import json
-    from pathlib import Path
-
-    lines = json.loads((Path(__file__).parent / "fixtures/low_quality_specimen_ocr.json").read_text())
-    r = parse_residence_card([OcrBox(l["text"], l["score"], tuple(l["box"])) for l in lines])
+    r = parse_fixture("low_quality_specimen_ocr.json")
     v = values(r)
     assert r["quality"]["level"] == "low"
     assert {k: v[k] for k in ("name", "date_of_birth", "sex", "period_of_stay", "expiration_date",
@@ -205,17 +208,9 @@ def test_good_image_quality_ok():
     assert r["labels_from_english_anchor"] == []
 
 
-def _fixture(name: str) -> dict:
-    import json
-    from pathlib import Path
-
-    lines = json.loads((Path(__file__).parent / "fixtures" / name).read_text())
-    return parse_residence_card([OcrBox(l["text"], l["score"], tuple(l["box"])) for l in lines])
-
-
 def test_isa_new_2026_design():
     """Official specimen of the card design issued from 2026-06-14 (no permission/issue rows)."""
-    r = _fixture("isa_residence_card_new_2026_ocr.json")
+    r = parse_fixture("isa_residence_card_new_2026_ocr.json")
     assert r["card_design"] == "2026"
     v = values(r)
     assert {k: v[k] for k in ("card_number", "name", "date_of_birth", "sex", "nationality",
@@ -235,7 +230,7 @@ def test_isa_new_2026_design():
 
 
 def test_isa_specified_card_is_flagged_unsupported():
-    r = _fixture("isa_specified_residence_card_2026_ocr.json")
+    r = parse_fixture("isa_specified_residence_card_2026_ocr.json")
     assert r["card_design"] == "specified_2026"
     assert any("特定在留カード" in w for w in r["warnings"])
     assert all(f["needs_review"] for f in r["fields"].values())

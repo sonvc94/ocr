@@ -7,9 +7,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import numpy as np
 import pytest
 
-from app import vl_client
+from app import config
+from app.ocr import vl_client
+from app.ocr.vl_client import blocks_to_boxes
 from app.residence_card import parse_residence_card
-from app.vl_client import blocks_to_boxes
 
 
 def test_block_lines_split_inside_bbox():
@@ -40,7 +41,7 @@ def test_service_dropping_connection_is_unavailable(monkeypatch):
 
     server = HTTPServer(("127.0.0.1", 0), Hangup)
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    monkeypatch.setattr(vl_client, "VL_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setattr(config, "VL_URL", f"http://127.0.0.1:{server.server_port}")
     try:
         with pytest.raises(vl_client.VlUnavailable) as exc_info:
             vl_client.run_vl(np.zeros((10, 10, 3), dtype=np.uint8))

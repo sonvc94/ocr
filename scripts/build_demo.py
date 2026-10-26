@@ -11,9 +11,8 @@ import shutil
 import time
 from pathlib import Path
 
-from app import ocr_engine
-from app.preprocess import encode_jpeg, load_image, normalize_card
-from app.residence_card import parse_residence_card
+from app import pipeline
+from app.preprocess import encode_jpeg, load_image
 
 SOURCE_PAGE = "https://www.moj.go.jp/isa/applications/procedures/whatzairyu_00001.html"
 SOURCE_PDF = "https://www.moj.go.jp/isa/content/001465339.pdf"
@@ -46,20 +45,7 @@ def main() -> None:
         src = src_dir / f"{sample['id']}.jpg"
         shutil.copy(src, out_dir / src.name)
         img, original_size = load_image(src.read_bytes())
-        img, cropped = normalize_card(img)
-        t0 = time.perf_counter()
-        boxes, img, _ = ocr_engine.run_ocr(img)
-        elapsed = round((time.perf_counter() - t0) * 1000)
-        result = parse_residence_card(boxes)
-        h, w = img.shape[:2]
-        result["ocr"] = {
-            "model": f"PP-OCRv5_{ocr_engine.MODEL_SIZE}",
-            "card_cropped": cropped,
-            "original_size": list(original_size),
-            "image_size": [w, h],
-            "lines": [{"text": b.text, "score": round(b.score, 4), "box": [round(v, 1) for v in b.box]} for b in boxes],
-        }
-        result["timing_ms"] = {"ocr": elapsed}
+        result, img = pipeline.extract(img, original_size)
         processed = out_dir / f"{sample['id']}_processed.jpg"
         processed.write_bytes(encode_jpeg(img))
         results.append(

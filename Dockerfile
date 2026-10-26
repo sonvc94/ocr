@@ -14,7 +14,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/__init__.py app/ocr_engine.py app/residence_card.py app/
+# Only the model module (no app imports) goes into the model-download layer, so code edits keep the cached weights.
+COPY app/__init__.py app/
+COPY app/ocr/__init__.py app/ocr/ppocr_model.py app/ocr/
 COPY scripts/download_models.py scripts/
 RUN python -m scripts.download_models
 

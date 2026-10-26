@@ -1,5 +1,11 @@
+# Build context of the main app image
 .git
 **/__pycache__
-samples
+**/.venv
+.pytest_cache
+**/.DS_Store
 *.md
+samples
 logs
+# separate service with its own Dockerfile (and a >1GB .venv when run natively)
+vl_service

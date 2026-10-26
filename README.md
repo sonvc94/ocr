@@ -30,6 +30,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 |---|---|---|
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
+| `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
 
 Mỗi trường trả về dạng:
 
@@ -50,16 +51,29 @@ thẳng dựa trên hướng các dòng chữ khi ảnh còn nghiêng (thường
 
 ```
 app/
-  main.py            FastAPI: /, /api/health, /api/extract
-  preprocess.py      EXIF rotate, tìm & nắn thẻ (OpenCV)
-  ocr_engine.py      PaddleOCR PP-OCRv5 (+ phân loại hướng ảnh 0/90/180/270, nắn ảnh nghiêng ≤ 30°)
-  residence_card.py  Parser theo nhãn: 氏名, 生年月日, 住居地, 在留資格... + validate
-  static/            Giao diện (HTML/JS thuần)
-scripts/make_sample.py   Sinh ảnh thẻ giả lập (dữ liệu giả) để test
-tests/                   Test parser + tìm viền/nắn nghiêng (không cần Paddle)
+  main.py              FastAPI: /, /api/health, /api/extract (chỉ nhận request, trả lỗi HTTP)
+  pipeline.py          Luồng xử lý chung: cắt/nắn thẻ → OCR → parse → JSON (API và scripts cùng dùng)
+  config.py            Biến môi trường của app
+  request_log.py       Log tóm tắt mỗi request, ghi kết quả/ảnh để debug (khi bật)
+  preprocess.py        EXIF rotate, tìm & nắn thẻ, ước lượng/xoay góc nghiêng (OpenCV)
+  ocr/
+    types.py           OcrBox: định dạng dòng OCR dùng chung giữa engine và parser
+    ppocr_model.py     Khởi tạo PP-OCRv5 (dùng riêng ở bước tải model khi build image)
+    ppocr.py           Engine PP-OCRv5 (+ phân loại hướng 0/90/180/270, nắn ảnh nghiêng ≤ 30°)
+    vl_client.py       Engine PaddleOCR-VL (gọi vl_service qua HTTP)
+  residence_card/      Parser theo nhãn: 氏名, 生年月日, 住居地, 在留資格...
+    patterns.py        Nhãn, regex, danh sách giá trị chính thức, ký tự OCR hay nhầm
+    layout.py          Gom box thành dòng (chịu được ảnh nghiêng), ghép thành văn bản
+    fields.py          Trích từng trường
+    checks.py          Nhận mẫu thẻ, đánh giá chất lượng ảnh, kiểm tra chéo ngày tháng
+    parser.py          parse_residence_card: ghép các bước trên
+  static/              Giao diện (HTML/JS thuần)
+scripts/               make_sample (sinh thẻ giả), build_demo (kết quả mẫu cho UI), download_models
+vl_service/            Service PaddleOCR-VL (chạy native trên host, cổng 8011) + vl_probe.py
+tests/                 Test parser, tìm viền/nắn nghiêng, vl_client (không cần Paddle)
 ```
 
-Test: `docker compose run --rm app python -m pytest -q tests`
+Test: `docker compose run --rm app python -m pytest -q`
 
 ## Log
 
