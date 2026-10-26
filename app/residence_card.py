@@ -28,6 +28,10 @@ class OcrBox:
         return (self.box[1] + self.box[3]) / 2
 
     @property
+    def cx(self) -> float:
+        return (self.box[0] + self.box[2]) / 2
+
+    @property
     def height(self) -> float:
         return self.box[3] - self.box[1]
 
@@ -141,18 +145,33 @@ def normalize(text: str) -> str:
     return unicodedata.normalize("NFKC", text).translate(CONFUSABLES).strip()
 
 
-def group_rows(boxes: list[OcrBox]) -> list[list[OcrBox]]:
-    """Group boxes whose vertical centers fall on the same line, left to right inside each row."""
+def _rows_at_slope(boxes: list[OcrBox], slope: float) -> list[list[OcrBox]]:
+    """Group boxes whose centers lie on the same line of the given slope (dy/dx)."""
     rows: list[list[OcrBox]] = []
-    for b in sorted(boxes, key=lambda b: b.cy):
+    for b in sorted(boxes, key=lambda b: b.cy - slope * b.cx):
         if rows:
             last = rows[-1]
-            ref_cy = sum(x.cy for x in last) / len(last)
+            ref_y = sum(x.cy - slope * x.cx for x in last) / len(last)
             ref_h = min(min(x.height for x in last), b.height)
-            if abs(b.cy - ref_cy) < ref_h * 0.5:
+            if abs(b.cy - slope * b.cx - ref_y) < ref_h * 0.5:
                 last.append(b)
                 continue
         rows.append([b])
+    return rows
+
+
+# A tilted photo (when the card edge was not found to flatten it) shifts a row by tens of pixels
+# across the card, splitting labels from their values. Rows are grouped along the slope that
+# gives the fewest rows; it must beat horizontal by 2+ rows so straight cards are unaffected.
+_SLOPES = [i * 0.005 for i in range(-36, 37)]  # up to ~10°
+
+
+def group_rows(boxes: list[OcrBox]) -> list[list[OcrBox]]:
+    """Group boxes lying on the same visual line (tolerating tilt), left to right inside each row."""
+    rows = _rows_at_slope(boxes, 0.0)
+    best = min((_rows_at_slope(boxes, s) for s in sorted(_SLOPES, key=abs)), key=len)
+    if len(best) <= len(rows) - 2:
+        rows = best
     return [sorted(r, key=lambda b: b.box[0]) for r in rows]
 
 

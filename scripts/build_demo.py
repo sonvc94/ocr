@@ -48,7 +48,7 @@ def main() -> None:
         img, original_size = load_image(src.read_bytes())
         img, cropped = normalize_card(img)
         t0 = time.perf_counter()
-        boxes, img = ocr_engine.run_ocr(img)
+        boxes, img, _ = ocr_engine.run_ocr(img)
         elapsed = round((time.perf_counter() - t0) * 1000)
         result = parse_residence_card(boxes)
         h, w = img.shape[:2]

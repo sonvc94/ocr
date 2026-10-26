@@ -118,6 +118,7 @@ def extract(
         img, cropped = normalize_card(img)
     t1 = time.perf_counter()
     vl_resp = None
+    deskew = 0.0
     if engine == "vl":
         try:
             boxes, vl_resp = vl_client.run_vl(img)
@@ -125,7 +126,7 @@ def extract(
             raise HTTPException(503, str(exc))
         model = vl_resp["model"]
     else:
-        boxes, img = ocr_engine.run_ocr(img)
+        boxes, img, deskew = ocr_engine.run_ocr(img)
         model = f"PP-OCRv5_{ocr_engine.MODEL_SIZE}"
     t2 = time.perf_counter()
     result = parse_residence_card(boxes)
@@ -142,6 +143,7 @@ def extract(
         "engine": engine,
         "model": model,
         "card_cropped": cropped,
+        "deskew_deg": round(deskew, 1),
         "original_size": list(original_size),
         "image_size": [w, h],
         "lines": [{"text": b.text, "score": round(b.score, 4), "box": [round(v, 1) for v in b.box]} for b in boxes],

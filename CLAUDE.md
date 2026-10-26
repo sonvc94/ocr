@@ -52,9 +52,22 @@ Biến môi trường: `OCR_MODEL_SIZE`, `OCR_ENABLE_MKLDNN` (mặc định 1), 
 - `main.py`: `/`, `/api/health`, `POST /api/extract?crop=&include_image=&engine=ppocr|vl`. Giới hạn 10MB.
   Log 1 dòng tóm tắt/request (không có PII). `LOG_RESPONSES=1` → ghi full kết quả vào `logs/extract.jsonl`;
   `DEBUG_SAVE_IMAGES=1` → lưu ảnh gốc + ảnh đã xử lý vào `logs/images/`. Cả hai chứa PII, compose đang bật mặc định.
-- `preprocess.py`: OpenCV tìm 4 góc thẻ (`find_card`) và warp (`normalize_card`).
-- `ocr_engine.py`: PP-OCRv5, `OCR_MODEL_SIZE=server|mobile`, có phân loại hướng 0/90/180/270.
+- `preprocess.py`: OpenCV tìm 4 góc thẻ (`find_card`) và warp (`normalize_card`). `find_card` có 2 lần quét:
+  (1) Canny 50/150 + `RETR_EXTERNAL`, sai lệch tỉ lệ < 0.25; (2) nếu lần 1 không thấy: Canny 20/60 + đóng khe hở
+  (morph close 7×7) + `RETR_LIST` + convex hull (bắc qua góc bị ngón tay che), điều kiện chặt hơn (sai lệch tỉ lệ < 0.15,
+  2 cạnh đối diện lệch ≤ 15%, diện tích 30–95% ảnh để không cắt nhầm vùng bên trong của ảnh đã cắt sát thẻ), rồi nới rộng
+  4% vì hull hay lẹm vào thẻ. Lần 2 thêm vào cho ảnh thẻ nhạt màu trong bao nhựa (log `1.png`, 26/10/2026). Lần 1 giữ nguyên
+  để không đổi kết quả các ảnh vốn đã chạy tốt.
+- `ocr_engine.py`: PP-OCRv5, `OCR_MODEL_SIZE=server|mobile`, có phân loại hướng 0/90/180/270. Sau OCR, `estimate_skew`
+  lấy trung vị góc cạnh trên của các polygon chữ (`rec_polys`, chỉ box dài > 2× cao, cần ≥ 3 box); nếu 1°–30° thì
+  xoay ảnh (`preprocess.rotate`, canvas nới rộng) và chiếu polygon theo, box trả về là bbox của polygon đã thẳng. Không
+  OCR lại (recognition vốn đọc được quad nghiêng). Góc đã nắn trả ở `ocr.deskew_deg`. Engine `vl` không có polygon
+  → không nắn, chỉ nhờ `group_rows` chịu nghiêng. `preprocess` được import **trong hàm** `run_ocr`: Dockerfile chỉ copy
+  `ocr_engine.py` + `residence_card.py` vào layer tải model (giữ cache model), import ở đầu module sẽ làm build lỗi.
 - `residence_card.py`: lõi parser.
+  - `group_rows`: gom box theo đường có độ dốc, thử dốc −0.18…0.18 (~±10°) và chọn dốc cho ít dòng nhất, nhưng chỉ
+    dùng khi ít hơn gom ngang ≥ 2 dòng (để thẻ thẳng không bị ảnh hưởng). Lý do: ảnh nghiêng vài độ làm lệch tâm dọc
+    giữa nhãn và giá trị quá nửa chiều cao chữ, nhãn bị tách khỏi giá trị / ghép nhầm sang dòng khác.
   - Gom box thành dòng → tìm nhãn JP (氏名, 生年月日, 住居地, 在留資格…) → cắt giá trị 15 trường.
   - Fallback: nhãn tiếng Anh (`NAME`, `DATE OF BIRTH`, `ADDRESS`…) → liệt kê ở `labels_from_english_anchor`,
     luôn `needs_review`.
@@ -79,5 +92,6 @@ Biến môi trường: `OCR_MODEL_SIZE`, `OCR_ENABLE_MKLDNN` (mặc định 1), 
 ### scripts/, tests/
 - `make_sample.py` sinh thẻ giả; `build_demo.py` tạo kết quả mẫu cho `static/samples`; `download_models.py` tải model khi build.
 - `vl_probe.py <ảnh> <pipeline_version>`: dev-only, in format/tốc độ output PaddleOCR-VL (cần venv của vl_service).
+- `test_preprocess.py`: ảnh tổng hợp bằng OpenCV (thẻ nhạt màu nghiêng, bị che góc; ảnh đã cắt sát) + `estimate_skew`/`rotate`.
 - Test parser dùng OCR fixture (`tests/fixtures/*.json`) hoặc box viết tay, không cần Paddle; `test_vl_client.py`
   dựng HTTP server giả thay cho vl_service.

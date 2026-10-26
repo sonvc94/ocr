@@ -28,7 +28,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng |
+| `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 
 Mỗi trường trả về dạng:
@@ -40,6 +40,9 @@ Mỗi trường trả về dạng:
 Các trường: `card_number, name, date_of_birth, sex, nationality, address, status_of_residence, work_restriction,
 period_of_stay, expiration_date, permission_type, issuing_authority, permission_date, issue_date, valid_until`.
 
+`ocr.card_cropped` cho biết đã tìm được viền thẻ để cắt hay chưa; `ocr.deskew_deg` là góc nghiêng (độ) đã được nắn
+thẳng dựa trên hướng các dòng chữ khi ảnh còn nghiêng (thường là ảnh không tìm được viền thẻ; chỉ engine `ppocr`), 0 nếu không nắn.
+
 `needs_review = true` khi: không đọc được, độ tin cậy OCR < 0.85, đã tự sửa ký tự, hoặc không qua kiểm tra chéo
 (ngày sinh < ngày cấp, hết hạn ≥ ngày cấp…).
 
@@ -49,11 +52,11 @@ period_of_stay, expiration_date, permission_type, issuing_authority, permission_
 app/
   main.py            FastAPI: /, /api/health, /api/extract
   preprocess.py      EXIF rotate, tìm & nắn thẻ (OpenCV)
-  ocr_engine.py      PaddleOCR PP-OCRv5 (+ phân loại hướng ảnh 0/90/180/270)
+  ocr_engine.py      PaddleOCR PP-OCRv5 (+ phân loại hướng ảnh 0/90/180/270, nắn ảnh nghiêng ≤ 30°)
   residence_card.py  Parser theo nhãn: 氏名, 生年月日, 住居地, 在留資格... + validate
   static/            Giao diện (HTML/JS thuần)
 scripts/make_sample.py   Sinh ảnh thẻ giả lập (dữ liệu giả) để test
-tests/                   Test parser (không cần Paddle)
+tests/                   Test parser + tìm viền/nắn nghiêng (không cần Paddle)
 ```
 
 Test: `docker compose run --rm app python -m pytest -q tests`

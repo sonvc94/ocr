@@ -42,6 +42,27 @@ def _order_corners(pts: np.ndarray) -> np.ndarray:
     return np.array([pts[s.argmin()], pts[d.argmin()], pts[s.argmax()], pts[d.argmax()]], dtype=np.float32)
 
 
+def _card_quad(contour: np.ndarray, strict: bool) -> np.ndarray | None:
+    approx = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
+    if len(approx) != 4:
+        return None
+    rect = _order_corners(approx.reshape(4, 2).astype(np.float32))
+    top, right = np.linalg.norm(rect[1] - rect[0]), np.linalg.norm(rect[2] - rect[1])
+    bottom, left = np.linalg.norm(rect[2] - rect[3]), np.linalg.norm(rect[3] - rect[0])
+    aspect = max(top, left) / max(min(top, left), 1)
+    if abs(aspect - CARD_ASPECT) >= (0.25 if strict else 0.15):
+        return None
+    if not strict:  # loose edges also outline inner panels: also require a near-rectangle
+        if max(top, bottom) / max(min(top, bottom), 1) > 1.15 or max(left, right) / max(min(left, right), 1) > 1.15:
+            return None
+    return rect
+
+
+def _expand(rect: np.ndarray, ratio: float) -> np.ndarray:
+    center = rect.mean(axis=0)
+    return (center + (rect - center) * (1 + ratio)).astype(np.float32)
+
+
 def find_card(img: np.ndarray) -> np.ndarray | None:
     """Return the 4 corners of the largest card-shaped quadrilateral, or None."""
     h, w = img.shape[:2]
@@ -49,17 +70,29 @@ def find_card(img: np.ndarray) -> np.ndarray | None:
     edges = cv2.dilate(cv2.Canny(gray, 50, 150), np.ones((3, 3), np.uint8), iterations=2)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for c in sorted(contours, key=cv2.contourArea, reverse=True)[:5]:
-        area = cv2.contourArea(c)
-        if area < 0.2 * w * h:
+        if cv2.contourArea(c) < 0.2 * w * h:
             break
-        approx = cv2.approxPolyDP(c, 0.02 * cv2.arcLength(c, True), True)
-        if len(approx) != 4:
+        rect = _card_quad(c, strict=True)
+        if rect is not None:
+            return rect
+
+    # Second pass for low-contrast edges (pale card, plastic sleeve, fingers over a corner): weaker
+    # edges with gaps closed, convex hull to bridge occluded corners. The hull may cut a little into
+    # the card, so the crop is widened slightly.
+    edges = cv2.morphologyEx(cv2.Canny(gray, 20, 60), cv2.MORPH_CLOSE, np.ones((7, 7), np.uint8), iterations=2)
+    contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    hulls = sorted((cv2.convexHull(c) for c in contours), key=cv2.contourArea, reverse=True)[:5]
+    for hull in hulls:
+        area = cv2.contourArea(hull)
+        if area < 0.3 * w * h:
+            break
+        if area > 0.95 * w * h:  # the image border itself (card already cropped tight)
             continue
-        rect = _order_corners(approx.reshape(4, 2).astype(np.float32))
-        width = np.linalg.norm(rect[1] - rect[0])
-        height = np.linalg.norm(rect[3] - rect[0])
-        aspect = max(width, height) / max(min(width, height), 1)
-        if abs(aspect - CARD_ASPECT) < 0.25:
+        rect = _card_quad(hull, strict=False)
+        if rect is not None:
+            rect = _expand(rect, 0.04)
+            rect[:, 0] = rect[:, 0].clip(0, w - 1)
+            rect[:, 1] = rect[:, 1].clip(0, h - 1)
             return rect
     return None
 
@@ -77,6 +110,37 @@ def normalize_card(img: np.ndarray) -> tuple[np.ndarray, bool]:
     dst = np.array([[0, 0], [out_w - 1, 0], [out_w - 1, out_h - 1], [0, out_h - 1]], dtype=np.float32)
     matrix = cv2.getPerspectiveTransform(rect, dst)
     return cv2.warpPerspective(img, matrix, (out_w, out_h)), True
+
+
+def estimate_skew(polys: list[np.ndarray]) -> float:
+    """Median tilt in degrees of the text lines' top edges (OCR quads, clockwise from top-left).
+
+    Only wide boxes count: short ones (1-2 characters) give noisy angles.
+    """
+    angles = []
+    for p in polys:
+        p = np.asarray(p, dtype=np.float32).reshape(-1, 2)
+        if len(p) != 4:
+            continue
+        dx, dy = p[1] - p[0]
+        if np.hypot(dx, dy) > 2 * np.linalg.norm(p[3] - p[0]):
+            angles.append(np.degrees(np.arctan2(dy, dx)))
+    return float(np.median(angles)) if len(angles) >= 3 else 0.0
+
+
+def rotate(img: np.ndarray, degrees: float) -> tuple[np.ndarray, np.ndarray]:
+    """Rotate so a line tilted by `degrees` becomes horizontal; canvas grows to keep the corners.
+
+    Returns the image and the 2x3 affine matrix to map points into it.
+    """
+    h, w = img.shape[:2]
+    m = cv2.getRotationMatrix2D((w / 2, h / 2), degrees, 1.0)
+    cos, sin = abs(m[0, 0]), abs(m[0, 1])
+    new_w, new_h = int(h * sin + w * cos), int(h * cos + w * sin)
+    m[0, 2] += new_w / 2 - w / 2
+    m[1, 2] += new_h / 2 - h / 2
+    out = cv2.warpAffine(img, m, (new_w, new_h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    return out, m
 
 
 def encode_jpeg(img: np.ndarray, quality: int = 85) -> bytes:

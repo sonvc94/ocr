@@ -104,6 +104,35 @@ def test_group_rows_orders_left_to_right():
     assert [[b.text for b in r] for r in rows] == [["A", "B"], ["C"]]
 
 
+def rotated(boxes: list[OcrBox], degrees: float) -> list[OcrBox]:
+    """Axis-aligned boxes of the card photographed with a tilt (what OCR returns as rec_boxes)."""
+    import math
+
+    a = math.radians(degrees)
+    out = []
+    for b in boxes:
+        x1, y1, x2, y2 = b.box
+        pts = [(x * math.cos(a) - y * math.sin(a), x * math.sin(a) + y * math.cos(a) + 300)
+               for x, y in ((x1, y1), (x2, y1), (x2, y2), (x1, y2))]
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        out.append(OcrBox(b.text, b.score, (min(xs), min(ys), max(xs), max(ys))))
+    return out
+
+
+def test_tilted_card():
+    expected = values(parse_residence_card(CARD))
+    for degrees in (-5, -3, 3, 5):
+        assert values(parse_residence_card(rotated(CARD, degrees))) == expected, degrees
+
+
+def test_group_rows_follows_tilt():
+    # Two rows tilted ~6°: the right end of row 1 is lower than the left end of row 2's label would suggest
+    boxes = [line("A1", 0, 100, w=200), line("A2", 400, 140, w=200), line("A3", 800, 180, w=200),
+             line("B1", 0, 190, w=200), line("B2", 400, 230, w=200)]
+    rows = group_rows(boxes)
+    assert [[b.text for b in r] for r in rows] == [["A1", "A2", "A3"], ["B1", "B2"]]
+
+
 def test_ocr_confusables():
     replace = {
         "在留資格": "在留资格",  # simplified Chinese 资
