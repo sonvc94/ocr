@@ -57,7 +57,7 @@ def index():
 
 @app.get("/api/zones")
 def zones(document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENTS)})$")):
-    """Card templates (label/value positions) used by mode=zone/hybrid; drawn on static/design.html."""
+    """Card templates (label/value positions) used by mode=zone/hybrid; drawn in the "Giấy tờ hỗ trợ" tab."""
     return JP_TEMPLATES if document == "jp_residence" else {}  # pattern-only documents: no template
 
 

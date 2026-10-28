@@ -8,30 +8,6 @@
    "card_number": {
     "value": "AB12345678CD",
     "needs_review": false
-   },
-   "name": {
-    "value": "TURNER ELIZABETH",
-    "needs_review": false
-   },
-   "date_of_birth": {
-    "value": "1985-12-31",
-    "needs_review": false
-   },
-   "nationality": {
-    "value": "米国",
-    "needs_review": true
-   },
-   "status_of_residence": {
-    "value": "留学",
-    "needs_review": false
-   },
-   "period_of_stay": {
-    "value": "4年3月",
-    "needs_review": false
-   },
-   "valid_until": {
-    "value": "2023-07-01",
-    "needs_review": false
    }
   }
  },
@@ -43,30 +19,6 @@
   "fields": {
    "card_number": {
     "value": "AB12345678CD",
-    "needs_review": false
-   },
-   "name": {
-    "value": "TURNER ELIZABETH",
-    "needs_review": false
-   },
-   "date_of_birth": {
-    "value": "1985-12-31",
-    "needs_review": false
-   },
-   "nationality": {
-    "value": "米国",
-    "needs_review": false
-   },
-   "status_of_residence": {
-    "value": "留学",
-    "needs_review": false
-   },
-   "period_of_stay": {
-    "value": "4年3月",
-    "needs_review": false
-   },
-   "valid_until": {
-    "value": "2023-07-01",
     "needs_review": false
    }
   }
@@ -80,30 +32,6 @@
    "card_number": {
     "value": "BI23456780GO",
     "needs_review": true
-   },
-   "name": {
-    "value": "TURNER ELIZABETH",
-    "needs_review": false
-   },
-   "date_of_birth": {
-    "value": "1985-12-31",
-    "needs_review": false
-   },
-   "nationality": {
-    "value": "米国",
-    "needs_review": false
-   },
-   "status_of_residence": {
-    "value": "留学",
-    "needs_review": false
-   },
-   "period_of_stay": {
-    "value": "4年3月",
-    "needs_review": false
-   },
-   "valid_until": {
-    "value": "2023-07-01",
-    "needs_review": false
    }
   }
  }

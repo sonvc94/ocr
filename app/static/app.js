@@ -290,6 +290,7 @@ function showView(view) {
   $("view-upload").hidden = view !== "upload";
   $("view-samples").hidden = view !== "samples";
   $("view-docs").hidden = view !== "docs";
+  $("view-guide").hidden = view !== "guide";
   if (view === "samples") loadSamples();
   if (view === "docs") loadDocs();
   try {
@@ -302,7 +303,7 @@ $("views").addEventListener("click", (e) => {
 });
 try {
   const savedView = localStorage.getItem("view");
-  if (savedView === "samples" || savedView === "docs") showView(savedView);
+  if (["samples", "docs", "guide"].includes(savedView)) showView(savedView);
 } catch {}
 
 function cleanJson() {

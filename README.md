@@ -99,8 +99,8 @@ app/
   driver_license/      Bằng lái Nhật: số + ngày cấp
   passport/            Hộ chiếu Nhật: số hộ chiếu (MRZ + số in)
   health_insurance/    Thẻ bảo hiểm y tế Nhật: loại thẻ, đơn vị bảo hiểm, ngày cấp
-  static/              Giao diện (HTML/JS thuần); how-it-works.html giải thích cách hoạt động cho người không chuyên; tab "Giấy tờ hỗ trợ" (docs.js) liệt kê giấy tờ Nhật + trường lấy được kèm hình minh hoạ
-scripts/               make_sample (sinh thẻ giả), build_demo (chạy ảnh mẫu chính thức → tab "Mẫu chính thức"), build_howto (ảnh minh hoạ), download_models
+  static/              Giao diện (HTML/JS thuần); tab "Luồng xử lý" giải thích từng bước xử lý ảnh; tab "Giấy tờ hỗ trợ" (docs.js) liệt kê giấy tờ Nhật + trường lấy được kèm hình minh hoạ
+scripts/               make_sample (sinh thẻ giả), build_demo (chạy ảnh mẫu chính thức → tab "Mẫu chính thức"), build_howto (ảnh minh hoạ cho tab "Luồng xử lý"), download_models
 vl_service/            Service PaddleOCR-VL (chạy native trên host, cổng 8011) + vl_probe.py
 deploy/aws-ec2-gpu/    install.sh + hướng dẫn deploy native lên EC2 GPU (systemd, Caddy)
 tests/                 Test parser, tìm viền/nắn nghiêng, vl_client (không cần Paddle)

@@ -113,8 +113,6 @@ pre {
   border-bottom: 2px solid transparent;
 }
 .views button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
-.views .view-link { margin-left: auto; padding: 8px 14px; font-size: 14px; text-decoration: none; }
-.views .view-link.next { margin-left: 0; }
 a { color: var(--accent); }
 
 .samples-view { padding: 8px 24px 32px; }
@@ -179,3 +177,31 @@ a { color: var(--accent); }
 .doc-fields th code { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
 .doc-fields tr.absent th, .doc-fields tr.absent td { opacity: 0.6; }
 .doc-fields tr[data-field]:hover { background: color-mix(in srgb, var(--warn) 8%, transparent); }
+
+/* "Luồng xử lý" view */
+.guide { max-width: 1000px; margin: 0 auto; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; font-size: 15px; line-height: 1.65; }
+@media (max-width: 900px) { .guide { padding: 16px; } }
+.guide h2 { font-size: 19px; margin: 32px 0 8px; padding-top: 8px; border-top: 1px solid var(--border); scroll-margin-top: 12px; }
+.guide .lead { font-size: 16px; margin-top: 0; }
+.guide ul, .guide ol { padding-left: 22px; }
+.guide li { margin: 4px 0; }
+.guide code { font-size: 13px; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+.guide pre { font-size: 12px; }
+.guide .note { background: var(--warn-bg); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 14px; }
+.guide-toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; padding: 10px 14px; background: var(--bg); border-radius: 8px; }
+.guide-toc a { text-decoration: none; }
+.guide-table { margin: 10px 0; }
+.guide-table th { width: auto; color: var(--text); font-weight: 600; }
+.guide-table td:first-child { white-space: nowrap; font-weight: 500; }
+@media (max-width: 700px) { .guide-table td:first-child { white-space: normal; } }
+.guide-flow { width: 100%; height: auto; margin: 8px 0 4px; }
+.guide-flow .flow-node rect { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; }
+.guide-flow .flow-node text { fill: var(--text); font-size: 15px; font-weight: 600; text-anchor: middle; }
+.guide-flow .flow-node text.flow-sub { fill: var(--muted); font-size: 12px; font-weight: 400; }
+.guide-flow .flow-edge path { stroke: var(--muted); stroke-width: 1.8; fill: none; }
+.guide-flow .flow-arrowhead { fill: var(--muted); }
+.guide-cases figure { margin: 16px 0; }
+.guide-cases figcaption { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.guide-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 700px) { .guide-steps { grid-template-columns: 1fr; } }
+.guide-steps img { width: 100%; border-radius: 6px; border: 1px solid var(--border); }

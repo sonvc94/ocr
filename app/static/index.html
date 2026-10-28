@@ -14,13 +14,224 @@
       <button data-view="upload" class="active">Thử ảnh của bạn</button>
       <button data-view="samples">Mẫu chính thức</button>
       <button data-view="docs">Giấy tờ hỗ trợ</button>
-      <a class="view-link" href="/static/how-it-works.html">Cách hoạt động</a>
-      <a class="view-link next" href="/static/design.html">Thiết kế (review)</a>
+      <button data-view="guide">Luồng xử lý</button>
     </nav>
   </header>
 
   <div id="view-samples" class="samples-view" hidden>
     <div id="samples"><p class="status loading">Đang tải…</p></div>
+  </div>
+
+  <div id="view-guide" class="samples-view" hidden>
+    <article class="guide">
+      <p class="lead">Trang này mô tả hệ thống xử lý một ảnh giấy tờ từ lúc nhận vào đến lúc trả JSON: chuẩn hoá kích thước, xoay đúng chiều,
+        tìm và cắt viền thẻ, đọc chữ, rồi xác định mỗi trường bằng <strong>nhãn in sẵn</strong> hoặc <strong>vị trí trên thẻ</strong>.
+        Mọi bước chạy trên máy nội bộ, ảnh chỉ xử lý trong bộ nhớ.</p>
+
+      <nav class="guide-toc">
+        <a href="#g-flow">Sơ đồ</a><a href="#g-input">1. Đầu vào</a><a href="#g-size">2. Ảnh lớn, ảnh nhỏ</a>
+        <a href="#g-rotate">3. Xoay ảnh</a><a href="#g-crop">4. Tìm và cắt viền</a><a href="#g-ocr">5. Đọc chữ</a>
+        <a href="#g-detect">6. Nhận diện loại</a><a href="#g-label">7. Theo nhãn</a><a href="#g-zone">8. Theo vị trí</a>
+        <a href="#g-check">9. Kiểm tra</a><a href="#g-output">10. Kết quả</a><a href="#g-limits">Giới hạn</a>
+      </nav>
+
+      <h2 id="g-flow">Sơ đồ tổng quát</h2>
+      <svg class="guide-flow" viewBox="0 0 1060 250" role="img" aria-label="Luồng xử lý: ảnh, chuẩn hoá kích thước và xoay EXIF, tìm và cắt viền thẻ, OCR có xoay và nắn nghiêng, gom dòng, nhận diện loại, trích trường theo nhãn hoặc vị trí, kiểm tra, JSON">
+        <defs><marker id="g-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="flow-arrowhead"/></marker></defs>
+        <g class="flow-node"><rect x="5" y="10" width="190" height="88" rx="10"/><text x="100" y="42">Ảnh đầu vào</text><text x="100" y="64" class="flow-sub">upload · camera · dán</text></g>
+        <g class="flow-node"><rect x="220" y="10" width="190" height="88" rx="10"/><text x="315" y="42">Chuẩn hoá</text><text x="315" y="64" class="flow-sub">xoay theo EXIF</text><text x="315" y="82" class="flow-sub">cạnh dài 1200–2000px</text></g>
+        <g class="flow-node"><rect x="435" y="10" width="190" height="88" rx="10"/><text x="530" y="42">Tìm viền thẻ</text><text x="530" y="64" class="flow-sub">cắt + nắn phẳng</text><text x="530" y="82" class="flow-sub">về 1600×1009px</text></g>
+        <g class="flow-node"><rect x="650" y="10" width="190" height="88" rx="10"/><text x="745" y="42">Đọc chữ (OCR)</text><text x="745" y="64" class="flow-sub">xoay 90°/180°/270°</text><text x="745" y="82" class="flow-sub">nắn nghiêng 1–30°</text></g>
+        <g class="flow-node"><rect x="865" y="10" width="190" height="88" rx="10"/><text x="960" y="42">Gom dòng</text><text x="960" y="64" class="flow-sub">ghép nhãn với giá trị</text><text x="960" y="82" class="flow-sub">chịu nghiêng ±10°</text></g>
+        <g class="flow-node"><rect x="865" y="150" width="190" height="88" rx="10"/><text x="960" y="182">Nhận diện loại</text><text x="960" y="204" class="flow-sub">khi chọn</text><text x="960" y="222" class="flow-sub">"Tự nhận diện"</text></g>
+        <g class="flow-node"><rect x="650" y="150" width="190" height="88" rx="10"/><text x="745" y="182">Trích trường</text><text x="745" y="204" class="flow-sub">theo nhãn</text><text x="745" y="222" class="flow-sub">theo vị trí</text></g>
+        <g class="flow-node"><rect x="435" y="150" width="190" height="88" rx="10"/><text x="530" y="182">Kiểm tra</text><text x="530" y="204" class="flow-sub">kiểm tra chéo</text><text x="530" y="222" class="flow-sub">chất lượng · gắn cờ</text></g>
+        <g class="flow-node"><rect x="220" y="150" width="190" height="88" rx="10"/><text x="315" y="182">JSON</text><text x="315" y="204" class="flow-sub">trường + độ tin cậy</text><text x="315" y="222" class="flow-sub">cảnh báo</text></g>
+        <g class="flow-edge" marker-end="url(#g-arrow)"><path d="M195,54 H218"/><path d="M410,54 H433"/><path d="M625,54 H648"/><path d="M840,54 H863"/><path d="M960,98 V148"/><path d="M865,194 H842"/><path d="M650,194 H627"/><path d="M435,194 H412"/></g>
+      </svg>
+
+      <h2 id="g-input">1. Đầu vào</h2>
+      <ul>
+        <li>Ảnh JPEG / PNG / WEBP tối đa 10MB: chọn file, kéo thả, dán (Ctrl+V) hoặc chụp bằng camera. Chọn ảnh chỉ hiện xem trước;
+          hệ thống chạy khi bấm <strong>Nhận dạng</strong>, nên có thể đổi tuỳ chọn rồi bấm lại.</li>
+        <li><strong>Giấy tờ</strong>: "Tự nhận diện" (mặc định) hoặc chọn loại. <strong>Cách đọc</strong>: theo nhãn, theo vị trí,
+          hoặc kết hợp (mục 7–8). <strong>Engine</strong>: PP-OCR (mặc định) hoặc PaddleOCR-VL (chậm, chỉ đọc theo nhãn).
+          <strong>Tự cắt &amp; nắn thẻ</strong>: bỏ chọn khi ảnh đã là thẻ cắt sát.</li>
+        <li>API: <code>POST /api/extract?document=auto&amp;mode=label|zone|hybrid&amp;engine=ppocr|vl&amp;crop=true</code>.</li>
+      </ul>
+
+      <h2 id="g-size">2. Ảnh lớn, ảnh nhỏ</h2>
+      <p>Ảnh đến từ nhiều nguồn: ảnh điện thoại 4000px trở lên, ảnh scan, hay ảnh mẫu cắt từ trang web chỉ vài trăm px. Kích thước được
+        đưa về khoảng cố định ở nhiều chỗ để mọi bước sau làm việc với chữ có cỡ gần giống nhau:</p>
+      <table class="guide-table">
+        <tr><th>Bước</th><th>Xử lý</th><th>Vì sao</th></tr>
+        <tr><td>Đọc ảnh</td><td>Cạnh dài &gt; 2000px → thu nhỏ về 2000px. Cạnh dài &lt; 1200px → phóng lên 1600px (nội suy bicubic).
+          Kích thước gốc vẫn ghi trong kết quả (<code>ocr.original_size</code>).</td>
+          <td>Ảnh quá lớn làm OCR chậm mà không thêm độ chính xác. Ảnh quá nhỏ làm mất nét kana và nét mảnh; phóng lên trước giúp đọc lại được một phần.</td></tr>
+        <tr><td>Tìm viền (lần 3)</td><td>Thu ảnh về 600px và làm mờ trước khi tìm cạnh.</td>
+          <td>Ở cỡ gốc, vân gỗ / vân nền tạo hàng nghìn cạnh nhỏ làm đứt viền thẻ; thu nhỏ làm vân biến mất mà viền thẻ vẫn còn.</td></tr>
+        <tr><td>Cắt + nắn thẻ</td><td>Thẻ luôn được nắn về đúng <strong>1600×1009px</strong> (tỉ lệ thẻ ID-1, 85.6×54mm),
+          dù trong ảnh gốc thẻ to hay nhỏ.</td>
+          <td>OCR luôn thấy chữ cùng cỡ; vị trí các ô trên thẻ trùng với bản đồ mẫu.</td></tr>
+        <tr><td>Bản đồ vị trí (template)</td><td>Toạ độ ghi theo tỉ lệ 0–1 của thẻ, sai số đo theo phần trăm chiều rộng thẻ (≤ 2%).
+          Thẻ phải chiếm ≥ 20% chiều ngang ảnh.</td>
+          <td>Không phụ thuộc độ phân giải; thẻ quá nhỏ trong khung thì vị trí không đủ tin cậy.</td></tr>
+        <tr><td>Đánh giá chất lượng</td><td>Độ tin cậy OCR thấp → khuyến nghị chụp lại với chiều ngang thẻ ≥ 1500px.</td>
+          <td>Phóng to không tạo ra chi tiết đã mất.</td></tr>
+      </table>
+      <p class="note">Ví dụ giới hạn: ảnh mẫu bằng lái chỉ 338px. Sau khi phóng lên, số bằng lái vẫn đọc đúng, nhưng chữ nhỏ <code>交付</code>
+        bị đọc thành <code>节</code> và mất niên hiệu của ngày cấp, nên ngày cấp không lấy được.</p>
+
+      <h2 id="g-rotate">3. Xoay ảnh đúng chiều</h2>
+      <ol>
+        <li><strong>Hướng chụp của điện thoại (EXIF)</strong>: điện thoại thường lưu ảnh nằm ngang kèm thông tin "xoay 90°"; ảnh được xoay theo
+          thông tin này ngay khi đọc.</li>
+        <li><strong>Thẻ chụp dọc</strong>: khi nắn thẻ, nếu cạnh dài của thẻ đang đứng thì đổi thứ tự 4 góc để cạnh dài nằm ngang.</li>
+        <li><strong>Ảnh lộn ngược / quay 90°</strong>: trước khi đọc chữ, bộ phân loại hướng của PaddleOCR xác định ảnh đang ở 0°, 90°, 180° hay 270° và xoay lại.</li>
+        <li><strong>Nghiêng nhẹ 1°–30°</strong> (thường khi không cắt được viền thẻ): lấy góc của các dòng chữ dài (cần ≥ 3 dòng), dùng góc
+          trung vị, xoay cả ảnh lại cho thẳng. Không cần đọc lại chữ vì bộ đọc vốn đọc được dòng nghiêng; chỉ khung chữ được tính lại cho khít.</li>
+        <li><strong>Nghiêng còn sót</strong> (dưới khoảng 10°): bước gom dòng thử các đường xiên, nên nhãn và giá trị cùng hàng vẫn được ghép đúng.</li>
+      </ol>
+
+      <h2 id="g-crop">4. Tìm và cắt viền thẻ</h2>
+      <p>Hệ thống tìm tứ giác có tỉ lệ gần thẻ ID-1, rồi nắn phối cảnh về hình chữ nhật 1600×1009. Có 3 lần thử, lần sau chỉ chạy khi lần trước không thấy:</p>
+      <ol>
+        <li><strong>Viền rõ</strong> (thẻ trên nền tối): tìm cạnh thường, lấy đường bao ngoài lớn nhất có tỉ lệ lệch &lt; 25%.</li>
+        <li><strong>Viền mờ</strong> (thẻ nhạt trong bao nhựa, ngón tay che một góc): tìm cạnh nhạy hơn, nối các khe hở, dùng bao lồi để
+          bắc qua góc bị che. Điều kiện chặt hơn (tỉ lệ lệch &lt; 15%, 2 cạnh đối diện dài gần bằng nhau, chiếm 30–95% ảnh), rồi nới khung 4%
+          vì bao lồi hay lẹm vào thẻ.</li>
+        <li><strong>Nền có vân</strong> (thẻ nhỏ trên bàn gỗ): thu nhỏ còn 600px, làm mờ, tìm cạnh trên từng kênh màu (thẻ và nền khác nhau
+          về màu nhiều hơn độ sáng), nới khung 2%.</li>
+      </ol>
+      <p>Không tìm thấy viền thì dùng nguyên ảnh (<code>ocr.card_cropped=false</code>); vẫn đọc được, nhờ bước nắn nghiêng ở mục 3.
+        <strong>Hộ chiếu</strong> không bao giờ được cắt: trang hộ chiếu không phải cỡ thẻ ID-1, và cuốn hộ chiếu mở 2 trang có tỉ lệ gần bằng
+        1 trang nên dễ bị cắt nhầm cả cuốn.</p>
+      <div class="guide-cases">
+        <figure><figcaption>Thẻ nhỏ, chụp xiên trên nền tối → cắt được viền, nắn phẳng</figcaption>
+          <div class="guide-steps"><img src="/static/howto/perspective_1_photo.jpg" alt="Ảnh chụp xiên" loading="lazy">
+            <img src="/static/howto/perspective_2_processed.jpg" alt="Thẻ sau khi cắt và nắn" loading="lazy">
+            <img src="/static/howto/perspective_3_boxes.jpg" alt="Khung chữ OCR" loading="lazy"></div></figure>
+        <figure><figcaption>Nền gần cùng màu thẻ, nghiêng 8° → lần thử 2 tìm được viền mờ</figcaption>
+          <div class="guide-steps"><img src="/static/howto/low_contrast_tilt_1_photo.jpg" alt="Thẻ trên nền cùng màu" loading="lazy">
+            <img src="/static/howto/low_contrast_tilt_2_processed.jpg" alt="Thẻ sau khi cắt" loading="lazy">
+            <img src="/static/howto/low_contrast_tilt_3_boxes.jpg" alt="Khung chữ OCR" loading="lazy"></div></figure>
+        <figure><figcaption>Chụp sát, góc thẻ ra ngoài khung → không có viền để cắt, xoay thẳng 6° theo dòng chữ</figcaption>
+          <div class="guide-steps"><img src="/static/howto/closeup_tilt_1_photo.jpg" alt="Ảnh chụp sát, nghiêng" loading="lazy">
+            <img src="/static/howto/closeup_tilt_2_processed.jpg" alt="Ảnh sau khi xoay thẳng" loading="lazy">
+            <img src="/static/howto/closeup_tilt_3_boxes.jpg" alt="Khung chữ OCR" loading="lazy"></div></figure>
+        <p class="meta">Ảnh: thẻ mẫu ISA đặt vào ảnh giả lập, chạy qua đúng pipeline này (<code>scripts/build_howto.py</code>). Mỗi hàng: ảnh vào → ảnh đã xử lý → khung chữ OCR.</p>
+      </div>
+
+      <h2 id="g-ocr">5. Đọc chữ (OCR) và gom dòng</h2>
+      <ul>
+        <li>Mô hình <strong>PP-OCRv5</strong> (bản server, đọc kanji tốt hơn bản mobile) trả từng dòng chữ: nội dung, độ tin cậy 0–1 và khung toạ độ.</li>
+        <li>Bỏ khung cao hơn 4 lần chiều cao dòng chữ trung bình: đó là ảnh chân dung hoặc con dấu, không phải chữ.</li>
+        <li><strong>Chuẩn hoá chữ</strong>: chữ/số toàn khổ → chữ thường (<code>２０２５</code> → <code>2025</code>); chữ Hán giản thể mà mô hình
+          hay trả nhầm → chữ Nhật (<code>有效</code> → <code>有効</code>, <code>公安委员会</code> → <code>公安委員会</code>).</li>
+        <li><strong>Gom dòng</strong>: các khung có tâm nằm trên cùng một đường (thử độ dốc trong khoảng ±10°) thành một hàng, xếp trái → phải,
+          rồi ghép thành văn bản phẳng. Mỗi ký tự vẫn nhớ thuộc dòng OCR nào để lấy độ tin cậy.</li>
+      </ul>
+
+      <h2 id="g-detect">6. Nhận diện loại giấy tờ</h2>
+      <p>Khi chọn "Tự nhận diện", hệ thống cộng điểm các chữ in chỉ có trên từng loại:</p>
+      <table class="guide-table">
+        <tr><th>Loại</th><th>Dấu hiệu (điểm)</th></tr>
+        <tr><td>Thẻ cư trú</td><td>在留カード / RESIDENCE CARD (3), 特定在留 (3), 在留資格, 就労制限, 住居地 (2), 在留期間, 国籍・地域 (1)</td></tr>
+        <tr><td>My Number</td><td>個人番号カード / マイナンバーカード (3), 電子証明書 (2), 臓器提供 (1)</td></tr>
+        <tr><td>Bằng lái</td><td>運転免許証, 公安委員会 (3), 第…号 12 chữ số, 免許の条件 (2), 二・小・原 (1)</td></tr>
+        <tr><td>Hộ chiếu</td><td>dòng MRZ 1 <code>P&lt;JPN</code>, dòng MRZ 2 (3), 旅券 / PASSPORT, Passport No (2), 発行国, Surname (1)</td></tr>
+        <tr><td>Bảo hiểm y tế</td><td>…被保険者証 / 資格確認書 / 組合員証 (3), 保険者番号, 保険者名称 / 交付者名 (2), 健康保険 (1)</td></tr>
+      </table>
+      <p>Chữ in trên nhiều loại (氏名, 住所, まで有効, 日本国) không được tính. Loại điểm cao nhất được chọn nếu đạt ≥ 3; loại thứ hai đạt
+        ≥ 75% điểm loại nhất thì kết quả kèm cảnh báo "không chắc chắn"; không loại nào đạt thì báo lỗi để người dùng chọn tay.
+        Ảnh được cắt như thẻ trước khi nhận diện; nếu ra hộ chiếu thì đọc lại ảnh gốc chưa cắt (tốn thêm một lần OCR).</p>
+
+      <h2 id="g-label">7. Lấy trường theo nhãn</h2>
+      <p>Cách đọc mặc định, dùng cho mọi loại giấy tờ. Trên văn bản phẳng, hệ thống tìm vị trí các nhãn in sẵn (chịu được lỗi OCR: thừa dấu cách,
+        chữ giản thể…) và lấy <strong>đoạn chữ từ sau nhãn đến trước nhãn kế tiếp</strong>, rồi làm sạch theo kiểu dữ liệu của trường:</p>
+      <ul>
+        <li><strong>Thẻ cư trú</strong>: <code>番号 AB12345678CD</code> → số thẻ, sửa ký tự hay nhầm theo vị trí (2 chữ + 8 số + 2 chữ: O→0, I→1…).
+          Nhãn tiếng Nhật đọc hỏng thì dùng nhãn tiếng Anh in bên dưới (NAME, DATE OF BIRTH…) để định vị, và trường đó bị gắn cờ.</li>
+        <li><strong>Bảo hiểm y tế</strong>: <code>保険者名称</code> / <code>交付者名</code> → phần còn lại của dòng; <code>交付年月日</code> → ngày ngay sau
+          (hoặc ngày ngay trước chữ <code>交付</code>). Tên thẻ in 2 dòng (<code>国民健康保険</code> / <code>資格確認書</code>) được ghép lại.</li>
+        <li><strong>Giấy tờ không có nhãn cho trường cần lấy</strong> thì đọc theo mẫu chữ:
+          <ul>
+            <li>My Number: hạn = ngày có <code>まで有効</code> ngay sau; nơi cấp = cụm chữ kết thúc bằng <code>市長/区長/町長/村長</code>.</li>
+            <li>Bằng lái: số = 12 chữ số trong <code>第 … 号</code>; ngày cấp = ngày sau <code>交付</code>, bỏ số tra cứu 5 chữ số theo sau.</li>
+            <li>Hộ chiếu: số in cạnh <code>旅券番号</code>, đối chiếu với 9 ký tự đầu dòng MRZ thứ hai.</li>
+          </ul></li>
+        <li><strong>Ngày tháng</strong>: nhận cả năm dương lịch và niên hiệu (令和, 平成, 昭和, 元年, dạng <code>R5. 4. 1</code>), trả về <code>YYYY-MM-DD</code>.</li>
+      </ul>
+
+      <h2 id="g-zone">8. Lấy trường theo vị trí, và kết hợp</h2>
+      <p>Chỉ thẻ cư trú (mẫu cũ và mẫu 2026) có <strong>bản đồ vị trí (template)</strong>: toạ độ từng nhãn, từng ô giá trị và các dòng chữ cố định
+        (mốc), đo trên thẻ mẫu chính thức. Các loại khác chạy như "theo nhãn" kèm cảnh báo.</p>
+      <svg class="guide-flow" viewBox="0 0 980 200" role="img" aria-label="Đặt bản đồ mẫu lên ảnh: tìm mốc chữ, khớp, chiếu ô giá trị, lấy chữ trong ô">
+        <defs><marker id="g-arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="flow-arrowhead"/></marker></defs>
+        <g class="flow-node"><rect x="5" y="40" width="210" height="110" rx="10"/><text x="110" y="78">Tìm mốc</text>
+          <text x="110" y="100" class="flow-sub">dòng OCR trùng chữ cố định</text><text x="110" y="120" class="flow-sub">(在留カード, 氏名, NAME…)</text></g>
+        <g class="flow-node"><rect x="255" y="40" width="210" height="110" rx="10"/><text x="360" y="78">Khớp mẫu vào ảnh</text>
+          <text x="360" y="100" class="flow-sub">≥ 3 mốc, loại mốc sai (RANSAC)</text><text x="360" y="120" class="flow-sub">sai số ≤ 2% · xoay ≤ 30°</text></g>
+        <g class="flow-node"><rect x="505" y="40" width="210" height="110" rx="10"/><text x="610" y="78">Chiếu ô giá trị</text>
+          <text x="610" y="100" class="flow-sub">từ toạ độ mẫu</text><text x="610" y="120" class="flow-sub">sang toạ độ ảnh</text></g>
+        <g class="flow-node"><rect x="755" y="40" width="220" height="110" rx="10"/><text x="865" y="78">Lấy chữ trong ô</text>
+          <text x="865" y="100" class="flow-sub">dòng chạm nhiều ô thì chia</text><text x="865" y="120" class="flow-sub">theo vị trí từng cụm chữ</text></g>
+        <g class="flow-edge" marker-end="url(#g-arrow2)"><path d="M215,95 H253"/><path d="M465,95 H503"/><path d="M715,95 H753"/></g>
+      </svg>
+      <ul>
+        <li><strong>Vì sao dùng mốc chữ thay vì viền thẻ</strong>: mốc vẫn có khi không cắt được viền, và tự bù được thẻ nghiêng, xa gần, phối cảnh
+          (≥ 4 mốc thì dùng phép biến đổi phối cảnh nếu nó giảm sai số ≥ 30%). Cần ≥ 3 mốc vì 2 điểm luôn khớp tuyệt đối, không kiểm chứng được.</li>
+        <li>Không đủ mốc nhưng ảnh đã là thẻ được nắn phẳng (tỉ lệ ảnh ≈ tỉ lệ thẻ) → co giãn bản đồ theo kích thước ảnh.
+          Không khớp được → dùng kết quả theo nhãn, kèm cảnh báo.</li>
+        <li>Chữ trong ô đi qua cùng bước làm sạch như cách đọc theo nhãn, nên hai cách cho ra giá trị so sánh được với nhau.</li>
+      </ul>
+      <table class="guide-table">
+        <tr><th>Cách đọc</th><th>Khi nào dùng</th></tr>
+        <tr><td>Theo nhãn (<code>label</code>)</td><td>Mặc định. Đúng cả khi bố cục lệch, miễn đọc được nhãn.</td></tr>
+        <tr><td>Theo vị trí (<code>zone</code>)</td><td>Nhãn đọc hỏng nhưng thẻ rõ; chỉ thẻ cư trú.</td></tr>
+        <tr><td>Kết hợp (<code>hybrid</code>)</td><td>Ưu tiên theo nhãn. Hai cách giống nhau → ghi <code>label+zone</code> (tin cậy hơn).
+          Chỉ vị trí đọc được → lấy theo vị trí, gắn cờ. Hai cách khác nhau → giữ theo nhãn, gắn cờ, ghi chú giá trị theo vị trí.</td></tr>
+      </table>
+      <p>Bật "Hiện ô template" ở trang chính để xem các ô đã chiếu lên ảnh; tab "Giấy tờ hỗ trợ" vẽ các ô trên thẻ mẫu.</p>
+
+      <h2 id="g-check">9. Kiểm tra và gắn cờ "cần kiểm tra"</h2>
+      <ul>
+        <li>Mỗi trường bị gắn <code>needs_review</code> khi: không đọc được, độ tin cậy OCR &lt; 0.85, đã tự sửa ký tự, có ghi chú (đoán, hai cách đọc khác nhau…),
+          hoặc không qua kiểm tra chéo.</li>
+        <li><strong>Chất lượng ảnh</strong> <code>low</code> khi độ tin cậy trung bình &lt; 0.9, hơn 20% dòng dưới 0.8, hoặc đọc được dưới 60% nhãn mong đợi;
+          khi đó các trường bị gắn cờ (thẻ cư trú: các trường chữ Hán, dễ sai nhất; loại khác: mọi trường đọc được), kèm lời khuyên chụp lại.</li>
+        <li><strong>Kiểm tra chéo</strong>:
+          <ul>
+            <li>Hộ chiếu: chữ số kiểm tra của dòng MRZ.</li>
+            <li>Bằng lái: 2 số đầu phải là mã công an tỉnh.</li>
+            <li>My Number: thẻ hết hạn, hạn quá 10 năm.</li>
+            <li>Bảo hiểm, bằng lái: ngày cấp không được ở tương lai.</li>
+            <li>Thẻ cư trú: API chỉ trả số thẻ nên bỏ qua kiểm tra thứ tự các ngày; số thẻ vẫn được sửa và kiểm định dạng.</li>
+          </ul></li>
+      </ul>
+
+      <h2 id="g-output">10. Kết quả trả về</h2>
+<pre>{
+  "document": "jp_passport",                       // loại đã đọc
+  "document_detection": { "detected": "jp_passport", "confident": true, "scores": {…} },  // khi document=auto
+  "fields": {
+    "passport_number": { "value": "ZZ1000001", "raw": "ZZ1000001", "confidence": 0.99,
+                         "needs_review": false, "notes": [], "source": "label" }
+  },
+  "quality": { "level": "ok", "reasons": [], "advice": null },
+  "warnings": [],
+  "ocr": { "card_cropped": false, "deskew_deg": 0.0, "original_size": [800, 538], "image_size": [1600, 1076], "lines": […] },
+  "timing_ms": { "preprocess": 3, "ocr": 9800, "parse": 2 }
+}</pre>
+
+      <h2 id="g-limits">Giới hạn hiện tại</h2>
+      <ul>
+        <li>Chỉ đọc mặt trước; chưa thử trên ảnh chụp giấy tờ thật của My Number, bằng lái, hộ chiếu, bảo hiểm (mới thử trên ảnh mẫu chính thức).</li>
+        <li>Chỉ thẻ cư trú có bản đồ vị trí; các loại khác chỉ đọc theo nhãn / mẫu chữ.</li>
+        <li>特定在留カード (thẻ cư trú gộp My Number) chưa hỗ trợ: nhận ra được nhưng mọi trường đều bị gắn cờ.</li>
+        <li>Ảnh quá nhỏ hoặc mờ: phóng to không khôi phục được chữ nhỏ (xem mục 2).</li>
+      </ul>
+    </article>
   </div>
 
   <div id="view-docs" class="samples-view" hidden>

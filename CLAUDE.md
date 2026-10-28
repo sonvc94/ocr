@@ -43,7 +43,7 @@ curl -s -F file=@samples/isa/residence_card_new_2026.jpg \
   "localhost:8000/api/extract?include_image=false&engine=ppocr&mode=hybrid" \
   > samples/results/residence_card_new_2026.ppocr.hybrid.json                          # engine=vl cần vl_service chạy
 docker compose run --rm -v ./app:/app/app -v ./scripts:/app/scripts app python -m scripts.build_demo  # cập nhật static/samples (rồi --build)
-docker compose run --rm -v ./app/static:/app/app/static app python -m scripts.build_howto # ảnh cho how-it-works.html
+docker compose run --rm -v ./app:/app/app -v ./scripts:/app/scripts app python -m scripts.build_howto  # ảnh cho tab "Luồng xử lý"
 ```
 
 Không có linter/formatter cấu hình sẵn.
@@ -185,10 +185,10 @@ không import nhau).
   (toạ độ 0–1 trên ảnh đã xử lý, đo từ khung OCR của chính ảnh mẫu; nơi cấp My Number đo tay vì OCR không đọc được; 1 trường có thể
   nhiều ô, vd số hộ chiếu + MRZ). Tỉ lệ khung = `template.aspect` hoặc `ocr.image_size` của mẫu. **Thêm/bớt trường hoặc loại giấy tờ
   thì sửa `DOCS` trong `docs.js` và `FIELD_LABELS` trong `app.js`; chạy lại `build_demo` thì kiểm lại `boxes` (ảnh đã xử lý có thể đổi).**
-  `main.py` gắn `?v=mtime` cho `app.js`, `docs.js`, `style.css`. `how-it-works.html` (link "Cách hoạt động"): giải thích luồng xử lý cho người non-tech,
-  ảnh minh hoạ thật trong `static/howto/` sinh bằng `scripts/build_howto.py` → **đổi luồng preprocess/OCR/parse thì cập nhật
-  trang này** và chạy lại script. `design.html` (link "Thiết kế (review)" ở trang chủ) (vẽ template từ `/api/zones`): bản thiết kế đoán giá trị theo
-  danh sách/vị trí: mục ★ (template + mode zone/hybrid) đã triển khai, mục 0–6 **chưa**. Khi làm mục nào thì cập nhật cả trang này lẫn phần kiến trúc ở trên.
+  `main.py` gắn `?v=mtime` cho `app.js`, `docs.js`, `style.css`. Tab "Luồng xử lý" (`#view-guide`, HTML tĩnh trong `index.html`,
+  viết 28/10/2026 thay `how-it-works.html` + `design.html` đã xoá): đầu vào, xử lý ảnh lớn/nhỏ, xoay, cắt viền, OCR + gom dòng, nhận diện loại,
+  theo nhãn, theo vị trí/kết hợp, kiểm tra, JSON, giới hạn; ảnh minh hoạ thật trong `static/howto/` (`scripts/build_howto.py`).
+  **Đổi luồng xử lý, ngưỡng, dấu hiệu nhận diện hay cách đọc của loại giấy tờ nào thì cập nhật tab này** (các con số trong đó lấy từ code).
 
 ### vl_service/ (PaddleOCR-VL, cổng 8011)
 - Tách riêng vì VL cần paddlepaddle 3.3.x, bản này crash PP-OCRv5 trên CPU (oneDNN). App chính pin 3.2.2.
@@ -214,7 +214,7 @@ không import nhau).
 ### scripts/, tests/
 - `make_sample.py` sinh thẻ giả; `build_demo.py` chạy pipeline trên mọi ảnh mẫu chính thức (`SAMPLES`: `src`, `document`, nguồn từng ảnh)
   → `static/samples/` (ảnh + `results.json`, tab "Mẫu chính thức" và ví dụ trong tab "Giấy tờ hỗ trợ"); `build_howto.py` đặt thẻ mẫu ISA
-  vào ảnh giả lập (xiên, nền cùng màu, chụp sát nghiêng), chạy pipeline thật, ghi ảnh + `summary.json` vào `static/howto`; `download_models.py` tải model khi build.
+  vào ảnh giả lập (ảnh chụp sát `closeup_tilt` cắt mất 2 ký tự cuối số thẻ → số thẻ sai nhưng bị gắn cờ, đúng như mong đợi) (xiên, nền cùng màu, chụp sát nghiêng), chạy pipeline thật, ghi ảnh + `summary.json` vào `static/howto`; `download_models.py` tải model khi build.
 - `test_detect.py`: nhận diện trên OCR ảnh mẫu chính thức, không nhận ra / không chắc, chữ giản thể; `pipeline.extract(document="auto")` với
   `_ocr`/`normalize_card` giả (hộ chiếu OCR lại ảnh gốc, `UnknownDocument`).
 - `test_jp_documents.py`: bằng lái, hộ chiếu (MRZ đúng/sai check digit, `«` thay `<`), bảo hiểm (協会けんぽ, 国保 với `R5. 4. 1`, 資格確認書),

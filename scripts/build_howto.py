@@ -1,4 +1,4 @@
-"""Build the step-by-step images for static/how-it-works.html from the ISA specimen card.
+"""Build the step-by-step images for the "Luồng xử lý" tab (static/index.html, section 4) from the ISA specimen card.
 
 Each case places the specimen in a simulated photo (tilted / perspective / low-contrast background),
 runs the real pipeline and saves: the photo, the processed image with OCR boxes, and a summary JSON.
@@ -19,7 +19,6 @@ from app.pipeline import extract
 STATIC = Path(__file__).resolve().parent.parent / "app" / "static"
 OUT = STATIC / "howto"
 CARD = STATIC / "samples" / "residence_card_current.jpg"
-SHOWN_FIELDS = ("card_number", "name", "date_of_birth", "nationality", "status_of_residence", "period_of_stay", "valid_until")
 
 
 def _background(w: int, h: int, color: tuple[int, int, int], seed: int) -> np.ndarray:
@@ -89,8 +88,7 @@ def main() -> None:
             "deskew_deg": result["ocr"]["deskew_deg"],
             "lines": len(result["ocr"]["lines"]),
             "quality": result["quality"]["level"],
-            "fields": {k: {"value": result["fields"][k]["value"], "needs_review": result["fields"][k]["needs_review"]}
-                       for k in SHOWN_FIELDS},
+            "fields": {k: {"value": f["value"], "needs_review": f["needs_review"]} for k, f in result["fields"].items()},
         }
     (OUT / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, indent=1))
