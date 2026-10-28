@@ -1,6 +1,6 @@
 """PaddleOCR-VL as a small HTTP service: POST an image, get the recognized text blocks back.
 
-Runs in its own container because PaddleOCR-VL needs PaddlePaddle 3.3.x, which breaks PP-OCRv5
+Runs as its own process (natively on the Mac host, or as a systemd service on a GPU server) because PaddleOCR-VL needs PaddlePaddle 3.3.x, which breaks PP-OCRv5
 on CPU in the main app. Images are processed in memory only.
 """
 
@@ -17,6 +17,8 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 PIPELINE_VERSION = os.getenv("VL_PIPELINE_VERSION", "v1.5")
+# "gpu:0" | "cpu"; unset = Paddle's default (the GPU when paddlepaddle-gpu sees one, else the CPU).
+DEVICE = os.getenv("VL_DEVICE") or None
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 _lock = threading.Lock()
@@ -33,6 +35,7 @@ def get_vl():
                 pipeline_version=PIPELINE_VERSION,
                 use_doc_orientation_classify=False,  # the main app already rotates and crops the card
                 use_doc_unwarping=False,
+                device=DEVICE,
             )
     return _vl
 
@@ -71,7 +74,9 @@ app = FastAPI(title="PaddleOCR-VL service", lifespan=lifespan)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": f"PaddleOCR-VL-{PIPELINE_VERSION}"}
+    import paddle
+
+    return {"status": "ok", "model": f"PaddleOCR-VL-{PIPELINE_VERSION}", "device": DEVICE or paddle.device.get_device()}
 
 
 @app.post("/ocr")

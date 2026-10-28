@@ -26,8 +26,12 @@ const VN_ID_FIELDS = {
   place_of_origin: ["Quê quán", "Place of origin"],
   place_of_residence: ["Nơi thường trú", "Place of residence"],
 };
-const FIELD_LABELS = { residence_card: RESIDENCE_FIELDS, vn_id_card: VN_ID_FIELDS };
-const VL_DOCUMENTS = ["jp_residence"]; // vl_service only runs the Japanese setup
+const MY_NUMBER_FIELDS = {
+  issuer: ["Nơi cấp", "○○市長"],
+  expiry_date: ["Có hiệu lực đến", "まで有効"],
+};
+const FIELD_LABELS = { residence_card: RESIDENCE_FIELDS, vn_id_card: VN_ID_FIELDS, my_number_card: MY_NUMBER_FIELDS };
+const VL_DOCUMENTS = ["jp_residence", "jp_mynumber"]; // vl_service only runs the Japanese setup
 const LOW_SCORE = 0.85;
 
 const $ = (id) => document.getElementById(id);
@@ -286,7 +290,7 @@ $("downloadJson").addEventListener("click", () => {
 
 $("showBoxes").addEventListener("change", syncLayers);
 $("showZones").addEventListener("change", syncLayers);
-// Document type: remembered per browser; engine=vl is only offered for the Japanese card.
+// Document type: remembered per browser; engine=vl is only offered for the Japanese cards.
 function syncEngine() {
   const vlAllowed = VL_DOCUMENTS.includes($("document").value);
   $("engine").querySelector('option[value="vl"]').disabled = !vlAllowed;

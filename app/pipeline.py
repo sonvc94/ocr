@@ -10,6 +10,7 @@ from .ocr import vl_client
 from .ocr.ppocr import run_ocr
 from .ocr.ppocr_model import model_name
 from .preprocess import normalize_card
+from .my_number_card import parse_my_number_card
 from .residence_card import MODES, parse_residence_card
 from .vn_id_card import parse_vn_id_card
 
@@ -18,8 +19,9 @@ ENGINES = ("ppocr", "vl")
 DOCUMENTS = {
     "jp_residence": (parse_residence_card, "ja"),
     "vn_id": (parse_vn_id_card, "vi"),
+    "jp_mynumber": (parse_my_number_card, "ja"),
 }
-VL_DOCUMENTS = ("jp_residence",)  # vl_service runs the Japanese PaddleOCR-VL setup only
+VL_DOCUMENTS = ("jp_residence", "jp_mynumber")  # vl_service runs the Japanese PaddleOCR-VL setup only
 
 VL_WARNING = (
     "PaddleOCR-VL không trả độ tin cậy theo dòng: needs_review chỉ dựa vào định dạng và kiểm tra chéo, "
@@ -43,7 +45,7 @@ def extract(
     if engine == "vl" and mode != "label":
         raise ValueError("mode=zone/hybrid chỉ hỗ trợ engine=ppocr.")
     if engine == "vl" and document not in VL_DOCUMENTS:
-        raise ValueError("engine=vl chỉ hỗ trợ thẻ cư trú Nhật.")
+        raise ValueError("engine=vl chỉ hỗ trợ thẻ Nhật.")
     parse, lang = DOCUMENTS[document]
     t0 = time.perf_counter()
     cropped = False

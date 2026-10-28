@@ -15,13 +15,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Tổng quan
 
-Demo OCR mặt trước thẻ: thẻ cư trú Nhật (在留カード, `document=jp_residence`) và thẻ căn cước Việt Nam mẫu 2024 / CCCD gắn chip 2021
-(`document=vn_id`). Upload hoặc chụp camera → JSON các trường. Chạy hoàn toàn local.
+Demo OCR mặt trước thẻ: thẻ cư trú Nhật (在留カード, `document=jp_residence`), thẻ My Number (個人番号カード, `document=jp_mynumber`,
+chỉ nơi cấp + hạn thẻ) và thẻ căn cước Việt Nam mẫu 2024 / CCCD gắn chip 2021 (`document=vn_id`). Upload hoặc chụp camera → JSON các trường. Chạy hoàn toàn local.
 
 ```
 Upload → preprocess (EXIF rotate, tìm viền thẻ ID-1, cắt + nắn phẳng: dùng chung cho 2 loại thẻ)
        → OCR (engine=ppocr: PP-OCR theo ngôn ngữ thẻ ja|vi | engine=vl: PaddleOCR-VL qua vl_service, chỉ thẻ Nhật)
-       → parse_residence_card | parse_vn_id_card (theo nhãn, + theo vị trí nếu mode=zone|hybrid)
+       → parse_residence_card | parse_my_number_card | parse_vn_id_card (theo nhãn, + theo vị trí nếu mode=zone|hybrid)
        → kiểm tra chéo + đánh giá chất lượng → JSON
 ```
 
@@ -53,24 +53,24 @@ docker compose run --rm -e PYTHONPATH=/app -v ./app:/app/app -v ./tests:/app/tes
 
 Không có linter/formatter cấu hình sẵn.
 
-Biến môi trường: `OCR_MODEL_SIZE`, `OCR_ENABLE_MKLDNN` (mặc định 1), `OCR_VI_DET_MODEL` / `OCR_VI_REC_MODEL` (model thẻ VN), `LOG_RESPONSES`, `LOG_FILE`, `DEBUG_SAVE_IMAGES`
+Biến môi trường: `OCR_MODEL_SIZE`, `OCR_ENABLE_MKLDNN` (mặc định 1, chỉ có tác dụng trên CPU), `OCR_DEVICE` (`gpu:0`|`cpu`, không đặt = Paddle tự chọn), `OCR_VI_DET_MODEL` / `OCR_VI_REC_MODEL` (model thẻ VN), `LOG_RESPONSES`, `LOG_FILE`, `DEBUG_SAVE_IMAGES`
 (code mặc định 0, compose bật 1), `VL_URL`, `VL_MODE=layout|whole`, `VL_TIMEOUT_S` (600); vl_service:
-`VL_PIPELINE_VERSION` (mặc định `v1.5`).
+`VL_PIPELINE_VERSION` (mặc định `v1.5`), `VL_DEVICE`.
 
 ## Kiến trúc & logic
 
 ### app/ (FastAPI, Docker linux/amd64, cổng 8000)
-Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `ocr/*`, `residence_card/*`, `vn_id_card/*`) → `card_core/*`;
+Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `ocr/*`, `residence_card/*`, `my_number_card/*`, `vn_id_card/*`) → `card_core/*`;
 `ocr/types.OcrBox` là định dạng dòng OCR dùng chung (parser không import engine, engine không import parser; 2 package thẻ
 không import nhau).
-- `main.py`: chỉ lo HTTP: `/`, `/api/health` (model theo ngôn ngữ), `/api/zones?document=` (template toạ độ),
-  `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=jp_residence|vn_id`
-  (`vl` + `zone`/`hybrid` → 422; `vl` + `vn_id` → 422). Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
+- `main.py`: chỉ lo HTTP: `/`, `/api/health` (model theo ngôn ngữ, `device` thật đang chạy), `/api/zones?document=` (template toạ độ),
+  `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=jp_residence|jp_mynumber|vn_id`
+  (`vl` + `zone`/`hybrid` → 422; `vl` + `vn_id` → 422). `/api/zones?document=jp_mynumber` trả `{}` (không có template). Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
   Lúc khởi động nạp sẵn mọi model trong `ppocr_model.MODELS` (2 model ~740MB RAM tổng).
 - `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại thẻ → (hàm parse, ngôn ngữ OCR);
-  `VL_DOCUMENTS` = loại thẻ cho phép engine=vl. Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
+  `VL_DOCUMENTS` = loại thẻ cho phép engine=vl (`jp_residence`, `jp_mynumber`). Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
   deskew_deg, size, lines) + `timing_ms` (preprocess không tính bước decode ảnh). API và `scripts/build_demo.py` cùng dùng.
-- `config.py`: biến môi trường của app (log, VL). Riêng `OCR_MODEL_SIZE`/`OCR_ENABLE_MKLDNN` đọc trong `ocr/ppocr_model.py`.
+- `config.py`: biến môi trường của app (log, VL). Riêng `OCR_MODEL_SIZE`/`OCR_ENABLE_MKLDNN`/`OCR_DEVICE` đọc trong `ocr/ppocr_model.py`.
 - `request_log.py`: log 1 dòng tóm tắt/request (không có PII, có `doc=` loại thẻ). `LOG_RESPONSES=1` → ghi full kết quả vào `logs/extract.jsonl`;
   `DEBUG_SAVE_IMAGES=1` → lưu ảnh gốc + ảnh đã xử lý vào `logs/images/`. Cả hai chứa PII, compose đang bật mặc định.
 - `preprocess.py`: OpenCV tìm 4 góc thẻ (`find_card`) và warp (`normalize_card`). `find_card` có 3 lần quét:
@@ -83,7 +83,7 @@ không import nhau).
   nới 2%. Thêm cho ảnh thẻ CCCD chụp trên bàn gỗ, thẻ chỉ ~18% ảnh (log `6337de321938`, `fd35bf5e2740`, `87f5cca695f8`, 27/10/2026):
   ở cỡ gốc vân gỗ làm đứt viền thẻ và dính vào viền nên contour ngoài cùng thành hình thang; thẻ xanh vs gỗ cam khác nhau rõ về màu hơn độ sáng.
 - `ocr/ppocr_model.py`: `MODELS` = ngôn ngữ → (det, rec), mỗi ngôn ngữ 1 instance + lock riêng (predictor không thread-safe),
-  phân loại hướng 0/90/180/270. `ja`: PP-OCRv5 `OCR_MODEL_SIZE=server|mobile`. `vi`: det PP-OCRv5 + rec `PP-OCRv6_medium_rec`
+  phân loại hướng 0/90/180/270, `device=OCR_DEVICE` (`device_name()` cho health). `ja`: PP-OCRv5 `OCR_MODEL_SIZE=server|mobile`. `vi`: det PP-OCRv5 + rec `PP-OCRv6_medium_rec`
   vì rec PP-OCRv5 (Trung/Nhật) bỏ hết dấu, `latin_PP-OCRv5_mobile_rec` mất chữ (`NGUYN`); det PP-OCRv6 nhanh hơn ~40% nhưng gộp
   nhãn + giá trị thành 1 dòng và làm mất "Nữ" (so bằng `scripts/bench_vi_rec.py`, kết quả `samples/results/vn_model_bench.txt`, 27/10/2026).
   **Không được import gì từ app**: Dockerfile chỉ copy file này (+ 2 `__init__.py` rỗng) vào layer tải model
@@ -133,6 +133,17 @@ không import nhau).
     kết quả ở `layout` (`mode`, `registration`, `zones_px`); `Field.source` = `label|zone|label+zone`. Fallback nhãn tiếng Anh (`_anchor_labels`: `NAME`, `DATE OF BIRTH`, `ADDRESS`…) →
     liệt kê ở `labels_from_english_anchor`, luôn `needs_review`.
   - `needs_review` khi: không đọc được, conf < 0.85, đã tự sửa, fail kiểm tra chéo, hoặc quality `low` (trường kanji).
+- `my_number_card/` (thẻ My Number mặt trước, `document_type=my_number_card`, OCR `ja`): API `parse_my_number_card`. Người dùng chỉ cần
+  2 trường (28/10/2026): `issuer` và `expiry_date`; các trường khác trên thẻ (họ tên, địa chỉ, ngày sinh, giới tính) cố ý không lấy.
+  Cả 2 không có nhãn in sẵn → đọc theo mẫu chữ trên text phẳng (`Document`), không template, `mode=zone|hybrid` chạy như `label` + warning.
+  - `expiry_date`: ngày (`DATE_RE`, nhận cả 和暦 令和/平成/昭和) có `まで有効` ngay sau (cách ≤ 3 ký tự, khác box/dòng cũng được); bỏ ngày
+    có `生` theo sau (ngày sinh). Không đọc được `まで有効` → lấy ngày muộn nhất, `needs_review` + note.
+  - `issuer`: `ISSUER_RE` = cụm kanji/kana kết thúc `市|区|町|村` + `長`, không được có kanji ngay sau (loại địa chỉ kiểu `千代田区長田町`);
+    lấy match **cuối** vì nơi cấp in dưới địa chỉ. Quality `low` → `issuer` `needs_review`.
+  - Quality: đếm 4 chữ in (`個人番号カード`, `氏名`, `住所`, `まで有効`). `cross_check`: thẻ hết hạn → warning; hạn > 10 năm kể từ hôm nay
+    → `needs_review` (thẻ cấp tối đa 10 năm).
+  - Chưa thử trên ảnh thẻ thật (không có mẫu trong `samples/`), test chỉ dùng box viết tay (`tests/test_my_number_card.py`).
+    Layout thẻ mẫu mới 2026 (次期マイナンバーカード) chưa kiểm; tiêu đề nhận cả `マイナンバーカード`.
 - `vn_id_card/` (thẻ VN mặt trước, `document_type=vn_id_card`): API `parse_vn_id_card`. 2 mẫu (`patterns.DESIGNS`), chọn bằng
   `parser.card_design`: tiêu đề "CĂN CƯỚC CÔNG DÂN"/"Citizen Identity" → `cccd_2021` (CCCD gắn chip, 2021–06/2024, còn hiệu lực tới
   hạn in trên thẻ; mẫu mã vạch 2016 cùng tiêu đề nhưng chưa thử), còn lại → `2024` (thẻ căn cước từ 01/07/2024). Mỗi mẫu có nhãn
@@ -190,7 +201,18 @@ không import nhau).
   `cd vl_service && .venv/bin/uvicorn main:app --host 127.0.0.1 --port 8011 >> ../logs/vl_service.log 2>&1`
 - Mode `layout` (block có bbox) hoặc `whole` (không bbox).
 - `vl_probe.py <ảnh> [pipeline_version]`: dev-only, in format/tốc độ output PaddleOCR-VL (chạy bằng `.venv` của vl_service).
+- `VL_DEVICE` truyền vào `PaddleOCRVL(device=)`; `/health` trả `device`.
 - `.dockerignore` của app loại `vl_service/` và mọi `.venv` (venv VL ~1.1GB, trước đây bị gửi vào build context).
+
+### deploy/aws-ec2-gpu/ (server GPU, không Docker)
+- `install.sh` (chạy bằng sudo trong bản clone repo, Ubuntu 24.04 + Deep Learning Base GPU AMI có sẵn driver NVIDIA; g6.xlarge = L4):
+  tạo `.venv` + `vl_service/.venv` bằng python3.12, cài `paddlepaddle-gpu` **cùng version pin trong requirements** từ index Paddle
+  (`PADDLE_CUDA=cu126`; GPU wheel không có trên PyPI, CUDA/cuDNN đi kèm dạng pip `nvidia-*`), gỡ `paddlepaddle` CPU nếu có, chạy
+  `paddle.utils.run_check()`, tải model, ghi `/etc/ocr/{ocr,vl}.env` (chỉ khi chưa có; mặc định `*_DEVICE=gpu:0`, tắt log PII),
+  service systemd `ocr-app` (8000, `APP_HOST` mặc định 127.0.0.1) + `ocr-vl` (127.0.0.1:8011), log ra `logs/app.log`,
+  `logs/vl_service.log`; `DOMAIN` → Caddy HTTPS (Let's Encrypt, camera trong trang cần secure context), `BASIC_AUTH_*` → mật khẩu
+  (API không có auth). Cuối script gọi health, cảnh báo nếu `device` không phải GPU. Chạy lại được (cập nhật sau `git pull`).
+  Chưa chạy thử trên EC2 thật (viết 28/10/2026). Hướng dẫn: `deploy/aws-ec2-gpu/README.md`. Đổi requirements/env/service → sửa cả 2 file.
 
 ### scripts/, tests/
 - `make_sample.py` sinh thẻ giả; `make_sample_vn.py` in dữ liệu giả (số định danh đúng quy tắc) lên ảnh mẫu thẻ căn cước;
@@ -199,6 +221,7 @@ không import nhau).
 - `test_vn_id_card.py`: thẻ VN trên box viết tay + fixture OCR thật (nhãn bị đọc méo, ư/ơ thành u'/o', ngày hết hạn dưới ảnh,
   zone/hybrid trên ảnh chụp, kiểm tra chéo số định danh/hạn thẻ); `cccd_2021` trên box viết tay (người giả) và fixture OCR ảnh thật
   `tests/fixtures/vn_real2021_*.json` (git-ignore, chứa PII; test chỉ kiểm cấu trúc + kiểm tra chéo, không ghi giá trị thật; tự skip khi thiếu).
+- `test_my_number_card.py`: thẻ My Number trên box viết tay (nơi cấp kana, địa chỉ chứa `区長`, thiếu `まで有効`, kiểm tra chéo hạn thẻ).
 - `test_zones.py`: mode zone/hybrid trên fixture (trùng mode nhãn, thẻ nhỏ + nghiêng, mất nhãn, < 3 mốc, crop).
 - `test_preprocess.py`: ảnh tổng hợp bằng OpenCV (thẻ nhạt màu nghiêng, bị che góc; ảnh đã cắt sát) + `estimate_skew`/`rotate`.
 - Test parser dùng OCR fixture (`tests/fixtures/*.json`, đọc qua `parse_fixture`) hoặc box viết tay, không cần Paddle; `test_vl_client.py`

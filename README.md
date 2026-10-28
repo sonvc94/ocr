@@ -24,6 +24,12 @@ OCR_MODEL_SIZE=mobile docker compose up -d
 > (Docker Desktop → Settings → General → bật *Use Rosetta for x86_64/amd64 emulation*).
 > Nếu cần nhanh hơn, có thể chạy native trên macOS với Python 3.10–3.13: `pip install -r requirements.txt && uvicorn app.main:app`.
 
+### Deploy lên server GPU (AWS EC2 g6.xlarge, không Docker)
+
+Xem [`deploy/aws-ec2-gpu/README.md`](deploy/aws-ec2-gpu/README.md): script `install.sh` cài `paddlepaddle-gpu`, service
+systemd cho app + PaddleOCR-VL, tuỳ chọn HTTPS (Caddy) + mật khẩu. Chọn thiết bị bằng `OCR_DEVICE` / `VL_DEVICE`
+(`gpu:0` | `cpu`, mặc định Paddle tự chọn); `GET /api/health` trả `device` đang dùng.
+
 ## API
 
 ```bash
@@ -32,7 +38,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `document` | `jp_residence` | `jp_residence` (thẻ cư trú Nhật) hoặc `vn_id` (thẻ căn cước VN mẫu 2024 / CCCD gắn chip 2021, chỉ `engine=ppocr`, `vl` trả 422) |
+| `document` | `jp_residence` | `jp_residence` (thẻ cư trú Nhật), `jp_mynumber` (thẻ My Number 個人番号カード, chỉ lấy nơi cấp + hạn thẻ) hoặc `vn_id` (thẻ căn cước VN mẫu 2024 / CCCD gắn chip 2021, chỉ `engine=ppocr`, `vl` trả 422) |
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc, thẻ nhỏ trên nền vân gỗ) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 | `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
@@ -52,11 +58,13 @@ Các trường (`document_type` cho biết loại thẻ):
   theo tiêu đề thẻ. `cccd_2021` có thêm `place_of_origin` (quê quán), `place_of_residence` (nơi thường trú). Mẫu 2024: nơi cư trú,
   nơi đăng ký khai sinh, ngày cấp in ở mặt sau, chưa hỗ trợ. Họ tên có chữ mang dấu không có trong tiếng Việt (OCR đọc sai dấu)
   luôn `needs_review`.
+- `my_number_card` (mặt trước thẻ My Number): chỉ `issuer` (nơi cấp, in dạng `○○市長`/`○○区長`/`○○町長`/`○○村長`) và
+  `expiry_date` (ngày ISO, từ dòng `YYYY年 M月 D日まで有効`). Không có template → `zone`/`hybrid` chạy như `label` kèm warning.
 
 `source`: `label` (theo nhãn), `zone` (theo vị trí), `label+zone` (hai cách cho cùng kết quả). `layout` cho biết mode,
 kết quả khớp mẫu thẻ vào ảnh (`registration`: số mốc dùng, sai số, góc xoay; `null` nếu không khớp được → chỉ dùng kết quả
 theo nhãn kèm warning) và `zones_px` (ô giá trị đã chiếu vào ảnh, để vẽ). `GET /api/zones?document=jp_residence|vn_id` trả
-template toạ độ của các mẫu thẻ. `GET /api/health` liệt kê model OCR theo ngôn ngữ.
+template toạ độ của các mẫu thẻ. `GET /api/health` liệt kê model OCR theo ngôn ngữ và thiết bị (`device`: `cpu`/`gpu:0`).
 
 `ocr.card_cropped` cho biết đã tìm được viền thẻ để cắt hay chưa; `ocr.deskew_deg` là góc nghiêng (độ) đã được nắn
 thẳng dựa trên hướng các dòng chữ khi ảnh còn nghiêng (thường là ảnh không tìm được viền thẻ; chỉ engine `ppocr`), 0 nếu không nắn.
@@ -88,11 +96,13 @@ app/
     fields.py          Trích từng trường
     checks.py          Nhận mẫu thẻ, đánh giá chất lượng ảnh, kiểm tra chéo ngày tháng
     parser.py          parse_residence_card: ghép các bước trên
+  my_number_card/      Thẻ My Number: chỉ nơi cấp + hạn thẻ, đọc theo mẫu chữ (patterns, parser)
   vn_id_card/          Thẻ căn cước VN 2024 + CCCD gắn chip 2021: cùng cấu trúc (patterns, fields, checks, parser, data/templates.json)
   static/              Giao diện (HTML/JS thuần); how-it-works.html giải thích cách hoạt động cho người không chuyên
 scripts/               make_sample / make_sample_vn (sinh thẻ giả), build_demo (kết quả mẫu cho UI), build_howto (ảnh minh hoạ),
                        download_models, bench_vi_rec (so model OCR tiếng Việt), make_vn_fixtures (OCR → fixture test)
 vl_service/            Service PaddleOCR-VL (chạy native trên host, cổng 8011) + vl_probe.py
+deploy/aws-ec2-gpu/    install.sh + hướng dẫn deploy native lên EC2 GPU (systemd, Caddy)
 tests/                 Test parser, tìm viền/nắn nghiêng, vl_client (không cần Paddle)
 ```
 

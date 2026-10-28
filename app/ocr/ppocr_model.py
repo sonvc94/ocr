@@ -11,6 +11,8 @@ import threading
 
 # "server" is more accurate on kanji; "mobile" is several times faster on CPU.
 MODEL_SIZE = os.getenv("OCR_MODEL_SIZE", "server")
+# "gpu:0" | "cpu"; unset = Paddle's default (the GPU when paddlepaddle-gpu sees one, else the CPU).
+DEVICE = os.getenv("OCR_DEVICE") or None
 
 # (detection, recognition) per language. The PP-OCRv5 recognizer is Chinese/Japanese and drops Vietnamese
 # diacritics; PP-OCRv6_medium_rec reads them best (compared with scripts/bench_vi_rec.py, results in
@@ -40,8 +42,16 @@ def _create(lang: str):
         use_doc_orientation_classify=True,  # old scans are often rotated 90/180°
         use_doc_unwarping=False,
         use_textline_orientation=False,
-        enable_mkldnn=os.getenv("OCR_ENABLE_MKLDNN", "1") == "1",
+        enable_mkldnn=os.getenv("OCR_ENABLE_MKLDNN", "1") == "1",  # CPU only
+        device=DEVICE,
     )
+
+
+def device_name() -> str:
+    """The device the models run on, so a deploy can confirm it really uses the GPU."""
+    import paddle
+
+    return DEVICE or paddle.device.get_device()
 
 
 def get_ocr(lang: str = "ja"):
