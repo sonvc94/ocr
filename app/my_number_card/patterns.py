@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-import unicodedata
+
+from ..card_core.pattern_card import jp_normalize
 
 TITLE_RE = re.compile(r"個\s*人\s*番\s*号\s*カ\s*[ー一-]?\s*ド|マ\s*イ\s*ナ\s*ン\s*バ\s*[ー一-]?\s*カ\s*[ー一-]?\s*ド|INDIVIDUAL\s*NUMBER", re.IGNORECASE)
 # Printed labels, only used to judge OCR quality (the two fields have no label of their own).
@@ -24,5 +25,4 @@ ISSUER_RE = re.compile(r"([぀-ヿ一-鿿々]{1,24}?[市区町村])\s*長(?![一
 
 
 def normalize(text: str) -> str:
-    """NFKC turns full-width digits into ASCII, which the regexes expect."""
-    return unicodedata.normalize("NFKC", text).strip()
+    return jp_normalize(text)

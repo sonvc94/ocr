@@ -14,13 +14,10 @@ MODEL_SIZE = os.getenv("OCR_MODEL_SIZE", "server")
 # "gpu:0" | "cpu"; unset = Paddle's default (the GPU when paddlepaddle-gpu sees one, else the CPU).
 DEVICE = os.getenv("OCR_DEVICE") or None
 
-# (detection, recognition) per language. The PP-OCRv5 recognizer is Chinese/Japanese and drops Vietnamese
-# diacritics; PP-OCRv6_medium_rec reads them best (compared with scripts/bench_vi_rec.py, results in
-# samples/results/vn_model_bench.txt). Detection stays PP-OCRv5: PP-OCRv6_medium_det is faster but merges
-# label and value into one line and lost the short "Nữ" value.
+# (detection, recognition) per language. Only Japanese documents are read now; the per-language structure
+# is kept so another language can be added with its own models.
 MODELS = {
     "ja": (f"PP-OCRv5_{MODEL_SIZE}_det", f"PP-OCRv5_{MODEL_SIZE}_rec"),
-    "vi": (os.getenv("OCR_VI_DET_MODEL", f"PP-OCRv5_{MODEL_SIZE}_det"), os.getenv("OCR_VI_REC_MODEL", "PP-OCRv6_medium_rec")),
 }
 
 _locks = {lang: threading.Lock() for lang in MODELS}

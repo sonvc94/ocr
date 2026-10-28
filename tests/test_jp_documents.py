@@ -1,13 +1,16 @@
 """Pattern-only Japanese documents (driver's license, passport, health insurance card) and the residence card
-restricted to its card number, on hand-written boxes with made-up data. No Paddle needed."""
+restricted to its card number: hand-written boxes with made-up data, and the OCR of official specimens. No Paddle needed."""
 
 import datetime as dt
+import json
 from functools import partial
+from pathlib import Path
 
 from app.card_core.field import Field
 from app.driver_license import parse_driver_license
 from app.driver_license.parser import cross_check as license_check
 from app.health_insurance import parse_health_insurance
+from app.my_number_card import parse_my_number_card
 from app.ocr.types import OcrBox
 from app.passport import parse_passport
 from app.passport.patterns import mrz_check_digit
@@ -175,3 +178,43 @@ def test_residence_card_returns_card_number_only():
 
 def test_passport_is_not_cropped():
     assert DOCUMENTS["jp_passport"][2] is False
+
+
+# --- official specimens (見本) ---------------------------------------------------------------------------
+# Real PP-OCRv5 output of the specimen images in samples/official/ (sources in samples/official/SOURCES.md),
+# saved from the API (samples/results/official_*). Fake data printed by the issuing authorities.
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def official(name: str, parse) -> dict:
+    d = json.loads((FIXTURES / f"official_{name}_ocr.json").read_text())
+    return parse([OcrBox(l["text"], l["score"], tuple(l["box"])) for l in d["lines"]], tuple(d["image_size"]), d["cropped"])
+
+
+def test_official_passports():
+    for name, number in (("passport_2025", "ZZ1000001"), ("passport_2020", "XS1234567")):
+        r = official(name, parse_passport)
+        assert values(r) == {"passport_number": number}
+        assert not review(r)["passport_number"]  # MRZ check digit agrees with the printed number
+
+
+def test_official_health_insurance_certificate():
+    # Title on 2 lines with 有効期限 between them in the text; 交付者名 (municipal 国保).
+    r = official("health_insurance_shikaku_kakuninsho", parse_health_insurance)
+    assert values(r) == {"card_type": "国民健康保険資格確認書", "insurer_name": "名古屋市", "issue_date": "2026-08-01"}
+    assert not any(review(r).values())
+
+
+def test_official_my_number_card():
+    # OCR reads まで有效 (simplified 效); the issuer □□市長 is under the みほん stamp and not read at all.
+    r = official("my_number_card", parse_my_number_card)
+    assert values(r)["expiry_date"] == "2025-03-31"
+    assert not r["fields"]["expiry_date"]["notes"]  # found next to まで有効, not guessed
+
+
+def test_official_driver_license():
+    # 338px-wide specimen: 交付 and the era of the issue date are misread, so only the number comes out.
+    r = official("driver_license", parse_driver_license)
+    assert values(r)["license_number"] == "450599999940"  # 45 = 神奈川
+    assert not [w for w in r["warnings"] if "運転免許証" in w]  # 公安委員会 identifies it

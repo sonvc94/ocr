@@ -8,11 +8,11 @@
 </head>
 <body>
   <header>
-    <h1>OCR giấy tờ: Nhật · Thẻ căn cước VN <span class="tag">demo</span></h1>
-    <p class="sub">Upload hoặc chụp ảnh giấy tờ Nhật (thẻ cư trú, My Number, bằng lái, hộ chiếu, bảo hiểm y tế) / thẻ căn cước Việt Nam → trích xuất thông tin dạng JSON.</p>
+    <h1>OCR giấy tờ Nhật <span class="tag">demo</span></h1>
+    <p class="sub">Upload hoặc chụp ảnh giấy tờ Nhật (thẻ cư trú, My Number, bằng lái, hộ chiếu, bảo hiểm y tế) → trích xuất thông tin dạng JSON.</p>
     <nav id="views" class="views">
       <button data-view="upload" class="active">Thử ảnh của bạn</button>
-      <button data-view="samples">Mẫu chính thức (ISA)</button>
+      <button data-view="samples">Mẫu chính thức</button>
       <button data-view="docs">Giấy tờ hỗ trợ</button>
       <a class="view-link" href="/static/how-it-works.html">Cách hoạt động</a>
       <a class="view-link next" href="/static/design.html">Thiết kế (review)</a>
@@ -48,7 +48,6 @@
             <option value="jp_driver_license">Bằng lái xe Nhật (運転免許証)</option>
             <option value="jp_passport">Hộ chiếu Nhật (旅券)</option>
             <option value="jp_health_insurance">Thẻ bảo hiểm y tế Nhật (健康保険証)</option>
-            <option value="vn_id">Thẻ căn cước / CCCD VN</option>
           </select>
         </label>
         <label><input id="crop" type="checkbox" checked> Tự cắt &amp; nắn thẻ</label>
@@ -64,7 +63,7 @@
         <label>Engine
           <select id="engine">
             <option value="ppocr">PP-OCR (nhanh)</option>
-            <option value="vl">PaddleOCR-VL (chậm, thử nghiệm, chỉ thẻ Nhật)</option>
+            <option value="vl">PaddleOCR-VL (chậm, thử nghiệm)</option>
           </select>
         </label>
       </div>

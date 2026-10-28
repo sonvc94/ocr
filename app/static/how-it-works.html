@@ -80,9 +80,9 @@
     <p class="lead">Bạn đưa vào một <strong>tấm ảnh</strong> chụp mặt trước thẻ cư trú (在留カード). Hệ thống trả lại các <strong>thông tin trên thẻ</strong> dưới dạng chữ:
       họ tên, ngày sinh, quốc tịch, tư cách lưu trú, thời hạn… Trường nào chưa chắc chắn thì có dấu <span class="pill warn">cần xem lại</span>.
       Mọi việc chạy trên máy nội bộ, ảnh không gửi ra ngoài.</p>
-    <p>Hệ thống cũng đọc được <strong>thẻ căn cước Việt Nam mẫu 2024 và thẻ Căn cước công dân gắn chip (2021)</strong> (chọn "Giấy tờ" trên trang chính) theo cùng các bước dưới đây,
-      với một mô hình đọc chữ riêng cho tiếng Việt. Xem <a href="#vn">phần riêng cho thẻ căn cước</a>. Ảnh có thể tải lên hoặc chụp trực tiếp bằng camera.</p>
-
+    <p>Hệ thống cũng đọc vài mục trên các giấy tờ Nhật khác: thẻ My Number, bằng lái, hộ chiếu, thẻ bảo hiểm y tế (chọn "Giấy tờ" trên trang chính;
+      danh sách mục lấy được ở tab "Giấy tờ hỗ trợ"). Các giấy tờ này đi qua cùng các bước dưới đây nhưng đọc theo nhãn và mẫu chữ, chưa có bản đồ vị trí.
+      Ảnh có thể tải lên hoặc chụp trực tiếp bằng camera.</p>
     <div class="figure">
       <svg viewBox="0 0 960 170" role="img" aria-label="Sáu bước: nhận ảnh, tìm thẻ, nắn phẳng, đọc chữ, hiểu nội dung, kiểm tra">
         <g font-size="14">
@@ -294,24 +294,6 @@
         <h4>特定在留カード</h4><p>Thẻ gộp My Number, bố cục khác hẳn. Hiện chưa hỗ trợ, mọi mục đều bị gắn cờ.</p><span class="pill bad">Chưa hỗ trợ</span>
       </div>
     </div>
-
-    <h2 id="vn">Thẻ căn cước Việt Nam</h2>
-    <ul>
-      <li><strong>Hai mẫu thẻ:</strong> thẻ "CĂN CƯỚC" (từ 01/07/2024) và thẻ "CĂN CƯỚC CÔNG DÂN" gắn chip (2021, vẫn dùng tới khi hết hạn).
-        Hệ thống nhận mẫu theo dòng tiêu đề, rồi dùng đúng bộ nhãn và bản đồ vị trí của mẫu đó. Thẻ 2021 in thêm quê quán và nơi thường trú
-        ở mặt trước nên đọc được cả hai.</li>
-      <li><strong>Mô hình đọc riêng:</strong> mô hình đọc tiếng Nhật bỏ hết dấu tiếng Việt, nên thẻ căn cước dùng mô hình <strong>PP-OCRv6</strong>
-        (đọc được chữ Latin có dấu). Các bước tìm thẻ, nắn phẳng, tìm dòng chữ giữ nguyên.</li>
-      <li><strong>Nhãn bị đọc sai dấu vẫn nhận ra:</strong> "Giới tính" có thể bị đọc thành "Giói tinh", "Số định danh" thành "Só đjnh danh".
-        Hệ thống so nhãn không phân biệt dấu, và nếu phần tiếng Việt hỏng thì dùng phần tiếng Anh in cạnh bên (Sex, Nationality…).</li>
-      <li><strong>Kiểm tra chéo bằng số định danh:</strong> 3 số đầu là mã tỉnh nơi đăng ký khai sinh, số thứ 4 cho biết giới tính và thế kỷ sinh,
-        số thứ 5–6 là năm sinh. Hệ thống đối chiếu với ngày sinh và giới tính đọc được. Ngày hết hạn phải đúng sinh nhật tuổi 14, 25, 40 hoặc 60 (thẻ 2021: 25, 40 hoặc 60).</li>
-      <li><strong>Nhãn "Có giá trị đến" in rất nhỏ</strong> nên thường không đọc được. Khi đó hệ thống suy ra: trong các ngày trên thẻ, ngày sớm nhất
-        là ngày sinh, ngày muộn nhất là ngày hết hạn. Mục này được gắn cờ, trừ khi cách đọc "Nhãn + vị trí" cho cùng kết quả.</li>
-      <li><strong>Lưu ý họ tên và địa chỉ:</strong> mô hình đôi khi đọc sai dấu ("NGUYÊN" thay vì "NGUYỄN", "Son" thay vì "Sơn") mà vẫn tự tin cao,
-        nên luôn đối chiếu với thẻ. Nếu đọc ra dấu không có trong tiếng Việt (ví dụ "Ě") thì họ tên được gắn cờ.</li>
-      <li>Chỉ đọc mặt trước. Thẻ mẫu 2024: nơi cư trú, nơi đăng ký khai sinh, ngày cấp nằm ở mặt sau.</li>
-    </ul>
 
     <h2 id="tips">Mẹo để có kết quả tốt nhất</h2>
     <ul class="tips">

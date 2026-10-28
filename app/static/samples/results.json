@@ -1,14 +1,17 @@
 {
- "generated": "2026-10-20",
+ "generated": "2026-10-28",
  "samples": [
   {
-   "id": "residence_card_current",
-   "title": "在留カード — mẫu hiện hành (cấp đến 13/06/2026)",
-   "description": "Thẻ mẫu chính thức (見本) mẫu cũ, ảnh gốc 509×320px trích từ tờ hướng dẫn của Cục Xuất nhập cảnh.",
-   "image": "/static/samples/residence_card_current.jpg",
-   "processed_image": "/static/samples/residence_card_current_processed.jpg",
+   "source_name": "Cục Xuất nhập cảnh (ISA)",
    "source_page": "https://www.moj.go.jp/isa/applications/procedures/whatzairyu_00001.html",
    "source_pdf": "https://www.moj.go.jp/isa/content/001465339.pdf",
+   "id": "residence_card_current",
+   "src": "samples/isa/residence_card_current.jpg",
+   "document": "jp_residence",
+   "title": "在留カード — mẫu hiện hành (cấp đến 13/06/2026)",
+   "description": "Thẻ mẫu chính thức (見本) mẫu cũ, ảnh gốc 509×320px trích từ tờ hướng dẫn của Cục Xuất nhập cảnh. API chỉ trả số thẻ.",
+   "image": "/static/samples/residence_card_current.jpg",
+   "processed_image": "/static/samples/residence_card_current_processed.jpg",
    "result": {
     "document_type": "residence_card",
     "side": "front",
@@ -19,105 +22,8 @@
       "raw": "AB12345678CD",
       "confidence": 0.9988,
       "needs_review": false,
-      "notes": []
-     },
-     "name": {
-      "value": "TURNERI ELIZABETH",
-      "raw": "TURNERI ELIZABETH",
-      "confidence": 0.9696,
-      "needs_review": false,
-      "notes": []
-     },
-     "date_of_birth": {
-      "value": "1985-12-31",
-      "raw": "1985年12月31日",
-      "confidence": 0.9448,
-      "needs_review": false,
-      "notes": []
-     },
-     "permission_date": {
-      "value": "2019-04-01",
-      "raw": "2019年04月01日",
-      "confidence": 0.9959,
-      "needs_review": false,
-      "notes": []
-     },
-     "issue_date": {
-      "value": "2019-04-01",
-      "raw": "2019年04月01日",
-      "confidence": 0.9959,
-      "needs_review": false,
-      "notes": []
-     },
-     "sex": {
-      "value": "F",
-      "raw": "女",
-      "confidence": 0.9448,
-      "needs_review": false,
-      "notes": []
-     },
-     "nationality": {
-      "value": "米国",
-      "raw": "米国 DSEX",
-      "confidence": 0.9448,
-      "needs_review": false,
-      "notes": []
-     },
-     "address": {
-      "value": "東京都千代田区霞が関1丁目1番1号霞が関八ツ202号",
-      "raw": "東京都千代田区霞が関1丁目1番1号霞が関八ツ202号",
-      "confidence": 0.8995,
-      "needs_review": false,
-      "notes": []
-     },
-     "status_of_residence": {
-      "value": "留学",
-      "raw": "留学 Student",
-      "confidence": 0.9869,
-      "needs_review": false,
-      "notes": []
-     },
-     "work_restriction": {
-      "value": "就労不可",
-      "raw": "就労不可",
-      "confidence": 0.9948,
-      "needs_review": false,
-      "notes": []
-     },
-     "period_of_stay": {
-      "value": "4年3月",
-      "raw": "4年3月(2023年07月01日)",
-      "confidence": 0.9676,
-      "needs_review": false,
-      "notes": []
-     },
-     "expiration_date": {
-      "value": "2023-07-01",
-      "raw": "2023年07月01日",
-      "confidence": 0.9676,
-      "needs_review": false,
-      "notes": []
-     },
-     "permission_type": {
-      "value": "在留期間更新許可",
-      "raw": "在留期間更新許可(東京入国在留管理局長)",
-      "confidence": 0.9271,
-      "needs_review": false,
-      "notes": []
-     },
-     "issuing_authority": {
-      "value": "東京入国在留管理局長",
-      "raw": "東京入国在留管理局長",
-      "confidence": 0.9271,
-      "needs_review": false,
-      "notes": []
-     },
-     "valid_until": {
-      "value": "2023-07-01",
-      "raw": "2023年07月01日まで有",
-      "confidence": 0.9648,
-      "needs_review": false,
-      "notes": []
+      "notes": [],
+      "source": "label"
      }
     },
     "quality": {
@@ -125,9 +31,7 @@
      "reasons": [],
      "advice": null
     },
-    "warnings": [
-     "Thẻ đã hết hiệu lực."
-    ],
+    "warnings": [],
     "mean_ocr_confidence": 0.9744,
     "labels_found": [
      "address",
@@ -145,10 +49,17 @@
      "work_restriction"
     ],
     "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
     "full_text": "日本国政府 在留カード 番号 AB12345678CD\nGOVERNMENT OF JAPAN RESIDENCE CARD No.\n氏名 TURNERI ELIZABETH\nNAME\n生年月日 1985年12月31日性別女F.国·地城米国\nDATE OF BIRTH Y M DSEX NATIONALITY/REGION\n住居地 東京都千代田区霞が関1丁目1番1号霞が関八ツ202号\nADDRESS\n在留資格 留学\nSTATUS Student\n就労制限の有無 就労不可\n在留期間(満了日)\nPERIOD OF STAY 4年3月(2023年07月01日)\n(DATE OF EXPIRATION) Y M Y M D\n許可の種類在留期間更新許可(東京入国在留管理局長) MOJ\n見本·SAMPLE\n許可年月日2019年04月01日交付年月日2019年04月01日\nこのカードは 2023年07月01日まで有効 です。 出入国在 管理長官\nPERIOD OFVALIDITYOF THISCARD",
     "ocr": {
-     "model": "PP-OCRv5_server",
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
      "card_cropped": false,
+     "deskew_deg": 0.0,
      "original_size": [
       509,
       320
@@ -621,18 +532,23 @@
      ]
     },
     "timing_ms": {
-     "ocr": 15556
+     "preprocess": 185,
+     "ocr": 16019,
+     "parse": 16
     }
    }
   },
   {
-   "id": "residence_card_new_2026",
-   "title": "在留カード — mẫu mới (cấp từ 14/06/2026)",
-   "description": "Mẫu mới không còn in thời hạn lưu trú, loại/ngày cấp phép và ngày cấp thẻ (chỉ lưu trong chip IC). Ảnh gốc 665×416px.",
-   "image": "/static/samples/residence_card_new_2026.jpg",
-   "processed_image": "/static/samples/residence_card_new_2026_processed.jpg",
+   "source_name": "Cục Xuất nhập cảnh (ISA)",
    "source_page": "https://www.moj.go.jp/isa/applications/procedures/whatzairyu_00001.html",
    "source_pdf": "https://www.moj.go.jp/isa/content/001465339.pdf",
+   "id": "residence_card_new_2026",
+   "src": "samples/isa/residence_card_new_2026.jpg",
+   "document": "jp_residence",
+   "title": "在留カード — mẫu mới (cấp từ 14/06/2026)",
+   "description": "Mẫu mới in số thẻ ở phía dưới. Ảnh gốc 665×416px. API chỉ trả số thẻ.",
+   "image": "/static/samples/residence_card_new_2026.jpg",
+   "processed_image": "/static/samples/residence_card_new_2026_processed.jpg",
    "result": {
     "document_type": "residence_card",
     "side": "front",
@@ -643,115 +559,8 @@
       "raw": "AB12345678CD",
       "confidence": 0.9506,
       "needs_review": false,
-      "notes": []
-     },
-     "name": {
-      "value": "TURNER ELIZABETH",
-      "raw": "TURNER ELIZABETH",
-      "confidence": 0.989,
-      "needs_review": false,
-      "notes": []
-     },
-     "date_of_birth": {
-      "value": "1985-12-31",
-      "raw": "1985年12月31日",
-      "confidence": 0.9551,
-      "needs_review": false,
-      "notes": []
-     },
-     "permission_date": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": false,
-      "notes": [
-       "Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."
-      ]
-     },
-     "issue_date": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": false,
-      "notes": [
-       "Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."
-      ]
-     },
-     "sex": {
-      "value": "F",
-      "raw": "女",
-      "confidence": 0.9551,
-      "needs_review": false,
-      "notes": []
-     },
-     "nationality": {
-      "value": "米国",
-      "raw": "米国",
-      "confidence": 0.9187,
-      "needs_review": false,
-      "notes": []
-     },
-     "address": {
-      "value": "東京都千代田区 が関1丁目1番1号が関八イツ202号",
-      "raw": "東京都千代田区 が関1丁目1番1号が関八イツ202号",
-      "confidence": 0.9457,
-      "needs_review": false,
-      "notes": []
-     },
-     "status_of_residence": {
-      "value": "永住者の配偶者等",
-      "raw": "永住者の配偶者等 Spouse or Child of Permanent Resident",
-      "confidence": 0.9527,
-      "needs_review": false,
-      "notes": []
-     },
-     "work_restriction": {
-      "value": "就労制限なし",
-      "raw": "就労制限なし",
-      "confidence": 0.9956,
-      "needs_review": false,
-      "notes": []
-     },
-     "period_of_stay": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": false,
-      "notes": [
-       "Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."
-      ]
-     },
-     "expiration_date": {
-      "value": "2030-12-05",
-      "raw": "2030年12月05日",
-      "confidence": 0.9944,
-      "needs_review": false,
-      "notes": []
-     },
-     "permission_type": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": false,
-      "notes": [
-       "Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."
-      ]
-     },
-     "issuing_authority": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": false,
-      "notes": [
-       "Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."
-      ]
-     },
-     "valid_until": {
-      "value": "2030-12-05",
-      "raw": "2030年12月05日まで有",
-      "confidence": 0.9684,
-      "needs_review": false,
-      "notes": []
+      "notes": [],
+      "source": "label"
      }
     },
     "quality": {
@@ -774,10 +583,17 @@
      "work_restriction"
     ],
     "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
     "full_text": "日本国政府 在留カード\nGOVERNMENTOFJAPAN RESIDENCE CARD ISA\n氏名 TURNER ELIZABETH\nNAME\n生年月日 1985年12月31日性別女F.国・地域 米国\nDATE OFBIRTH Y M D SEX NATIONALITY/REGION\n住居地 東京都千代田区 が関1丁目1番1号が関八イツ202号\nADDRESS\n就労制限の有無 就労制限なし\nWORKRESTRICTIONS\n在留資格 永住者の配偶者等\nSTATUS Spouse or Child of Permanent Resident\n在留期間満了日 2030年12月05日\nTHE EXPIRYDATE OF THE PERIOD OFSTAY\n番号No.AB12345678CD 見本·SAMPLE\nこのカードは2030年12月05日まで有効 です。\nPERIOD OF VALIDITY OF THISCARD",
     "ocr": {
-     "model": "PP-OCRv5_server",
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
      "card_cropped": false,
+     "deskew_deg": 0.0,
      "original_size": [
       665,
       416
@@ -1130,18 +946,23 @@
      ]
     },
     "timing_ms": {
-     "ocr": 8066
+     "preprocess": 59,
+     "ocr": 7779,
+     "parse": 7
     }
    }
   },
   {
+   "source_name": "Cục Xuất nhập cảnh (ISA)",
+   "source_page": "https://www.moj.go.jp/isa/applications/procedures/whatzairyu_00001.html",
+   "source_pdf": "https://www.moj.go.jp/isa/content/001465339.pdf",
    "id": "specified_residence_card_2026",
+   "src": "samples/isa/specified_residence_card_2026.jpg",
+   "document": "jp_residence",
    "title": "特定在留カード — thẻ cư trú gộp My Number (từ 14/06/2026)",
    "description": "Bố cục khác hoàn toàn, demo CHƯA hỗ trợ — đưa vào để thấy hệ thống cảnh báo thay vì trả kết quả sai một cách im lặng.",
    "image": "/static/samples/specified_residence_card_2026.jpg",
    "processed_image": "/static/samples/specified_residence_card_2026_processed.jpg",
-   "source_page": "https://www.moj.go.jp/isa/applications/procedures/whatzairyu_00001.html",
-   "source_pdf": "https://www.moj.go.jp/isa/content/001465339.pdf",
    "result": {
     "document_type": "residence_card",
     "side": "front",
@@ -1152,108 +973,8 @@
       "raw": "AB12345678CD",
       "confidence": 0.9975,
       "needs_review": true,
-      "notes": []
-     },
-     "name": {
-      "value": "TURNER ELIZABETH",
-      "raw": "TURNER ELIZABETH 0 在留 カ一ド 個人",
-      "confidence": 0.5779,
-      "needs_review": true,
-      "notes": []
-     },
-     "date_of_birth": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "permission_date": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "issue_date": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "sex": {
-      "value": "F",
-      "raw": "女",
-      "confidence": 0.9995,
-      "needs_review": true,
-      "notes": []
-     },
-     "nationality": {
-      "value": "ニュージーランド 番号 在留期用満了日2027年12月27日 就労制限 不可 在督資格 留学 の有無 資格外活动 許可 (28时以内·風俗営業不可) 出入国在留 管理厅長官 0000",
-      "raw": "ニュージーランド 番号 在留期用満了日2027年12月27日 就労制限 不可 在督資格 留学 の有無 資格外活动 許可 (28时以内·風俗営業不可) 出入国在留 管理厅長官 0000",
-      "confidence": 0.7233,
-      "needs_review": true,
-      "notes": []
-     },
-     "address": {
-      "value": "ツ202号",
-      "raw": "ツ202号",
-      "confidence": 0.9729,
-      "needs_review": true,
-      "notes": []
-     },
-     "status_of_residence": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "work_restriction": {
-      "value": "就労制限なし",
-      "raw": "就労制限",
-      "confidence": 0.9609,
-      "needs_review": true,
-      "notes": [
-       "Đã chuẩn hoá theo danh sách giá trị chính thức.",
-       "Không thấy nhãn, đoán theo mẫu chữ."
-      ]
-     },
-     "period_of_stay": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "expiration_date": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "permission_type": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "issuing_authority": {
-      "value": null,
-      "raw": null,
-      "confidence": null,
-      "needs_review": true,
-      "notes": []
-     },
-     "valid_until": {
-      "value": "2027-12-20",
-      "raw": "2027年12月20日まで有",
-      "confidence": 0.9998,
-      "needs_review": true,
-      "notes": []
+      "notes": [],
+      "source": "label"
      }
     },
     "quality": {
@@ -1275,10 +996,17 @@
      "sex"
     ],
     "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
     "full_text": "氏名 TURNER ELIZABETH 0\n在留\nカ一ド 個人番号\n住所・東京都千代田区霞が関1丁目1番地1号霞が関入 カード\n住居地ツ202号 性別女\nMEIPANJA PANJAPANIAPANJAI\n985年12月31日生 2027年12月20日まで有効\n在留力一ド\nAB12345678CD\n国・地城ニュージーランド 番号\n在留期用満了日2027年12月27日\n就労制限 不可\n在督資格 留学 の有無\n資格外活动 許可 (28时以内·風俗営業不可)\n見本·SAMPLE\n出入国在留\n管理厅長官 0000",
     "ocr": {
-     "model": "PP-OCRv5_server",
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
      "card_cropped": false,
+     "deskew_deg": 0.0,
      "original_size": [
       514,
       324
@@ -1601,7 +1329,2417 @@
      ]
     },
     "timing_ms": {
-     "ocr": 8123
+     "preprocess": 78,
+     "ocr": 8816,
+     "parse": 17
+    }
+   }
+  },
+  {
+   "id": "my_number_card",
+   "src": "samples/official/my_number_card.jpg",
+   "document": "jp_mynumber",
+   "title": "マイナンバーカード — thẻ My Number",
+   "description": "Ảnh mẫu 507×317px. Nơi cấp in là 「□□市長」 (chữ giữ chỗ) và bị dấu みほん đè lên nên OCR không đọc được; hạn thẻ đọc đúng.",
+   "source_name": "Thành phố Kobe (神戸市)",
+   "source_page": "https://www.city.kobe.lg.jp/a53715/mynumbercard.html",
+   "image": "/static/samples/my_number_card.jpg",
+   "processed_image": "/static/samples/my_number_card_processed.jpg",
+   "result": {
+    "document_type": "my_number_card",
+    "side": "front",
+    "card_design": null,
+    "fields": {
+     "issuer": {
+      "value": null,
+      "raw": null,
+      "confidence": null,
+      "needs_review": true,
+      "notes": [],
+      "source": "label"
+     },
+     "expiry_date": {
+      "value": "2025-03-31",
+      "raw": " 2025年3月31日",
+      "confidence": 0.9376,
+      "needs_review": true,
+      "notes": [],
+      "source": "label"
+     }
+    },
+    "quality": {
+     "level": "low",
+     "reasons": [
+      "Độ tin cậy OCR trung bình thấp (0.86).",
+      "36% dòng chữ có độ tin cậy dưới 0.8."
+     ],
+     "advice": "Nên chụp/scan lại rõ hơn (chiều ngang thẻ ≥ 1500px, không lóa, không watermark) hoặc nhập tay các trường cần kiểm tra."
+    },
+    "warnings": [
+     "Thẻ đã hết hạn (2025-03-31)."
+    ],
+    "mean_ocr_confidence": 0.8556,
+    "labels_found": [
+     "address",
+     "name",
+     "title",
+     "valid_marker"
+    ],
+    "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
+    "full_text": "氏名 番号 花子\n住所 O県□口市△△町 □ 丁目O番地VV号 個人番号 カード\nAPPANJAPAN JAPANIARANJANA 性別 女\nAPAN 平成元年3月31日生 2025年3月31日まで有効\nX 三 電子証明書 年\nJAPAN 有効期限 月日\n14rA\nAJAN\n器提供意思【1死後及心停止死後/2心停止た死後み/3提供せ】\n(1-2で提供したくい器があれば×) 【心黄·肺·肝膜·肾腻·胖腻·小躺·眼球】\n名年月日 年月\n01234567890123456 1234 特记: 署名",
+    "ocr": {
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
+     "card_cropped": true,
+     "deskew_deg": 0.0,
+     "original_size": [
+      507,
+      317
+     ],
+     "image_size": [
+      1600,
+      1008
+     ],
+     "lines": [
+      {
+       "text": "番号",
+       "score": 0.9989,
+       "box": [
+        147.0,
+        27.0,
+        291.0,
+        102.0
+       ]
+      },
+      {
+       "text": "花子",
+       "score": 0.9997,
+       "box": [
+        345.0,
+        24.0,
+        490.0,
+        106.0
+       ]
+      },
+      {
+       "text": "氏名",
+       "score": 0.9995,
+       "box": [
+        27.0,
+        51.0,
+        112.0,
+        95.0
+       ]
+      },
+      {
+       "text": "個人番号",
+       "score": 0.9703,
+       "box": [
+        1399.0,
+        141.0,
+        1556.0,
+        186.0
+       ]
+      },
+      {
+       "text": "O県□口市△△町",
+       "score": 0.7303,
+       "box": [
+        139.0,
+        168.0,
+        625.0,
+        228.0
+       ]
+      },
+      {
+       "text": "□",
+       "score": 0.7645,
+       "box": [
+        617.0,
+        165.0,
+        691.0,
+        238.0
+       ]
+      },
+      {
+       "text": "住所",
+       "score": 0.9999,
+       "box": [
+        25.0,
+        175.0,
+        111.0,
+        220.0
+       ]
+      },
+      {
+       "text": "丁目O番地VV号",
+       "score": 0.7677,
+       "box": [
+        687.0,
+        179.0,
+        1111.0,
+        232.0
+       ]
+      },
+      {
+       "text": "カード",
+       "score": 0.8743,
+       "box": [
+        1421.0,
+        179.0,
+        1532.0,
+        222.0
+       ]
+      },
+      {
+       "text": "性別",
+       "score": 0.9998,
+       "box": [
+        1403.0,
+        250.0,
+        1499.0,
+        297.0
+       ]
+      },
+      {
+       "text": "女",
+       "score": 0.999,
+       "box": [
+        1510.0,
+        248.0,
+        1568.0,
+        299.0
+       ]
+      },
+      {
+       "text": "APPANJAPAN JAPANIARANJANA",
+       "score": 0.7548,
+       "box": [
+        84.0,
+        285.0,
+        522.0,
+        314.0
+       ]
+      },
+      {
+       "text": "平成元年3月31日生",
+       "score": 0.9985,
+       "box": [
+        536.0,
+        329.0,
+        956.0,
+        384.0
+       ]
+      },
+      {
+       "text": "2025年3月31日まで有效",
+       "score": 0.9376,
+       "box": [
+        1038.0,
+        334.0,
+        1559.0,
+        393.0
+       ]
+      },
+      {
+       "text": "APAN",
+       "score": 0.9671,
+       "box": [
+        451.0,
+        364.0,
+        530.0,
+        395.0
+       ]
+      },
+      {
+       "text": "X",
+       "score": 0.8365,
+       "box": [
+        520.0,
+        400.0,
+        674.0,
+        521.0
+       ]
+      },
+      {
+       "text": "電子证明書",
+       "score": 0.8391,
+       "box": [
+        1020.0,
+        425.0,
+        1153.0,
+        459.0
+       ]
+      },
+      {
+       "text": "年",
+       "score": 1.0,
+       "box": [
+        1289.0,
+        435.0,
+        1362.0,
+        483.0
+       ]
+      },
+      {
+       "text": "月日",
+       "score": 0.9901,
+       "box": [
+        1345.0,
+        435.0,
+        1551.0,
+        488.0
+       ]
+      },
+      {
+       "text": "三",
+       "score": 0.4836,
+       "box": [
+        882.0,
+        447.0,
+        908.0,
+        469.0
+       ]
+      },
+      {
+       "text": "有効期限",
+       "score": 0.7304,
+       "box": [
+        1018.0,
+        453.0,
+        1154.0,
+        489.0
+       ]
+      },
+      {
+       "text": "JAPAN",
+       "score": 0.7469,
+       "box": [
+        442.0,
+        470.0,
+        519.0,
+        494.0
+       ]
+      },
+      {
+       "text": "14rA",
+       "score": 0.4705,
+       "box": [
+        442.0,
+        498.0,
+        506.0,
+        519.0
+       ]
+      },
+      {
+       "text": "AJAN",
+       "score": 0.4777,
+       "box": [
+        445.0,
+        524.0,
+        522.0,
+        544.0
+       ]
+      },
+      {
+       "text": "器提供意思【1死後及心停止死後/2心停止た死後み/3提供せ】",
+       "score": 0.8497,
+       "box": [
+        575.0,
+        824.0,
+        1518.0,
+        877.0
+       ]
+      },
+      {
+       "text": "(1-2で提供したくい器があれば×）",
+       "score": 0.7536,
+       "box": [
+        583.0,
+        861.0,
+        1031.0,
+        899.0
+       ]
+      },
+      {
+       "text": "【心黄·肺·肝膜·肾腻·胖腻·小躺·眼球】",
+       "score": 0.7374,
+       "box": [
+        1040.0,
+        865.0,
+        1517.0,
+        911.0
+       ]
+      },
+      {
+       "text": "名年月日",
+       "score": 0.9827,
+       "box": [
+        583.0,
+        893.0,
+        709.0,
+        928.0
+       ]
+      },
+      {
+       "text": "年月",
+       "score": 0.9982,
+       "box": [
+        813.0,
+        894.0,
+        940.0,
+        931.0
+       ]
+      },
+      {
+       "text": "署名",
+       "score": 0.9707,
+       "box": [
+        969.0,
+        914.0,
+        1068.0,
+        971.0
+       ]
+      },
+      {
+       "text": "1234",
+       "score": 0.9999,
+       "box": [
+        360.0,
+        931.0,
+        462.0,
+        978.0
+       ]
+      },
+      {
+       "text": "特记：",
+       "score": 0.6131,
+       "box": [
+        586.0,
+        926.0,
+        684.0,
+        963.0
+       ]
+      },
+      {
+       "text": "01234567890123456",
+       "score": 0.993,
+       "box": [
+        16.0,
+        937.0,
+        305.0,
+        974.0
+       ]
+      }
+     ]
+    },
+    "timing_ms": {
+     "preprocess": 39,
+     "ocr": 7932,
+     "parse": 19
+    }
+   }
+  },
+  {
+   "id": "driver_license",
+   "src": "samples/official/driver_license.jpg",
+   "document": "jp_driver_license",
+   "title": "運転免許証 — bằng lái xe",
+   "description": "Ảnh mẫu rất nhỏ (cắt phần thẻ, 338×225px, bỏ chú thích bên phải): đọc được số bằng lái, chữ 交付 và niên hiệu của ngày cấp bị đọc sai nên không lấy được ngày cấp.",
+   "source_name": "Cảnh sát tỉnh Kanagawa (神奈川県警察)",
+   "source_page": "https://www.police.pref.kanagawa.jp/tetsuzuki/menkyo/mes83080.html",
+   "image": "/static/samples/driver_license.jpg",
+   "processed_image": "/static/samples/driver_license_processed.jpg",
+   "result": {
+    "document_type": "driver_license",
+    "side": "front",
+    "card_design": null,
+    "fields": {
+     "license_number": {
+      "value": "450599999940",
+      "raw": "第 450599999940 号",
+      "confidence": 0.9261,
+      "needs_review": true,
+      "notes": [],
+      "source": "label"
+     },
+     "issue_date": {
+      "value": null,
+      "raw": null,
+      "confidence": null,
+      "needs_review": true,
+      "notes": [],
+      "source": "label"
+     }
+    },
+    "quality": {
+     "level": "low",
+     "reasons": [
+      "Độ tin cậy OCR trung bình thấp (0.78).",
+      "31% dòng chữ có độ tin cậy dưới 0.8.",
+      "Chỉ nhận ra 3/6 nhãn tiếng Nhật."
+     ],
+     "advice": "Nên chụp/scan lại rõ hơn (chiều ngang thẻ ≥ 1500px, không lóa, không watermark) hoặc nhập tay các trường cần kiểm tra."
+    },
+    "warnings": [],
+    "mean_ocr_confidence": 0.7803,
+    "labels_found": [
+     "address",
+     "commission",
+     "name"
+    ],
+    "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
+    "full_text": "氏名 神奈川花子 平成01年 05月 01日生\n住所 横浜市旭区中尾1-1-1\n节001年0505日12345\n2024年(令和06年)06月01日ま有効\n条件等\n優良 見本\n号第 450599999940 号\n2 明治01年23月45 - 中\n種 -\n大正6789 国 1 008\n昭和02年3 用 45 凯 小特 膜付 公安委員会",
+    "ocr": {
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
+     "card_cropped": true,
+     "deskew_deg": -2.9,
+     "original_size": [
+      338,
+      225
+     ],
+     "image_size": [
+      1649,
+      1088
+     ],
+     "lines": [
+      {
+       "text": "05月",
+       "score": 0.9982,
+       "box": [
+        1283.3,
+        83.0,
+        1407.8,
+        153.4
+       ]
+      },
+      {
+       "text": "01日生",
+       "score": 0.9952,
+       "box": [
+        1415.4,
+        85.8,
+        1588.0,
+        153.7
+       ]
+      },
+      {
+       "text": "平成01年",
+       "score": 0.9753,
+       "box": [
+        1077.4,
+        84.1,
+        1267.3,
+        152.5
+       ]
+      },
+      {
+       "text": "神奈川花子",
+       "score": 0.9919,
+       "box": [
+        192.7,
+        69.0,
+        579.3,
+        158.8
+       ]
+      },
+      {
+       "text": "氏名",
+       "score": 0.9499,
+       "box": [
+        73.2,
+        86.9,
+        165.0,
+        142.5
+       ]
+      },
+      {
+       "text": "横浜市旭区中尾1-1-1",
+       "score": 0.9577,
+       "box": [
+        201.8,
+        236.6,
+        924.2,
+        312.8
+       ]
+      },
+      {
+       "text": "住所",
+       "score": 0.9764,
+       "box": [
+        77.0,
+        243.2,
+        168.2,
+        299.0
+       ]
+      },
+      {
+       "text": "节001年0505日12345",
+       "score": 0.9275,
+       "box": [
+        269.1,
+        317.0,
+        947.3,
+        381.2
+       ]
+      },
+      {
+       "text": "2024年（令和06年）06月01日ま有效",
+       "score": 0.9054,
+       "box": [
+        64.8,
+        382.7,
+        1047.5,
+        491.4
+       ]
+      },
+      {
+       "text": "通标免許证",
+       "score": 0.7346,
+       "box": [
+        1044.4,
+        434.2,
+        1124.3,
+        866.8
+       ]
+      },
+      {
+       "text": "条件等",
+       "score": 0.9752,
+       "box": [
+        82.4,
+        557.0,
+        182.9,
+        607.0
+       ]
+      },
+      {
+       "text": "見本",
+       "score": 0.9975,
+       "box": [
+        392.9,
+        603.7,
+        798.7,
+        734.1
+       ]
+      },
+      {
+       "text": "優良",
+       "score": 0.9633,
+       "box": [
+        111.3,
+        625.5,
+        234.5,
+        705.8
+       ]
+      },
+      {
+       "text": "号",
+       "score": 0.9997,
+       "box": [
+        900.7,
+        737.3,
+        959.6,
+        797.1
+       ]
+      },
+      {
+       "text": "450599999940",
+       "score": 0.9967,
+       "box": [
+        293.1,
+        731.9,
+        877.4,
+        800.1
+       ]
+      },
+      {
+       "text": "号第",
+       "score": 0.9261,
+       "box": [
+        80.5,
+        736.9,
+        272.9,
+        797.1
+       ]
+      },
+      {
+       "text": "-",
+       "score": 0.2619,
+       "box": [
+        583.7,
+        834.1,
+        608.2,
+        885.2
+       ]
+      },
+      {
+       "text": "中",
+       "score": 0.9984,
+       "box": [
+        733.7,
+        835.8,
+        765.3,
+        870.3
+       ]
+      },
+      {
+       "text": "明治01年23月45",
+       "score": 0.9774,
+       "box": [
+        189.2,
+        823.1,
+        584.8,
+        885.8
+       ]
+      },
+      {
+       "text": "種",
+       "score": 0.8595,
+       "box": [
+        620.2,
+        853.0,
+        664.3,
+        897.1
+       ]
+      },
+      {
+       "text": "2",
+       "score": 0.2991,
+       "box": [
+        81.3,
+        837.2,
+        160.5,
+        880.4
+       ]
+      },
+      {
+       "text": "-",
+       "score": 0.0584,
+       "box": [
+        678.3,
+        872.0,
+        708.4,
+        914.4
+       ]
+      },
+      {
+       "text": "008",
+       "score": 0.4113,
+       "box": [
+        1132.8,
+        895.8,
+        1357.3,
+        951.4
+       ]
+      },
+      {
+       "text": "1",
+       "score": 0.768,
+       "box": [
+        547.2,
+        888.3,
+        576.4,
+        933.6
+       ]
+      },
+      {
+       "text": "大正6789",
+       "score": 0.9931,
+       "box": [
+        190.2,
+        882.9,
+        468.5,
+        944.2
+       ]
+      },
+      {
+       "text": "国",
+       "score": 0.1027,
+       "box": [
+        473.7,
+        894.5,
+        497.0,
+        940.7
+       ]
+      },
+      {
+       "text": "小特",
+       "score": 0.9372,
+       "box": [
+        669.3,
+        911.0,
+        722.8,
+        1005.9
+       ]
+      },
+      {
+       "text": "膜付",
+       "score": 0.6669,
+       "box": [
+        731.6,
+        906.6,
+        773.1,
+        1001.1
+       ]
+      },
+      {
+       "text": "公安委员会",
+       "score": 0.6957,
+       "box": [
+        1132.7,
+        935.9,
+        1357.1,
+        996.0
+       ]
+      },
+      {
+       "text": "45",
+       "score": 0.9994,
+       "box": [
+        501.5,
+        936.1,
+        587.8,
+        1006.3
+       ]
+      },
+      {
+       "text": "凯",
+       "score": 0.0884,
+       "box": [
+        624.2,
+        934.3,
+        662.1,
+        974.1
+       ]
+      },
+      {
+       "text": "昭和02年3",
+       "score": 0.9218,
+       "box": [
+        187.9,
+        936.8,
+        477.7,
+        1007.8
+       ]
+      },
+      {
+       "text": "用",
+       "score": 0.3945,
+       "box": [
+        473.6,
+        950.6,
+        502.1,
+        1001.9
+       ]
+      }
+     ]
+    },
+    "timing_ms": {
+     "preprocess": 48,
+     "ocr": 6619,
+     "parse": 15
+    }
+   }
+  },
+  {
+   "id": "passport_2025",
+   "src": "samples/official/passport_2025.jpg",
+   "document": "jp_passport",
+   "title": "旅券 — hộ chiếu mẫu 2025 (nộp đơn từ 24/03/2025)",
+   "description": "Trang thông tin cá nhân, ảnh 800×538px. Số in trên trang và số trong MRZ (đúng check digit) khớp nhau.",
+   "source_name": "Tỉnh Kanagawa (神奈川県)",
+   "source_page": "https://www.pref.kanagawa.jp/docs/h6d/passport/aboutpass.html",
+   "image": "/static/samples/passport_2025.jpg",
+   "processed_image": "/static/samples/passport_2025_processed.jpg",
+   "result": {
+    "document_type": "passport",
+    "side": "front",
+    "card_design": null,
+    "fields": {
+     "passport_number": {
+      "value": "ZZ1000001",
+      "raw": "ZZ1000001",
+      "confidence": 0.988,
+      "needs_review": false,
+      "notes": [],
+      "source": "label"
+     }
+    },
+    "quality": {
+     "level": "ok",
+     "reasons": [],
+     "advice": null
+    },
+    "warnings": [],
+    "mean_ocr_confidence": 0.9119,
+    "labels_found": [
+     "issuing_country",
+     "japan",
+     "number",
+     "passport",
+     "surname"
+    ],
+    "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
+    "full_text": "日本国 JAPAN FFAIRS\n旅券 型/Type 発行国/lssuingcountry 4 旅券番号/PassportNo.\nPASSPORT 2 3 ZZ1000001\nPP JPN 務 務 学\n姓/Surname\nGAIMU\n1 5 名/Given name\nSAKURA\n国籍/Nationalit 生年月日/Dateofbirth\n6 JAPAN 7 20 FEB2000\n性別/Sex 9 本籍/RegisteredDomicile\n8 F TOKYO\n発行年月日/Dateofissue 所持人自署/Signatureofbearer\n24 MAR 2025 11\n10 有効期間満了目人Dateofexbiry\n24 MAR 2035 外務さくら\n発行官庁/Authority\n12 MINISTRYOF\nFOREIGNAFFAIRS\nPPJPNGAIMU<<SAKURA<<<<<<<<<<<<<<<<<<<<<<<<<<\n13\nZZ10000012JPN0002200F3503247<<<<<<<<<<<<<<08",
+    "ocr": {
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
+     "card_cropped": false,
+     "deskew_deg": 0.0,
+     "original_size": [
+      800,
+      538
+     ],
+     "image_size": [
+      1600,
+      1076
+     ],
+     "lines": [
+      {
+       "text": "日本国",
+       "score": 0.9989,
+       "box": [
+        675.0,
+        34.0,
+        925.0,
+        82.0
+       ]
+      },
+      {
+       "text": "FFAIRS",
+       "score": 0.8414,
+       "box": [
+        1512.0,
+        32.0,
+        1579.0,
+        94.0
+       ]
+      },
+      {
+       "text": "JAPAN",
+       "score": 0.9934,
+       "box": [
+        1135.0,
+        48.0,
+        1312.0,
+        86.0
+       ]
+      },
+      {
+       "text": "富三十六套尚",
+       "score": 0.554,
+       "box": [
+        50.0,
+        78.0,
+        101.0,
+        248.0
+       ]
+      },
+      {
+       "text": "旅券",
+       "score": 0.9928,
+       "box": [
+        261.0,
+        76.0,
+        357.0,
+        120.0
+       ]
+      },
+      {
+       "text": "型/Type",
+       "score": 0.9577,
+       "box": [
+        538.0,
+        104.0,
+        648.0,
+        136.0
+       ]
+      },
+      {
+       "text": "③",
+       "score": 0.5004,
+       "box": [
+        668.0,
+        109.0,
+        713.0,
+        161.0
+       ]
+      },
+      {
+       "text": "発行国/lssuingcountry",
+       "score": 0.9535,
+       "box": [
+        715.0,
+        105.0,
+        1003.0,
+        137.0
+       ]
+      },
+      {
+       "text": "旅券番号/PassportNo.",
+       "score": 0.9483,
+       "box": [
+        1086.0,
+        106.0,
+        1368.0,
+        135.0
+       ]
+      },
+      {
+       "text": "PASSPORT",
+       "score": 0.9971,
+       "box": [
+        262.0,
+        121.0,
+        465.0,
+        158.0
+       ]
+      },
+      {
+       "text": "2",
+       "score": 0.6472,
+       "box": [
+        491.0,
+        108.0,
+        542.0,
+        165.0
+       ]
+      },
+      {
+       "text": "4",
+       "score": 0.9981,
+       "box": [
+        1043.0,
+        116.0,
+        1080.0,
+        155.0
+       ]
+      },
+      {
+       "text": "PP",
+       "score": 0.9803,
+       "box": [
+        538.0,
+        147.0,
+        604.0,
+        190.0
+       ]
+      },
+      {
+       "text": "JPN",
+       "score": 0.9925,
+       "box": [
+        706.0,
+        148.0,
+        801.0,
+        189.0
+       ]
+      },
+      {
+       "text": "ZZ1000001",
+       "score": 0.9913,
+       "box": [
+        1083.0,
+        149.0,
+        1365.0,
+        187.0
+       ]
+      },
+      {
+       "text": "务",
+       "score": 0.0973,
+       "box": [
+        1460.0,
+        175.0,
+        1479.0,
+        193.0
+       ]
+      },
+      {
+       "text": "務",
+       "score": 0.8104,
+       "box": [
+        1487.0,
+        177.0,
+        1507.0,
+        196.0
+       ]
+      },
+      {
+       "text": "学",
+       "score": 0.053,
+       "box": [
+        1509.0,
+        176.0,
+        1529.0,
+        192.0
+       ]
+      },
+      {
+       "text": "姓/Surname",
+       "score": 0.9808,
+       "box": [
+        533.0,
+        203.0,
+        692.0,
+        237.0
+       ]
+      },
+      {
+       "text": "GAIMU",
+       "score": 0.9962,
+       "box": [
+        539.0,
+        240.0,
+        697.0,
+        279.0
+       ]
+      },
+      {
+       "text": "1",
+       "score": 0.555,
+       "box": [
+        75.0,
+        265.0,
+        119.0,
+        314.0
+       ]
+      },
+      {
+       "text": "5",
+       "score": 0.9993,
+       "box": [
+        501.0,
+        256.0,
+        530.0,
+        298.0
+       ]
+      },
+      {
+       "text": "名/Given name",
+       "score": 0.9484,
+       "box": [
+        539.0,
+        288.0,
+        733.0,
+        315.0
+       ]
+      },
+      {
+       "text": "SAKURA",
+       "score": 0.993,
+       "box": [
+        540.0,
+        320.0,
+        730.0,
+        361.0
+       ]
+      },
+      {
+       "text": "EN",
+       "score": 0.9812,
+       "box": [
+        1065.0,
+        163.0,
+        1442.0,
+        491.0
+       ]
+      },
+      {
+       "text": "6",
+       "score": 0.9287,
+       "box": [
+        498.0,
+        374.0,
+        536.0,
+        421.0
+       ]
+      },
+      {
+       "text": "国籍/Nationalit",
+       "score": 0.9777,
+       "box": [
+        540.0,
+        368.0,
+        743.0,
+        395.0
+       ]
+      },
+      {
+       "text": "7",
+       "score": 0.7609,
+       "box": [
+        738.0,
+        367.0,
+        799.0,
+        429.0
+       ]
+      },
+      {
+       "text": "生年月日/Dateofbirth",
+       "score": 0.9823,
+       "box": [
+        791.0,
+        368.0,
+        1088.0,
+        398.0
+       ]
+      },
+      {
+       "text": "JAPAN",
+       "score": 0.9975,
+       "box": [
+        542.0,
+        403.0,
+        698.0,
+        441.0
+       ]
+      },
+      {
+       "text": "20",
+       "score": 0.9996,
+       "box": [
+        796.0,
+        402.0,
+        859.0,
+        440.0
+       ]
+      },
+      {
+       "text": "FEB2000",
+       "score": 0.9966,
+       "box": [
+        888.0,
+        395.0,
+        1149.0,
+        442.0
+       ]
+      },
+      {
+       "text": "性别/Sex",
+       "score": 0.9637,
+       "box": [
+        538.0,
+        448.0,
+        662.0,
+        480.0
+       ]
+      },
+      {
+       "text": "8",
+       "score": 0.9975,
+       "box": [
+        499.0,
+        459.0,
+        533.0,
+        503.0
+       ]
+      },
+      {
+       "text": "9",
+       "score": 0.9449,
+       "box": [
+        738.0,
+        446.0,
+        797.0,
+        510.0
+       ]
+      },
+      {
+       "text": "本籍/RegisteredDomicile",
+       "score": 0.9758,
+       "box": [
+        794.0,
+        450.0,
+        1126.0,
+        479.0
+       ]
+      },
+      {
+       "text": "F",
+       "score": 0.9928,
+       "box": [
+        541.0,
+        486.0,
+        566.0,
+        519.0
+       ]
+      },
+      {
+       "text": "TOKYO",
+       "score": 0.9815,
+       "box": [
+        793.0,
+        482.0,
+        964.0,
+        526.0
+       ]
+      },
+      {
+       "text": "発行年月日/Dateofissue",
+       "score": 0.9737,
+       "box": [
+        536.0,
+        529.0,
+        866.0,
+        560.0
+       ]
+      },
+      {
+       "text": "所持人自署/Signatureofbearer",
+       "score": 0.985,
+       "box": [
+        1008.0,
+        530.0,
+        1411.0,
+        562.0
+       ]
+      },
+      {
+       "text": "24",
+       "score": 0.9993,
+       "box": [
+        539.0,
+        563.0,
+        601.0,
+        602.0
+       ]
+      },
+      {
+       "text": "MAR",
+       "score": 0.9904,
+       "box": [
+        633.0,
+        562.0,
+        732.0,
+        605.0
+       ]
+      },
+      {
+       "text": "2025",
+       "score": 0.995,
+       "box": [
+        760.0,
+        561.0,
+        893.0,
+        606.0
+       ]
+      },
+      {
+       "text": "11",
+       "score": 0.9861,
+       "box": [
+        984.0,
+        568.0,
+        1024.0,
+        611.0
+       ]
+      },
+      {
+       "text": "10",
+       "score": 0.9893,
+       "box": [
+        493.0,
+        585.0,
+        536.0,
+        626.0
+       ]
+      },
+      {
+       "text": "外務さくら",
+       "score": 0.9361,
+       "box": [
+        981.0,
+        597.0,
+        1446.0,
+        757.0
+       ]
+      },
+      {
+       "text": "有效期間满了目人Dateofexbiry",
+       "score": 0.8281,
+       "box": [
+        538.0,
+        609.0,
+        934.0,
+        641.0
+       ]
+      },
+      {
+       "text": "24",
+       "score": 0.9977,
+       "box": [
+        538.0,
+        642.0,
+        635.0,
+        686.0
+       ]
+      },
+      {
+       "text": "MAR",
+       "score": 0.9911,
+       "box": [
+        613.0,
+        642.0,
+        735.0,
+        689.0
+       ]
+      },
+      {
+       "text": "2035",
+       "score": 0.9835,
+       "box": [
+        748.0,
+        634.0,
+        897.0,
+        694.0
+       ]
+      },
+      {
+       "text": "発行官厅/Authority",
+       "score": 0.8849,
+       "box": [
+        536.0,
+        694.0,
+        789.0,
+        722.0
+       ]
+      },
+      {
+       "text": "12",
+       "score": 0.9849,
+       "box": [
+        493.0,
+        727.0,
+        541.0,
+        773.0
+       ]
+      },
+      {
+       "text": "MINISTRYOF",
+       "score": 0.993,
+       "box": [
+        541.0,
+        719.0,
+        756.0,
+        754.0
+       ]
+      },
+      {
+       "text": "FOREIGNAFFAIRS",
+       "score": 0.9974,
+       "box": [
+        541.0,
+        756.0,
+        835.0,
+        782.0
+       ]
+      },
+      {
+       "text": "PPJPNGAIMU<<SAKURA<<<<<<<<<<<<<<<<<<<<<<<<<<",
+       "score": 0.9553,
+       "box": [
+        80.0,
+        853.0,
+        1507.0,
+        893.0
+       ]
+      },
+      {
+       "text": "13",
+       "score": 0.9709,
+       "box": [
+        44.0,
+        890.0,
+        95.0,
+        941.0
+       ]
+      },
+      {
+       "text": "ZZ10000012JPN0002200F3503247<<<<<<<<<<<<<<08",
+       "score": 0.988,
+       "box": [
+        78.0,
+        932.0,
+        1507.0,
+        975.0
+       ]
+      }
+     ]
+    },
+    "timing_ms": {
+     "preprocess": 0,
+     "ocr": 11396,
+     "parse": 15
+    }
+   }
+  },
+  {
+   "id": "passport_2020",
+   "src": "samples/official/passport_2020.jpg",
+   "document": "jp_passport",
+   "title": "旅券 — hộ chiếu mẫu trước 2025",
+   "description": "Trang thông tin cá nhân, ảnh 800×512px.",
+   "source_name": "Tỉnh Kanagawa (神奈川県)",
+   "source_page": "https://www.pref.kanagawa.jp/docs/h6d/passport/aboutpass.html",
+   "image": "/static/samples/passport_2020.jpg",
+   "processed_image": "/static/samples/passport_2020_processed.jpg",
+   "result": {
+    "document_type": "passport",
+    "side": "front",
+    "card_design": null,
+    "fields": {
+     "passport_number": {
+      "value": "XS1234567",
+      "raw": "XS1234567",
+      "confidence": 0.9787,
+      "needs_review": false,
+      "notes": [],
+      "source": "label"
+     }
+    },
+    "quality": {
+     "level": "ok",
+     "reasons": [],
+     "advice": null
+    },
+    "warnings": [],
+    "mean_ocr_confidence": 0.9685,
+    "labels_found": [
+     "issuing_country",
+     "japan",
+     "number",
+     "passport",
+     "surname"
+    ],
+    "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
+    "full_text": "型/Type 発行国/Issuing country 4 旅券番号/Passport No.\n2 P 3 JPN XS1234567\n旅券 PASSPORT 姓/Surname\nYAMASHITA\n1 5\n名/Given name\nYURI\n国 籍/Nationality 生年月日/Dateofbirth\n6 JAPAN 7 20 FEB 1979\n性別/Sex 本籍/Registered Domicile\n8 F 9 KANAGAWA\n発行年月日/Dateofissue 所持人自署/Signatureofbearer\n10 APR 2021 1\n10\n有効期間満了日/Dateofexpiry\n10 APR 2031 山下ゆり\n発行官庁/Authority\n12 MINISTRYOF\nFOREIGN AFFAIRS\nP<JPNYAMASHITA<<YURI<<<<<<<<<<<<<<<<<<<<<<<<\n13 XS12345673JPN7902206F3104102<<<<<<<<<<<<<<02",
+    "ocr": {
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
+     "card_cropped": false,
+     "deskew_deg": 0.0,
+     "original_size": [
+      800,
+      512
+     ],
+     "image_size": [
+      1600,
+      1024
+     ],
+     "lines": [
+      {
+       "text": "②",
+       "score": 0.7269,
+       "box": [
+        496.0,
+        65.0,
+        540.0,
+        112.0
+       ]
+      },
+      {
+       "text": "型/Type",
+       "score": 0.9886,
+       "box": [
+        538.0,
+        59.0,
+        633.0,
+        92.0
+       ]
+      },
+      {
+       "text": "3",
+       "score": 0.9993,
+       "box": [
+        676.0,
+        67.0,
+        705.0,
+        107.0
+       ]
+      },
+      {
+       "text": "発行国/Issuing country",
+       "score": 0.9741,
+       "box": [
+        714.0,
+        60.0,
+        959.0,
+        90.0
+       ]
+      },
+      {
+       "text": "4",
+       "score": 0.9854,
+       "box": [
+        1054.0,
+        65.0,
+        1095.0,
+        107.0
+       ]
+      },
+      {
+       "text": "旅券番号/Passport No.",
+       "score": 0.9315,
+       "box": [
+        1098.0,
+        61.0,
+        1343.0,
+        88.0
+       ]
+      },
+      {
+       "text": "P",
+       "score": 0.9738,
+       "box": [
+        536.0,
+        95.0,
+        569.0,
+        136.0
+       ]
+      },
+      {
+       "text": "JPN",
+       "score": 0.9939,
+       "box": [
+        757.0,
+        94.0,
+        848.0,
+        138.0
+       ]
+      },
+      {
+       "text": "XS1234567",
+       "score": 0.9996,
+       "box": [
+        1097.0,
+        97.0,
+        1350.0,
+        135.0
+       ]
+      },
+      {
+       "text": "旅券",
+       "score": 0.9886,
+       "box": [
+        131.0,
+        138.0,
+        232.0,
+        179.0
+       ]
+      },
+      {
+       "text": "PASSPORT",
+       "score": 0.9996,
+       "box": [
+        252.0,
+        139.0,
+        443.0,
+        177.0
+       ]
+      },
+      {
+       "text": "姓/Surname",
+       "score": 0.9854,
+       "box": [
+        536.0,
+        157.0,
+        671.0,
+        184.0
+       ]
+      },
+      {
+       "text": "YAMASHITA",
+       "score": 0.9975,
+       "box": [
+        542.0,
+        190.0,
+        790.0,
+        227.0
+       ]
+      },
+      {
+       "text": "1",
+       "score": 1.0,
+       "box": [
+        88.0,
+        220.0,
+        113.0,
+        257.0
+       ]
+      },
+      {
+       "text": "5",
+       "score": 0.9998,
+       "box": [
+        502.0,
+        214.0,
+        530.0,
+        253.0
+       ]
+      },
+      {
+       "text": "名/Given name",
+       "score": 0.9705,
+       "box": [
+        537.0,
+        246.0,
+        702.0,
+        273.0
+       ]
+      },
+      {
+       "text": "YURI",
+       "score": 0.9972,
+       "box": [
+        538.0,
+        276.0,
+        650.0,
+        315.0
+       ]
+      },
+      {
+       "text": "国",
+       "score": 0.9995,
+       "box": [
+        541.0,
+        336.0,
+        565.0,
+        359.0
+       ]
+      },
+      {
+       "text": "籍/Nationality",
+       "score": 0.9708,
+       "box": [
+        584.0,
+        333.0,
+        738.0,
+        363.0
+       ]
+      },
+      {
+       "text": "6",
+       "score": 0.9988,
+       "box": [
+        503.0,
+        346.0,
+        532.0,
+        384.0
+       ]
+      },
+      {
+       "text": "7",
+       "score": 0.905,
+       "box": [
+        748.0,
+        341.0,
+        793.0,
+        392.0
+       ]
+      },
+      {
+       "text": "生年月日/Dateofbirth",
+       "score": 0.9898,
+       "box": [
+        794.0,
+        339.0,
+        1034.0,
+        363.0
+       ]
+      },
+      {
+       "text": "JAPAN",
+       "score": 0.9973,
+       "box": [
+        539.0,
+        363.0,
+        681.0,
+        404.0
+       ]
+      },
+      {
+       "text": "20",
+       "score": 0.9998,
+       "box": [
+        792.0,
+        366.0,
+        849.0,
+        402.0
+       ]
+      },
+      {
+       "text": "FEB",
+       "score": 0.9955,
+       "box": [
+        876.0,
+        366.0,
+        972.0,
+        403.0
+       ]
+      },
+      {
+       "text": "1979",
+       "score": 0.9999,
+       "box": [
+        984.0,
+        365.0,
+        1098.0,
+        401.0
+       ]
+      },
+      {
+       "text": "性别/Sex",
+       "score": 0.9828,
+       "box": [
+        538.0,
+        423.0,
+        657.0,
+        448.0
+       ]
+      },
+      {
+       "text": "本籍/Registered Domicile",
+       "score": 0.9451,
+       "box": [
+        789.0,
+        421.0,
+        1083.0,
+        451.0
+       ]
+      },
+      {
+       "text": "8",
+       "score": 0.9981,
+       "box": [
+        501.0,
+        434.0,
+        534.0,
+        476.0
+       ]
+      },
+      {
+       "text": "9",
+       "score": 0.9861,
+       "box": [
+        750.0,
+        427.0,
+        790.0,
+        477.0
+       ]
+      },
+      {
+       "text": "F",
+       "score": 0.9983,
+       "box": [
+        540.0,
+        455.0,
+        566.0,
+        488.0
+       ]
+      },
+      {
+       "text": "KANAGAWA",
+       "score": 0.9957,
+       "box": [
+        791.0,
+        455.0,
+        1013.0,
+        489.0
+       ]
+      },
+      {
+       "text": "発行年月日/Dateofissue",
+       "score": 0.9852,
+       "box": [
+        539.0,
+        510.0,
+        812.0,
+        536.0
+       ]
+      },
+      {
+       "text": "所持人自署/Signatureofbearer",
+       "score": 0.9939,
+       "box": [
+        1023.0,
+        512.0,
+        1343.0,
+        535.0
+       ]
+      },
+      {
+       "text": "10",
+       "score": 0.9999,
+       "box": [
+        541.0,
+        541.0,
+        600.0,
+        580.0
+       ]
+      },
+      {
+       "text": "APR",
+       "score": 0.9955,
+       "box": [
+        621.0,
+        542.0,
+        709.0,
+        579.0
+       ]
+      },
+      {
+       "text": "2021",
+       "score": 0.9999,
+       "box": [
+        733.0,
+        541.0,
+        843.0,
+        580.0
+       ]
+      },
+      {
+       "text": "1",
+       "score": 0.5059,
+       "box": [
+        978.0,
+        545.0,
+        1031.0,
+        595.0
+       ]
+      },
+      {
+       "text": "10",
+       "score": 0.9777,
+       "box": [
+        491.0,
+        562.0,
+        541.0,
+        607.0
+       ]
+      },
+      {
+       "text": "有効期間满了日/Dateofexpiry",
+       "score": 0.9164,
+       "box": [
+        538.0,
+        596.0,
+        869.0,
+        628.0
+       ]
+      },
+      {
+       "text": "山下ゆり",
+       "score": 0.9963,
+       "box": [
+        964.0,
+        586.0,
+        1380.0,
+        689.0
+       ]
+      },
+      {
+       "text": "10",
+       "score": 0.9999,
+       "box": [
+        540.0,
+        629.0,
+        604.0,
+        669.0
+       ]
+      },
+      {
+       "text": "APR",
+       "score": 0.9958,
+       "box": [
+        620.0,
+        629.0,
+        710.0,
+        669.0
+       ]
+      },
+      {
+       "text": "2031",
+       "score": 0.9999,
+       "box": [
+        733.0,
+        629.0,
+        843.0,
+        668.0
+       ]
+      },
+      {
+       "text": "発行官厅/Authority",
+       "score": 0.9544,
+       "box": [
+        539.0,
+        684.0,
+        748.0,
+        714.0
+       ]
+      },
+      {
+       "text": "12",
+       "score": 0.9933,
+       "box": [
+        495.0,
+        697.0,
+        537.0,
+        738.0
+       ]
+      },
+      {
+       "text": "MINISTRYOF",
+       "score": 0.9959,
+       "box": [
+        539.0,
+        715.0,
+        744.0,
+        745.0
+       ]
+      },
+      {
+       "text": "FOREIGN AFFAIRS",
+       "score": 0.9681,
+       "box": [
+        542.0,
+        751.0,
+        818.0,
+        775.0
+       ]
+      },
+      {
+       "text": "P<JPNYAMASHITA<<YURI<<<<<<<<<<<<<<<<<<<<<<<<",
+       "score": 0.8682,
+       "box": [
+        90.0,
+        850.0,
+        1505.0,
+        887.0
+       ]
+      },
+      {
+       "text": "13",
+       "score": 0.9787,
+       "box": [
+        46.0,
+        883.0,
+        94.0,
+        929.0
+       ]
+      },
+      {
+       "text": "XS12345673JPN7902206F3104102<<<<<<<<<<<<<<02",
+       "score": 0.9922,
+       "box": [
+        90.0,
+        920.0,
+        1503.0,
+        960.0
+       ]
+      }
+     ]
+    },
+    "timing_ms": {
+     "preprocess": 0,
+     "ocr": 10575,
+     "parse": 7
+    }
+   }
+  },
+  {
+   "id": "health_insurance_shikaku_kakuninsho",
+   "src": "samples/official/health_insurance_shikaku_kakuninsho.jpg",
+   "document": "jp_health_insurance",
+   "title": "国民健康保険 資格確認書 — thay thẻ bảo hiểm y tế",
+   "description": "Mẫu cho người dưới 70 tuổi của bảo hiểm y tế quốc dân, ảnh 752×469px. Đơn vị cấp in ở 交付者名.",
+   "source_name": "Thành phố Nagoya (名古屋市)",
+   "source_page": "https://www.city.nagoya.jp/kurashi/hoken/1011736/1011750/1011753.html",
+   "image": "/static/samples/health_insurance_shikaku_kakuninsho.jpg",
+   "processed_image": "/static/samples/health_insurance_shikaku_kakuninsho_processed.jpg",
+   "result": {
+    "document_type": "health_insurance_card",
+    "side": "front",
+    "card_design": null,
+    "fields": {
+     "card_type": {
+      "value": "国民健康保険資格確認書",
+      "raw": "国民健康保険 有効期限令和9年7月31日\n資格確認書",
+      "confidence": 0.9675,
+      "needs_review": false,
+      "notes": [],
+      "source": "label"
+     },
+     "insurer_name": {
+      "value": "名古屋市",
+      "raw": " 名古屋市",
+      "confidence": 0.9997,
+      "needs_review": false,
+      "notes": [],
+      "source": "label"
+     },
+     "issue_date": {
+      "value": "2026-08-01",
+      "raw": "令和8年8月1日",
+      "confidence": 0.9972,
+      "needs_review": false,
+      "notes": [],
+      "source": "label"
+     }
+    },
+    "quality": {
+     "level": "ok",
+     "reasons": [],
+     "advice": null
+    },
+    "warnings": [],
+    "mean_ocr_confidence": 0.9826,
+    "labels_found": [
+     "insurer",
+     "insurer_number",
+     "issue",
+     "name",
+     "title"
+    ],
+    "labels_from_english_anchor": [],
+    "layout": {
+     "mode": "label",
+     "registration": null,
+     "zones_px": {}
+    },
+    "full_text": "愛知県\n国民健康保険 有効期限令和9年7月31日\n資格確認書\n記号(なし) 番号 00000000 (枝番)00\n氏 名 国保 太郎\n生年 月日 昭和55年10月14日\n適用開始年月日 令和8年1月5日\n交付年月日 令和8年8月1日\n世帯主氏名 国保太郎\n住所 名古屋市中区三の丸3丁目1番1号\n名古\n保険者番号230000 交付者名 名古屋市\n名古屋市区役所 直通(000)000-0000 屋市",
+    "ocr": {
+     "engine": "ppocr",
+     "model": "PP-OCRv5_server_det + PP-OCRv5_server_rec",
+     "card_cropped": true,
+     "deskew_deg": 0.0,
+     "original_size": [
+      752,
+      469
+     ],
+     "image_size": [
+      1600,
+      1008
+     ],
+     "lines": [
+      {
+       "text": "愛知県",
+       "score": 0.9997,
+       "box": [
+        26.0,
+        26.0,
+        172.0,
+        80.0
+       ]
+      },
+      {
+       "text": "国民健康保険",
+       "score": 0.9978,
+       "box": [
+        26.0,
+        73.0,
+        314.0,
+        130.0
+       ]
+      },
+      {
+       "text": "有効期限令和9年7月31日",
+       "score": 0.9675,
+       "box": [
+        800.0,
+        99.0,
+        1294.0,
+        150.0
+       ]
+      },
+      {
+       "text": "資格確認書",
+       "score": 0.9998,
+       "box": [
+        26.0,
+        127.0,
+        267.0,
+        184.0
+       ]
+      },
+      {
+       "text": "記号（なし）",
+       "score": 0.8686,
+       "box": [
+        62.0,
+        246.0,
+        499.0,
+        308.0
+       ]
+      },
+      {
+       "text": "番号",
+       "score": 0.9998,
+       "box": [
+        609.0,
+        247.0,
+        764.0,
+        304.0
+       ]
+      },
+      {
+       "text": "00000000",
+       "score": 0.8685,
+       "box": [
+        898.0,
+        248.0,
+        1103.0,
+        299.0
+       ]
+      },
+      {
+       "text": "（枝番）00",
+       "score": 0.9891,
+       "box": [
+        1166.0,
+        239.0,
+        1389.0,
+        303.0
+       ]
+      },
+      {
+       "text": "国保",
+       "score": 1.0,
+       "box": [
+        441.0,
+        317.0,
+        575.0,
+        393.0
+       ]
+      },
+      {
+       "text": "太郎",
+       "score": 0.9997,
+       "box": [
+        620.0,
+        317.0,
+        751.0,
+        390.0
+       ]
+      },
+      {
+       "text": "氏",
+       "score": 0.9982,
+       "box": [
+        67.0,
+        334.0,
+        121.0,
+        382.0
+       ]
+      },
+      {
+       "text": "名",
+       "score": 0.9999,
+       "box": [
+        333.0,
+        332.0,
+        383.0,
+        383.0
+       ]
+      },
+      {
+       "text": "生年 月日",
+       "score": 0.9053,
+       "box": [
+        68.0,
+        403.0,
+        383.0,
+        456.0
+       ]
+      },
+      {
+       "text": "昭和55年10月14日",
+       "score": 0.9992,
+       "box": [
+        449.0,
+        408.0,
+        830.0,
+        462.0
+       ]
+      },
+      {
+       "text": "適用開始年月日",
+       "score": 0.9992,
+       "box": [
+        70.0,
+        474.0,
+        383.0,
+        525.0
+       ]
+      },
+      {
+       "text": "令和8年1月5日",
+       "score": 0.9964,
+       "box": [
+        450.0,
+        475.0,
+        832.0,
+        529.0
+       ]
+      },
+      {
+       "text": "交付年月日",
+       "score": 0.9998,
+       "box": [
+        72.0,
+        544.0,
+        386.0,
+        598.0
+       ]
+      },
+      {
+       "text": "令和8年8月1日",
+       "score": 0.9972,
+       "box": [
+        452.0,
+        544.0,
+        834.0,
+        598.0
+       ]
+      },
+      {
+       "text": "世带主氏名",
+       "score": 0.988,
+       "box": [
+        74.0,
+        617.0,
+        391.0,
+        667.0
+       ]
+      },
+      {
+       "text": "国保太郎",
+       "score": 0.9995,
+       "box": [
+        450.0,
+        612.0,
+        671.0,
+        669.0
+       ]
+      },
+      {
+       "text": "住所",
+       "score": 0.9996,
+       "box": [
+        71.0,
+        686.0,
+        217.0,
+        748.0
+       ]
+      },
+      {
+       "text": "名古屋市中区三の丸3丁目1番1号",
+       "score": 0.9533,
+       "box": [
+        261.0,
+        700.0,
+        1031.0,
+        756.0
+       ]
+      },
+      {
+       "text": "名古",
+       "score": 0.9998,
+       "box": [
+        1389.0,
+        791.0,
+        1529.0,
+        855.0
+       ]
+      },
+      {
+       "text": "保険者番号230000",
+       "score": 0.9875,
+       "box": [
+        87.0,
+        834.0,
+        497.0,
+        884.0
+       ]
+      },
+      {
+       "text": "交付者名",
+       "score": 0.9999,
+       "box": [
+        588.0,
+        831.0,
+        781.0,
+        883.0
+       ]
+      },
+      {
+       "text": "名古屋市",
+       "score": 0.9997,
+       "box": [
+        797.0,
+        831.0,
+        996.0,
+        882.0
+       ]
+      },
+      {
+       "text": "屋市",
+       "score": 0.9997,
+       "box": [
+        1390.0,
+        882.0,
+        1530.0,
+        946.0
+       ]
+      },
+      {
+       "text": "名古屋市区役所",
+       "score": 0.9996,
+       "box": [
+        86.0,
+        901.0,
+        572.0,
+        958.0
+       ]
+      },
+      {
+       "text": "直通(000)000-0000",
+       "score": 0.9843,
+       "box": [
+        621.0,
+        900.0,
+        1083.0,
+        957.0
+       ]
+      }
+     ]
+    },
+    "timing_ms": {
+     "preprocess": 28,
+     "ocr": 6769,
+     "parse": 11
     }
    }
   }

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+import unicodedata
 
 from .field import Field
 from .layout import Document
@@ -18,7 +19,18 @@ ERAS = {"令和": 2018, "R": 2018, "平成": 1988, "H": 1988, "昭和": 1925, "S
 JP_DATE_RE = re.compile(
     r"(令\s*和|平\s*成|昭\s*和|(?<![A-Za-z])[RHS](?=\s*\d{1,2}\s*\.))?\s*(\d{1,4}|元)\s*(?:年|\.)\s*(\d{1,2})\s*(?:月|\.)\s*(\d{1,2})\s*日?"
 )
+# PP-OCRv5 is trained on Chinese + Japanese together and sometimes emits the simplified Chinese form of a kanji
+# (seen on the official specimens: まで有效, 公安委员会, 电子证明書). None of these appears on the documents.
+SIMPLIFIED_TO_JP = str.maketrans({
+    "效": "効", "员": "員", "证": "証", "险": "険", "发": "発", "厅": "庁", "满": "満", "间": "間", "别": "別",
+    "资": "資", "务": "務", "带": "帯", "电": "電", "书": "書", "转": "転", "许": "許", "长": "長",
+})
 NO_TEMPLATE_WARNING = "Loại giấy tờ này chưa có template vị trí: chỉ dùng kết quả theo mẫu chữ."
+
+
+def jp_normalize(text: str) -> str:
+    """NFKC (full-width digits/letters/brackets → ASCII, which the regexes expect) + simplified kanji → Japanese."""
+    return unicodedata.normalize("NFKC", text).translate(SIMPLIFIED_TO_JP).strip()
 
 
 def jp_date(m: re.Match) -> str | None:

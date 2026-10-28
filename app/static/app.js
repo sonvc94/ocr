@@ -16,16 +16,6 @@ const RESIDENCE_FIELDS = {
   issue_date: ["Ngày cấp thẻ", "交付年月日"],
   valid_until: ["Thẻ có hiệu lực đến", "有効期限"],
 };
-const VN_ID_FIELDS = {
-  id_number: ["Số định danh cá nhân", "No."],
-  full_name: ["Họ và tên", "Full name"],
-  date_of_birth: ["Ngày sinh", "Date of birth"],
-  sex: ["Giới tính", "Sex"],
-  nationality: ["Quốc tịch", "Nationality"],
-  date_of_expiry: ["Có giá trị đến", "Date of expiry"],
-  place_of_origin: ["Quê quán", "Place of origin"],
-  place_of_residence: ["Nơi thường trú", "Place of residence"],
-};
 const MY_NUMBER_FIELDS = {
   issuer: ["Nơi cấp", "○○市長"],
   expiry_date: ["Có hiệu lực đến", "まで有効"],
@@ -42,13 +32,11 @@ const HEALTH_INSURANCE_FIELDS = {
 };
 const FIELD_LABELS = {
   residence_card: RESIDENCE_FIELDS,
-  vn_id_card: VN_ID_FIELDS,
   my_number_card: MY_NUMBER_FIELDS,
   driver_license: DRIVER_LICENSE_FIELDS,
   passport: PASSPORT_FIELDS,
   health_insurance_card: HEALTH_INSURANCE_FIELDS,
 };
-const VL_DOCUMENTS = ["jp_residence", "jp_mynumber", "jp_driver_license", "jp_passport", "jp_health_insurance"]; // vl_service only runs the Japanese setup
 const LOW_SCORE = 0.85;
 
 const $ = (id) => document.getElementById(id);
@@ -69,7 +57,7 @@ async function upload(file) {
   if (!file) return;
   lastFileName = file.name.replace(/\.[^.]+$/, "") || "result";
   const documentType = $("document").value;
-  const engine = VL_DOCUMENTS.includes(documentType) ? $("engine").value : "ppocr";
+  const engine = $("engine").value;
   const mode = engine === "vl" ? "label" : $("mode").value; // VL has no per-line boxes to place
   setStatus(
     engine === "vl" ? "Đang nhận dạng bằng PaddleOCR-VL… (trên CPU có thể mất vài phút)" : "Đang nhận dạng… (lần đầu có thể mất vài chục giây)",
@@ -200,8 +188,6 @@ const DESIGN_LABELS = {
   "2012": "Mẫu cũ (đến 13/06/2026)",
   "2026": "Mẫu mới (từ 14/06/2026)",
   specified_2026: "特定在留カード — chưa hỗ trợ",
-  "2024": "Thẻ căn cước mẫu 2024",
-  cccd_2021: "Căn cước công dân gắn chip (2021)",
 };
 
 // "Mẫu chính thức" view: precomputed results on the ISA specimen cards (scripts/build_demo.py)
@@ -215,14 +201,15 @@ async function loadSamples() {
     const data = await res.json();
     samplesLoaded = true;
     el.innerHTML =
-      `<p class="sub">Ảnh thẻ mẫu (見本) chính thức từ <a href="${esc(data.samples[0].source_page)}" target="_blank" rel="noopener">trang của Cục Xuất nhập cảnh Nhật</a> ` +
-      `(<a href="${esc(data.samples[0].source_pdf)}" target="_blank" rel="noopener">tờ hướng dẫn PDF</a>). ` +
-      `Kết quả chạy sẵn ngày ${esc(data.generated)}; bấm "Chạy lại" để OCR trực tiếp.</p>` +
+      `<p class="sub">Ảnh mẫu (見本) chính thức do cơ quan Nhật công bố (Cục Xuất nhập cảnh, chính quyền tỉnh/thành phố, cảnh sát tỉnh), ` +
+      `dữ liệu in trên mẫu là giả. Nguồn ghi dưới từng mẫu. Kết quả chạy sẵn ngày ${esc(data.generated)}; bấm "Chạy lại" để OCR trực tiếp.</p>` +
       data.samples.map(sampleCardHtml).join("");
     el.querySelectorAll("button[data-rerun]").forEach((b) =>
       b.addEventListener("click", async () => {
         const blob = await (await fetch(b.dataset.rerun)).blob();
         showView("upload");
+        $("document").value = b.dataset.document;
+        syncEngine();
         upload(new File([blob], b.dataset.rerun.split("/").pop(), { type: blob.type }));
       })
     );
@@ -242,7 +229,8 @@ function sampleCardHtml(s) {
         <h2>${esc(s.title)}</h2>
         <p class="sub">${esc(s.description)}</p>
         <p class="chips">
-          <span class="badge design">${esc(DESIGN_LABELS[r.card_design] || r.card_design)}</span>${qualityBadge}
+          <span class="badge design">document=${esc(s.document)}</span>
+          ${r.card_design ? `<span class="badge design">${esc(DESIGN_LABELS[r.card_design] || r.card_design)}</span>` : ""}${qualityBadge}
           <span class="badge plain">đọc được ${found}/${total} trường · ${review} cần kiểm tra · OCR ${(r.timing_ms.ocr / 1000).toFixed(1)}s</span>
         </p>
       </header>
@@ -252,8 +240,10 @@ function sampleCardHtml(s) {
             <img src="${esc(s.processed_image)}" alt="${esc(s.title)}" loading="lazy">
             <svg viewBox="0 0 ${r.ocr.image_size.join(" ")}">${boxesSvg(r.ocr.lines)}</svg>
           </div>
-          <p class="meta">Ảnh gốc ${r.ocr.original_size.join("×")}px · <a href="${esc(s.image)}" target="_blank">xem ảnh gốc</a></p>
-          <button class="rerun" data-rerun="${esc(s.image)}">Chạy lại trực tiếp</button>
+          <p class="meta">Ảnh gốc ${r.ocr.original_size.join("×")}px · <a href="${esc(s.image)}" target="_blank">xem ảnh gốc</a> ·
+            nguồn: <a href="${esc(s.source_page)}" target="_blank" rel="noopener">${esc(s.source_name)}</a>${
+              s.source_pdf ? ` (<a href="${esc(s.source_pdf)}" target="_blank" rel="noopener">PDF</a>)` : ""}</p>
+          <button class="rerun" data-rerun="${esc(s.image)}" data-document="${esc(s.document)}">Chạy lại trực tiếp</button>
           ${warningsHtml(r)}
         </div>
         <div>${fieldsTableHtml(r.fields, r.document_type)}</div>
@@ -310,11 +300,8 @@ $("downloadJson").addEventListener("click", () => {
 
 $("showBoxes").addEventListener("change", syncLayers);
 $("showZones").addEventListener("change", syncLayers);
-// Document type: remembered per browser; engine=vl is only offered for the Japanese cards.
+// Document type: remembered per browser. engine=vl only reads by label (no per-line boxes for zone/hybrid).
 function syncEngine() {
-  const vlAllowed = VL_DOCUMENTS.includes($("document").value);
-  $("engine").querySelector('option[value="vl"]').disabled = !vlAllowed;
-  if (!vlAllowed) $("engine").value = "ppocr";
   $("mode").disabled = $("engine").value === "vl";
 }
 try {

@@ -119,33 +119,41 @@ const DOCS = [
     document: "jp_mynumber",
     title: "マイナンバーカード — thẻ My Number (個人番号カード)",
     schematic: true,
+    sample: "my_number_card",
     fields: MY_NUMBER_DOC_FIELDS,
-    note: "Chỉ lấy nơi cấp và hạn thẻ; họ tên, địa chỉ, ngày sinh, giới tính cố ý không lấy. Chưa thử trên ảnh thẻ thật.",
+    note:
+      "Chỉ lấy nơi cấp và hạn thẻ; họ tên, địa chỉ, ngày sinh, giới tính cố ý không lấy. Ví dụ = ảnh mẫu của TP Kobe " +
+      "(nơi cấp 「□□市長」 bị dấu みほん che nên không đọc được). Chưa thử ảnh chụp thẻ thật.",
   },
   {
     document: "jp_driver_license",
     title: "運転免許証 — bằng lái xe Nhật",
     schematic: true,
+    sample: "driver_license",
     fields: DRIVER_LICENSE_DOC_FIELDS,
-    note: "Chỉ lấy số bằng lái và ngày cấp. Chưa thử trên ảnh thật.",
+    note:
+      "Chỉ lấy số bằng lái và ngày cấp. Ví dụ = ảnh mẫu của cảnh sát tỉnh Kanagawa (rất nhỏ, ngày cấp không đọc được). " +
+      "Chưa thử ảnh chụp thật.",
   },
   {
     document: "jp_passport",
     title: "旅券 — hộ chiếu Nhật (trang ảnh)",
     schematic: true,
+    sample: "passport_2025",
     fields: PASSPORT_DOC_FIELDS,
     note:
       "Chỉ hộ chiếu Nhật, chỉ lấy số hộ chiếu. Không tự cắt ảnh (trang hộ chiếu không phải cỡ thẻ ID-1): chụp rõ trang ảnh, " +
-      "đủ cả 2 dòng MRZ ở dưới. Chưa thử trên ảnh thật.",
+      "đủ cả 2 dòng MRZ ở dưới. Ví dụ = ảnh mẫu 2025 của tỉnh Kanagawa (MRZ khớp số in). Chưa thử ảnh chụp thật.",
   },
   {
     document: "jp_health_insurance",
     title: "健康保険証 / 資格確認書 — thẻ bảo hiểm y tế Nhật",
     schematic: true,
+    sample: "health_insurance_shikaku_kakuninsho",
     fields: HEALTH_INSURANCE_DOC_FIELDS,
     note:
       "Lấy loại thẻ, đơn vị bảo hiểm, ngày cấp. Thẻ ngừng cấp mới từ 02/12/2024; 資格確認書 thay thế có bố cục tương tự nên cũng nhận. " +
-      "Thẻ 国民健康保険 do thành phố cấp: đơn vị lấy ở 保険者名称 hoặc 交付者名. Chưa thử trên ảnh thật.",
+      "Thẻ 国民健康保険 do thành phố cấp: đơn vị lấy ở 保険者名称 hoặc 交付者名. Ví dụ = 資格確認書 mẫu của TP Nagoya. Chưa thử ảnh chụp thật.",
   },
   {
     document: "jp_residence",

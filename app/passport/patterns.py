@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-import unicodedata
+
+from ..card_core.pattern_card import jp_normalize
 
 # Printed words, only used to judge OCR quality and to tell a Japanese passport.
 LABELS = {
@@ -26,8 +27,7 @@ TO_LETTER = str.maketrans({"0": "O", "1": "I", "5": "S", "8": "B", "2": "Z"})
 
 
 def normalize(text: str) -> str:
-    """NFKC turns full-width letters/digits into ASCII, which the regexes expect."""
-    return unicodedata.normalize("NFKC", text).strip()
+    return jp_normalize(text)
 
 
 def mrz_check_digit(text: str) -> int:

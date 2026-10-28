@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-import unicodedata
+
+from ..card_core.pattern_card import jp_normalize
 
 TITLE_RE = re.compile(r"運\s*転\s*免\s*許\s*証")
 # Printed words, only used to judge OCR quality.
@@ -21,7 +22,7 @@ BARE_NUMBER_RE = re.compile(r"(?<!\d)\d{12}(?!\d)")
 TO_DIGIT = str.maketrans({"O": "0", "o": "0", "D": "0", "Q": "0", "I": "1", "l": "1", "|": "1", "S": "5", "B": "8", "Z": "2"})
 # "交付 令和03年05月10日 12345": the date is followed by a 5-digit reference number (照会番号), not part of it.
 ISSUE_LABEL_RE = re.compile(r"交\s*付")
-VALID_MARKER_RE = re.compile(r"ま\s*で\s*有\s*効")
+VALID_MARKER_RE = re.compile(r"ま\s*で?\s*有\s*効")  # small print: OCR drops で ("ま有効")
 BIRTH_SUFFIX_RE = re.compile(r"\s*生")
 
 # First 2 digits = the prefectural public safety commission that issued the license
@@ -40,5 +41,4 @@ COMMISSION_CODES = {
 
 
 def normalize(text: str) -> str:
-    """NFKC turns full-width digits into ASCII, which the regexes expect."""
-    return unicodedata.normalize("NFKC", text).strip()
+    return jp_normalize(text)

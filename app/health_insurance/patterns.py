@@ -7,12 +7,14 @@ laid out like the old card, so both titles are accepted.
 from __future__ import annotations
 
 import re
-import unicodedata
+
+from ..card_core.pattern_card import jp_normalize
 
 # Card type = the title: scheme + kind of card ("国民健康保険被保険者証", "健康保険資格確認書", "組合員証"…).
 SCHEMES = r"国民健康保険|健康保険|後期高齢者医療|船員保険|(?:国家公務員|地方職員|公立学校|警察|私立学校教職員)?共済組合"
 KINDS = r"被保険者証|被扶養者証|資格確認書|組合員証|加入者証"
 TITLE_RE = re.compile(rf"((?:{SCHEMES})\s*)?({KINDS})")
+SCHEME_RE = re.compile(SCHEMES)
 
 # Insurer: 保険者名称 (employee/health-society cards), 交付者名 / 保険者 (municipal National Health Insurance).
 INSURER_LABEL_RE = re.compile(r"保\s*険\s*者\s*名\s*称|交\s*付\s*者\s*名|(?<!被)保\s*険\s*者(?!\s*(?:番|所|証|名|氏))")
@@ -33,5 +35,4 @@ LABELS = {
 
 
 def normalize(text: str) -> str:
-    """NFKC turns full-width digits/brackets into ASCII, which the regexes expect."""
-    return unicodedata.normalize("NFKC", text).strip()
+    return jp_normalize(text)

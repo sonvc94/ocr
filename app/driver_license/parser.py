@@ -94,8 +94,9 @@ def parse_driver_license(
     boxes = drop_non_text(boxes)
     doc = Document(boxes, normalize)
     warnings: list[str] = []
-    if not TITLE_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 運転免許証 — ảnh có thể không phải bằng lái xe Nhật.")
+    # 運転免許証 is printed vertically next to the photo and often not read; 公安委員会 is printed on every license.
+    if not TITLE_RE.search(doc.text) and not LABELS["commission"].search(doc.text):
+        warnings.append("Không tìm thấy chữ 運転免許証 / 公安委員会 — ảnh có thể không phải bằng lái xe Nhật.")
     fields = {"license_number": _license_number(doc), "issue_date": _issue_date(doc)}
     warnings += cross_check(fields)
     return build_result("driver_license", fields, doc, LABELS, mode, warnings)

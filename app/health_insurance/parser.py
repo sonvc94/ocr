@@ -13,8 +13,9 @@ from ..card_core.field import Field, finish
 from ..card_core.layout import Document, drop_non_text
 from ..card_core.pattern_card import JP_DATE_RE, build_result, jp_date
 from ..ocr.types import OcrBox
-from .patterns import INSURER_LABEL_RE, ISSUE_LABEL_RE, ISSUE_SUFFIX_RE, LABELS, NEXT_LABEL_RE, TITLE_RE, normalize
+from .patterns import INSURER_LABEL_RE, ISSUE_LABEL_RE, ISSUE_SUFFIX_RE, LABELS, NEXT_LABEL_RE, SCHEME_RE, TITLE_RE, normalize
 
+SCHEME_WINDOW = 40  # title on 2 lines ("国民健康保険" / "資格確認書") with other print between them in the text
 LABEL_GAP = 6  # the date follows its label on the same line (after ":" or a stray character)
 VALUE_TRIM = " :：・.,|"
 
@@ -26,9 +27,17 @@ def _card_type(doc: Document) -> Field:
         return finish(f, None)
     f.raw = m.group(0)
     f.value = re.sub(r"\s+", "", m.group(0))
+    start = m.start()
     if not m.group(1):
-        f.notes.append("Không đọc được loại bảo hiểm (国民健康保険 / 健康保険 / …) trước tên thẻ.")
-    return finish(f, doc.score(m.start(), m.end()))
+        # Printed on the line above, e.g. the Nagoya 資格確認書: "国民健康保険 有効期限令和9年7月31日\n資格確認書".
+        schemes = list(SCHEME_RE.finditer(doc.text, max(0, m.start() - SCHEME_WINDOW), m.start()))
+        if schemes:
+            start = schemes[-1].start()
+            f.raw = doc.text[start:m.end()]
+            f.value = schemes[-1].group(0) + m.group(2)
+        else:
+            f.notes.append("Không đọc được loại bảo hiểm (国民健康保険 / 健康保険 / …) trước tên thẻ.")
+    return finish(f, doc.score(start, m.end()))
 
 
 def _insurer_name(doc: Document) -> Field:
