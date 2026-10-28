@@ -42,7 +42,7 @@ def _order_corners(pts: np.ndarray) -> np.ndarray:
     return np.array([pts[s.argmin()], pts[d.argmin()], pts[s.argmax()], pts[d.argmax()]], dtype=np.float32)
 
 
-def _card_quad(contour: np.ndarray, strict: bool) -> np.ndarray | None:
+def _card_quad(contour: np.ndarray, aspect_tol: float, rectangular: bool) -> np.ndarray | None:
     approx = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
     if len(approx) != 4:
         return None
@@ -50,9 +50,9 @@ def _card_quad(contour: np.ndarray, strict: bool) -> np.ndarray | None:
     top, right = np.linalg.norm(rect[1] - rect[0]), np.linalg.norm(rect[2] - rect[1])
     bottom, left = np.linalg.norm(rect[2] - rect[3]), np.linalg.norm(rect[3] - rect[0])
     aspect = max(top, left) / max(min(top, left), 1)
-    if abs(aspect - CARD_ASPECT) >= (0.25 if strict else 0.15):
+    if abs(aspect - CARD_ASPECT) >= aspect_tol:
         return None
-    if not strict:  # loose edges also outline inner panels: also require a near-rectangle
+    if rectangular:  # loose edges also outline inner panels / merge with background: require a near-rectangle
         if max(top, bottom) / max(min(top, bottom), 1) > 1.15 or max(left, right) / max(min(left, right), 1) > 1.15:
             return None
     return rect
@@ -72,7 +72,7 @@ def find_card(img: np.ndarray) -> np.ndarray | None:
     for c in sorted(contours, key=cv2.contourArea, reverse=True)[:5]:
         if cv2.contourArea(c) < 0.2 * w * h:
             break
-        rect = _card_quad(c, strict=True)
+        rect = _card_quad(c, aspect_tol=0.25, rectangular=False)
         if rect is not None:
             return rect
 
@@ -88,12 +88,48 @@ def find_card(img: np.ndarray) -> np.ndarray | None:
             break
         if area > 0.95 * w * h:  # the image border itself (card already cropped tight)
             continue
-        rect = _card_quad(hull, strict=False)
+        rect = _card_quad(hull, aspect_tol=0.15, rectangular=True)
         if rect is not None:
             rect = _expand(rect, 0.04)
             rect[:, 0] = rect[:, 0].clip(0, w - 1)
             rect[:, 1] = rect[:, 1].clip(0, h - 1)
             return rect
+    return _find_card_textured(img)
+
+
+def _find_card_textured(img: np.ndarray) -> np.ndarray | None:
+    """Third pass for a card on a textured background (wood grain), small in the frame.
+
+    At full size the grain gives thousands of edges that break the card outline, and the edges
+    touching the card merge with it into one outer contour. Downscaling + median blur removes the
+    grain; edges are taken on each Lab channel (pale cyan card vs. orange wood differ more in colour
+    than in brightness); RETR_LIST keeps the card border's own loop even when grain is attached to
+    it. Aspect tolerance stays loose (photo taken at an angle) but opposite sides must match.
+    The loop found is the inner side of the dilated edge band, a little inside the card: widened 2%.
+    """
+    scale = 600 / max(img.shape[:2])
+    small = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    h, w = small.shape[:2]
+    lab = cv2.cvtColor(small, cv2.COLOR_BGR2LAB)
+    channels = [cv2.medianBlur(lab[..., i], 9) for i in range(3)]
+    for lo, hi in ((30, 90), (20, 60), (50, 150)):
+        edges = np.zeros((h, w), np.uint8)
+        for ch in channels:
+            edges |= cv2.Canny(ch, lo, hi)
+        edges = cv2.dilate(edges, np.ones((3, 3), np.uint8))
+        contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        for c in sorted(contours, key=cv2.contourArea, reverse=True)[:10]:
+            area = cv2.contourArea(c)
+            if area < 0.08 * w * h:
+                break
+            if area > 0.95 * w * h:
+                continue
+            rect = _card_quad(c, aspect_tol=0.25, rectangular=True)
+            if rect is not None:
+                rect = _expand(rect / scale, 0.02)
+                rect[:, 0] = rect[:, 0].clip(0, img.shape[1] - 1)
+                rect[:, 1] = rect[:, 1].clip(0, img.shape[0] - 1)
+                return rect
     return None
 
 

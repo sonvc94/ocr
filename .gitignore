@@ -6,3 +6,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .DS_Store
+
+# OCR of photos of a real person's card (personal data)
+tests/fixtures/vn_real2021_*
+samples/results/vn_real_*

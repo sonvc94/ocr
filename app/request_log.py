@@ -19,8 +19,8 @@ def log_result(request_id: str, filename: str | None, result: dict) -> None:
     missing = [k for k, f in fields.items() if f["value"] is None]
     review = [k for k, f in fields.items() if f["needs_review"] and f["value"] is not None]
     logger.info(
-        "extract id=%s model=%s file=%s size=%s quality=%s found=%d/%d missing=%s review=%s anchored=%s timing=%s",
-        request_id, result["ocr"]["model"], filename, result["ocr"]["original_size"], result["quality"]["level"],
+        "extract id=%s doc=%s model=%s file=%s size=%s quality=%s found=%d/%d missing=%s review=%s anchored=%s timing=%s",
+        request_id, result["document_type"], result["ocr"]["model"], filename, result["ocr"]["original_size"], result["quality"]["level"],
         len(fields) - len(missing), len(fields), missing, review,
         result["labels_from_english_anchor"], result["timing_ms"],
     )

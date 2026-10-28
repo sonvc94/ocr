@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 from ..ocr.types import OcrBox
-from .patterns import normalize
 
 
 def drop_non_text(boxes: list[OcrBox]) -> list[OcrBox]:
@@ -45,9 +46,10 @@ def group_rows(boxes: list[OcrBox]) -> list[list[OcrBox]]:
 
 
 class Document:
-    """Flattened card text with a char-span -> OCR score mapping for confidence lookup."""
+    """Flattened card text with a char-span -> OCR score mapping for confidence lookup.
+    `normalize` is the card's text normalization, applied to every box."""
 
-    def __init__(self, boxes: list[OcrBox]):
+    def __init__(self, boxes: list[OcrBox], normalize: Callable[[str], str]):
         self.rows = group_rows(boxes)
         parts: list[str] = []
         self.spans: list[tuple[int, int, float]] = []

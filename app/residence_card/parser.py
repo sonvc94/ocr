@@ -2,25 +2,44 @@
 
 Input is the list of OCR text boxes (text, score, box). Boxes are grouped into visual
 rows, joined into one normalized text, and each field is taken as the span between
-its label and the next label found on the card.
+its label and the next label found on the card (mode=label).
+
+mode=zone / hybrid also read each field from its fixed position on the card (zones.py), once the
+card template has been located in the image (registration.py).
 """
 
 from __future__ import annotations
 
 import re
 
+from ..card_core.field import Field
+from ..card_core.layout import Document, drop_non_text
+from ..card_core.registration import register
+from ..card_core.zones import ZoneSpec, extract_zone_fields, merge, zones_px
 from ..ocr.types import OcrBox
 from .checks import assess_quality, card_design, cross_check
-from .fields import Field, Labels, extract_fields
-from .layout import Document, drop_non_text
+from .fields import extract_fields, label_positions
 from .patterns import (
     DATE_RE,
     ENGLISH_ANCHORS,
+    ENGLISH_SUBLABELS,
     FIELD_LABELS,
     LABELS,
     NOT_PRINTED_SINCE_2026,
     RESIDENCE_CARD_TITLE,
     normalize,
+)
+from .templates import TEMPLATES
+
+MODES = ("label", "zone", "hybrid")
+
+ZONE_SPEC = ZoneSpec(
+    normalize=normalize,
+    labels=(re.compile("|".join(f"(?:{p})" for p in LABELS.values())), ENGLISH_SUBLABELS),
+    unit=re.compile(r"[0-9０-９]+(?:[年月日][0-9０-９]+)*[年月日]?|[A-Za-z][A-Za-z.,'\-]*|.", re.S),
+    markers_only=re.compile(r"[YMD.\s]{1,6}"),  # the Y M D unit marks printed under dates
+    label_lang="jp",
+    parse=lambda doc: extract_fields(doc, label_positions(doc.text))[0],
 )
 
 # Fields whose label belongs to another field (both come out of the same segment).
@@ -29,17 +48,22 @@ DERIVED_FROM = {"expiration_date": "period_of_stay", "issuing_authority": "permi
 KANJI_FIELDS = ("nationality", "address", "status_of_residence", "work_restriction", "permission_type", "issuing_authority")
 
 
-def parse_residence_card(boxes: list[OcrBox]) -> dict:
+def parse_residence_card(
+    boxes: list[OcrBox], page_size: tuple[int, int] | None = None, cropped: bool = False, mode: str = "label"
+) -> dict:
+    """`page_size` (width, height) is the image the boxes refer to; `cropped` tells whether it is the card
+    already cut out and flattened. Both only matter for mode=zone/hybrid."""
     boxes = drop_non_text(boxes)
-    ocr_doc = Document(boxes)
-    labels = _label_positions(ocr_doc.text)
+    ocr_boxes = boxes
+    ocr_doc = Document(boxes, normalize)
+    labels = label_positions(ocr_doc.text)
     jp_labels_found = len(labels.keys() & FIELD_LABELS)
     missing = [k for k in ENGLISH_ANCHORS if k not in labels]
     anchored: set[str] = set()
     if missing:
         boxes, anchored = _anchor_labels(boxes, missing)
-    doc = Document(boxes) if anchored else ocr_doc
-    labels = _label_positions(doc.text)
+    doc = Document(boxes, normalize) if anchored else ocr_doc
+    labels = label_positions(doc.text)
     warnings: list[str] = []
 
     if not RESIDENCE_CARD_TITLE.search(doc.text):
@@ -48,6 +72,20 @@ def parse_residence_card(boxes: list[OcrBox]) -> dict:
     fields, guessed = extract_fields(doc, labels)
 
     design = card_design(doc.text, labels)
+    layout = {"mode": mode, "registration": None, "zones_px": {}}
+    if mode != "label":
+        reg = register(ocr_boxes, TEMPLATES[design], page_size, cropped, normalize) if design in TEMPLATES else None
+        if reg is None:
+            warnings.append("Không định vị được mẫu thẻ trong ảnh (quá ít nhãn đọc được): chỉ dùng kết quả theo nhãn.")
+        else:
+            layout["registration"] = reg.to_dict()
+            layout["zones_px"] = zones_px(reg, TEMPLATES[design])
+            zone_fields = extract_zone_fields(ocr_boxes, reg, TEMPLATES[design], ZONE_SPEC)
+            if mode == "zone":
+                fields = {k: zone_fields.get(k, Field(source="zone")) for k in fields}
+            else:
+                fields = merge(fields, zone_fields)
+
     if design == "2026":
         for key in NOT_PRINTED_SINCE_2026:
             fields[key] = Field(notes=["Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."], needs_review=False)
@@ -56,7 +94,7 @@ def parse_residence_card(boxes: list[OcrBox]) -> dict:
         warnings.append("Đây là 特定在留カード (thẻ cư trú gộp My Number), bố cục khác hẳn — demo chưa hỗ trợ, kết quả không đáng tin.")
 
     for key, f in fields.items():
-        if f.value is None:
+        if f.value is None or f.source == "zone":
             continue
         if DERIVED_FROM.get(key, key) in anchored:
             f.notes.append("Nhãn tiếng Nhật đọc lỗi, vị trí xác định qua nhãn tiếng Anh.")
@@ -85,17 +123,9 @@ def parse_residence_card(boxes: list[OcrBox]) -> dict:
         "mean_ocr_confidence": None if ocr_doc.mean_score is None else round(ocr_doc.mean_score, 4),
         "labels_found": sorted(labels),
         "labels_from_english_anchor": sorted(anchored),
+        "layout": layout,
         "full_text": doc.text,
     }
-
-
-def _label_positions(text: str) -> Labels:
-    found: Labels = {}
-    for key, pattern in LABELS.items():
-        m = re.search(pattern, text)
-        if m:
-            found[key] = (m.start(), m.end())
-    return found
 
 
 def _anchor_labels(boxes: list[OcrBox], missing: list[str]) -> tuple[list[OcrBox], set[str]]:

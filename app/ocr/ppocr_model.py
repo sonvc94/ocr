@@ -1,4 +1,4 @@
-"""The shared PP-OCRv5 pipeline instance. One instance, guarded by a lock.
+"""The shared PP-OCR pipeline instances, one per card language, each guarded by its own lock.
 
 Imports nothing from the app: the Dockerfile copies only this module into the layer that downloads
 the model weights, so editing other code does not invalidate that (multi-GB) cached layer.
@@ -11,18 +11,32 @@ import threading
 
 # "server" is more accurate on kanji; "mobile" is several times faster on CPU.
 MODEL_SIZE = os.getenv("OCR_MODEL_SIZE", "server")
-MODEL_NAME = f"PP-OCRv5_{MODEL_SIZE}"
 
-_lock = threading.Lock()
-_ocr = None
+# (detection, recognition) per language. The PP-OCRv5 recognizer is Chinese/Japanese and drops Vietnamese
+# diacritics; PP-OCRv6_medium_rec reads them best (compared with scripts/bench_vi_rec.py, results in
+# samples/results/vn_model_bench.txt). Detection stays PP-OCRv5: PP-OCRv6_medium_det is faster but merges
+# label and value into one line and lost the short "Nữ" value.
+MODELS = {
+    "ja": (f"PP-OCRv5_{MODEL_SIZE}_det", f"PP-OCRv5_{MODEL_SIZE}_rec"),
+    "vi": (os.getenv("OCR_VI_DET_MODEL", f"PP-OCRv5_{MODEL_SIZE}_det"), os.getenv("OCR_VI_REC_MODEL", "PP-OCRv6_medium_rec")),
+}
+
+_locks = {lang: threading.Lock() for lang in MODELS}
+_ocr: dict = {}
 
 
-def _create():
+def model_name(lang: str) -> str:
+    det, rec = MODELS[lang]
+    return f"{det} + {rec}"
+
+
+def _create(lang: str):
     from paddleocr import PaddleOCR
 
+    det, rec = MODELS[lang]
     return PaddleOCR(
-        text_detection_model_name=f"{MODEL_NAME}_det",
-        text_recognition_model_name=f"{MODEL_NAME}_rec",
+        text_detection_model_name=det,
+        text_recognition_model_name=rec,
         use_doc_orientation_classify=True,  # old scans are often rotated 90/180°
         use_doc_unwarping=False,
         use_textline_orientation=False,
@@ -30,15 +44,14 @@ def _create():
     )
 
 
-def get_ocr():
-    global _ocr
-    with _lock:
-        if _ocr is None:
-            _ocr = _create()
-    return _ocr
+def get_ocr(lang: str = "ja"):
+    with _locks[lang]:
+        if lang not in _ocr:
+            _ocr[lang] = _create(lang)
+    return _ocr[lang]
 
 
-def predict(img) -> list:
-    ocr = get_ocr()
-    with _lock:  # PaddleOCR predictors are not thread-safe
+def predict(img, lang: str = "ja") -> list:
+    ocr = get_ocr(lang)
+    with _locks[lang]:  # PaddleOCR predictors are not thread-safe
         return list(ocr.predict(img))

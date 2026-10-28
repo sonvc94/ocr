@@ -4,19 +4,21 @@ from __future__ import annotations
 
 import difflib
 import re
-from dataclasses import dataclass, field
 from datetime import date
 
-from .layout import Document
+from ..card_core.field import Field
+from ..card_core.field import finish as _finish
+from ..card_core.field import snap as _snap
+from ..card_core.layout import Document
 from .patterns import (
     ADDRESS_NUMERAL_FIX,
     ADDRESS_NUMERAL_MAP,
     CARD_NUMBER_RE,
     CJK_RE,
-    CONFIDENCE_THRESHOLD,
     DATE_RE,
     DURATION_RE,
     ENGLISH_SUBLABELS,
+    LABELS,
     NOISE,
     PERMISSION_TYPE_RE,
     STATUSES_OF_RESIDENCE,
@@ -28,22 +30,13 @@ from .patterns import (
 Labels = dict[str, tuple[int, int]]  # label key -> (start, end) in Document.text
 
 
-@dataclass
-class Field:
-    value: str | None = None
-    raw: str | None = None
-    confidence: float | None = None
-    needs_review: bool = True
-    notes: list[str] = field(default_factory=list)
-
-    def to_dict(self) -> dict:
-        return {
-            "value": self.value,
-            "raw": self.raw,
-            "confidence": None if self.confidence is None else round(self.confidence, 4),
-            "needs_review": self.needs_review,
-            "notes": self.notes,
-        }
+def label_positions(text: str) -> Labels:
+    found: Labels = {}
+    for key, pattern in LABELS.items():
+        m = re.search(pattern, text)
+        if m:
+            found[key] = (m.start(), m.end())
+    return found
 
 
 def extract_fields(doc: Document, labels: Labels) -> tuple[dict[str, Field], set[str]]:
@@ -95,23 +88,6 @@ def _parse_date(text: str) -> tuple[str | None, re.Match | None]:
         return date(y, mo, d).isoformat(), m
     except ValueError:
         return None, m
-
-
-def _finish(f: Field, confidence: float | None) -> Field:
-    f.confidence = confidence
-    f.needs_review = f.value is None or confidence is None or confidence < CONFIDENCE_THRESHOLD or bool(f.notes)
-    return f
-
-
-def _snap(f: Field, text: str, choices: list[str]) -> None:
-    """Set f.value to the closest official wording; flag it when OCR text had to be corrected."""
-    best = difflib.get_close_matches(text, choices, n=1, cutoff=0.6)
-    if best:
-        f.value = best[0]
-        if best[0] != text:
-            f.notes.append("Đã chuẩn hoá theo danh sách giá trị chính thức.")
-    else:
-        f.value = text or None
 
 
 def _fix_card_number(raw: str) -> str:

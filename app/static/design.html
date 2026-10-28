@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thiết kế đoán giá trị</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .doc { max-width: 980px; margin: 0 auto; padding: 8px 24px 64px; line-height: 1.6; font-size: 15px; }
+    @media (max-width: 900px) { .doc { padding: 8px 16px 48px; } }
+    .doc h2 { font-size: 19px; margin: 36px 0 8px; padding-top: 12px; border-top: 1px solid var(--border); scroll-margin-top: 12px; }
+    .doc h3 { font-size: 15px; margin: 20px 0 6px; }
+    .doc p, .doc li { margin: 6px 0; }
+    .doc ul, .doc ol { padding-left: 22px; }
+    .doc code { font-size: 13px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; }
+    .doc pre { font-size: 12.5px; border: 1px solid var(--border); }
+    .doc table { margin: 8px 0 12px; font-size: 13.5px; }
+    .doc th { width: auto; }
+    .table-wrap { overflow-x: auto; }
+    .back { font-size: 14px; }
+    .box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 12px 0; }
+    .box.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+    .toc { columns: 2; column-gap: 32px; margin: 0; padding-left: 20px; }
+    @media (max-width: 700px) { .toc { columns: 1; } }
+    .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+    .flow div { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+    .flow b { color: var(--accent); }
+    .badge.todo { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+    .muted { color: var(--muted); font-size: 13px; }
+    .tpl-controls { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 14px; margin: 10px 0; }
+    .tpl-controls select { font: inherit; }
+    .tpl-stage { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+    .tpl-stage svg { display: block; width: 100%; height: auto; }
+    .z-jp { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: var(--accent); stroke-width: 3; }
+    .z-en { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 8 6; }
+    .z-val { fill: color-mix(in srgb, var(--ok) 16%, transparent); stroke: var(--ok); stroke-width: 3; }
+    .z-val-en { fill: none; stroke: var(--ok); stroke-width: 2; stroke-dasharray: 8 6; }
+    .z-ign { fill: url(#hatch); stroke: var(--muted); stroke-width: 2; }
+    .z-card { fill: var(--bg); stroke: var(--border); stroke-width: 3; }
+    .z-text { font-size: 19px; fill: var(--text); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; pointer-events: none; }
+    .z-text.lbl { fill: var(--accent); }
+    .z-text.ign { fill: var(--muted); }
+    .tpl-stage rect:hover { stroke-width: 6; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); margin-top: 8px; }
+    .legend i { display: inline-block; width: 22px; height: 12px; vertical-align: -1px; margin-right: 6px; border-radius: 2px; }
+    .zone-table td, .zone-table th { font-size: 12.5px; padding: 5px 6px; font-variant-numeric: tabular-nums; }
+    .zone-table td:first-child { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="back" href="/">← Về trang demo</a>
+    <h1>Thiết kế: đoán giá trị theo danh sách &amp; vị trí <span class="tag">bản nháp</span></h1>
+    <p class="sub">Chưa có code. Trang này để review trước khi triển khai. Ngày 27/10/2026. Mỗi mục có id (vd. <code>#m3</code>) để trích dẫn khi góp ý.</p>
+  </header>
+
+  <article class="doc">
+    <div class="box">
+      <strong>Mục tiêu.</strong> Với các trường mà giá trị lấy từ một danh sách có sẵn (tư cách lưu trú, giới hạn lao động, quốc tịch…),
+      chuyển từ "đọc chữ" sang "chọn đáp án": OCR chỉ cần đủ gần để chọn đúng. Ngoài ra dùng ràng buộc giữa các trường và vị trí
+      cố định trên thẻ để đoán khi nhãn/giá trị đọc kém. Ưu tiên số 1: <strong>không được snap sai</strong>. Nếu không chắc thì để trống còn hơn đoán sai,
+      khi đó đưa ra <code>candidates</code> và <code>needs_review</code>.
+    </div>
+
+    <h2 id="toc">Mục lục</h2>
+    <p><strong>Ưu tiên hiện tại:</strong> <a href="#tpl">template toạ độ thẻ cư trú</a> (2012 và 2026). Các mục 0–6 dùng lại template này.</p>
+    <ul class="toc">
+      <li><a href="#tpl">★ Template toạ độ nhãn &amp; giá trị (ưu tiên)</a></li>
+      <li><a href="#zone-mode">★ Option mode=zone: tìm theo toạ độ, ảnh nghiêng / thẻ nhỏ</a></li>
+      <li><a href="#m0">0. Nền tảng: schema + đo hiệu quả</a></li>
+      <li><a href="#m1">1. So khớp có trọng số + độ chênh</a></li>
+      <li><a href="#m2">2. Bổ sung danh sách giá trị</a></li>
+      <li><a href="#m3">3. Suy luận kết hợp nhiều trường</a></li>
+      <li><a href="#m4">4. Template vùng + OCR lại vùng</a></li>
+      <li><a href="#m5">5. Địa chỉ phân cấp</a></li>
+      <li><a href="#m6">6. Chấm điểm lại bằng CTC</a></li>
+      <li><a href="#decisions">Các quyết định đã chốt</a></li>
+      <li><a href="#plan">Thứ tự triển khai</a></li>
+    </ul>
+
+    <h2 id="current">Hiện trạng</h2>
+    <ul>
+      <li>Đã snap theo danh sách bằng <code>difflib.get_close_matches(cutoff=0.6)</code> (<code>fields.py:_snap</code>), cho
+        <code>status_of_residence</code> (38 giá trị) và <code>work_restriction</code> (5 giá trị). Không có độ chênh top1/top2,
+        không có danh sách ứng viên.</li>
+      <li><code>permission_type</code> chỉ dùng regex. <code>nationality</code>, <code>address</code>, <code>issuing_authority</code> để text tự do.</li>
+      <li>Confidence chỉ có <strong>theo từng box</strong> (<code>Document.score</code> lấy min score của các box giao với đoạn), không có theo từng ký tự.</li>
+      <li>Parser không biết toạ độ thẻ hay kích thước ảnh, chỉ nhận <code>list[OcrBox]</code>.</li>
+    </ul>
+
+    <h2 id="tpl">Template toạ độ nhãn &amp; giá trị — thẻ cư trú</h2>
+    <p>Mỗi mẫu thẻ (<code>2012</code>, <code>2026</code>) có một template ghi vị trí của <strong>nhãn tiếng Nhật</strong>, <strong>nhãn tiếng Anh</strong>
+      và <strong>ô giá trị</strong> của từng trường, cùng các <strong>vùng bỏ qua</strong> (ảnh chân dung, logo, con dấu, tiêu đề).
+      Đây là nền cho <a href="#m4">mục 4</a>, đồng thời dùng để nhận dạng mẫu thẻ và kiểm tra nhãn tìm được có đúng chỗ không.
+      <code>特定在留カード</code> chưa có template (bố cục khác hẳn, chưa hỗ trợ).</p>
+
+    <h3>Hệ toạ độ</h3>
+    <ul>
+      <li>Gốc là góc <strong>trên-trái của thẻ</strong> (sau khi cắt + nắn). <code>x = px / chiều rộng thẻ</code>, <code>y = px / chiều cao thẻ</code>, cả hai trong [0, 1].
+        Không phụ thuộc độ phân giải ảnh.</li>
+      <li>Mỗi ô là <code>[x0, y0, x1, y1]</code>. Khi dùng sẽ nới thêm <code>pad</code> (mặc định 0.01 ≈ 16px trên thẻ 1600px) mỗi phía.</li>
+      <li>Ô giá trị được vẽ <strong>rộng hơn chữ trên mẫu</strong>: kéo tới mép ảnh chân dung (x ≈ 0.70), vì tên, địa chỉ, tư cách lưu trú có độ dài thay đổi.</li>
+    </ul>
+
+    <h3>Hình vẽ</h3>
+    <p class="muted">Số đo từ ảnh mẫu ISA trong <code>static/samples</code> (mỗi mẫu thẻ 1 ảnh). Rê chuột lên một ô để xem tên trường và toạ độ.
+      Dữ liệu vẽ đọc trực tiếp từ <a href="/api/zones"><code>/api/zones</code></a>, tức chính file <code>app/residence_card/data/templates.json</code> mà code đang dùng.</p>
+    <div class="tpl-controls">
+      <label>Mẫu thẻ <select id="tplDesign"><option value="2012">2012 (đang lưu hành)</option><option value="2026">2026 (từ 14/06/2026)</option></select></label>
+      <label><input type="checkbox" id="tplImage" checked> Ảnh mẫu bên dưới</label>
+      <label><input type="checkbox" id="tplLabels" checked> Nhãn</label>
+      <label><input type="checkbox" id="tplValues" checked> Giá trị</label>
+      <label><input type="checkbox" id="tplIgnore" checked> Vùng bỏ qua</label>
+    </div>
+    <div class="tpl-stage"><svg id="tplSvg" viewBox="0 0 1600 1009" role="img" aria-label="Sơ đồ vị trí nhãn và giá trị trên thẻ cư trú"></svg></div>
+    <div class="legend">
+      <span><i style="background:color-mix(in srgb,var(--accent) 14%,transparent);border:2px solid var(--accent)"></i>Nhãn tiếng Nhật</span>
+      <span><i style="border:2px dashed var(--accent)"></i>Nhãn tiếng Anh</span>
+      <span><i style="background:color-mix(in srgb,var(--ok) 16%,transparent);border:2px solid var(--ok)"></i>Ô giá trị</span>
+      <span><i style="border:2px dashed var(--ok)"></i>Dòng dịch tiếng Anh của giá trị</span>
+      <span><i style="border:2px solid var(--muted)"></i>Vùng bỏ qua</span>
+    </div>
+    <div class="table-wrap"><table class="zone-table" id="tplTable"></table></div>
+
+    <h3>Cấu trúc dữ liệu (mỗi mẫu thẻ)</h3>
+<pre>{
+  "version": 1,
+  "source": "Mẫu ISA (moj.go.jp), ảnh đã nắn 1600×1000",
+  "aspect": 1.5858,                       // 85.60 / 53.98 mm
+  "pad": 0.01,
+  "fields": {
+    "status_of_residence": {
+      "label": { "jp": "在留資格", "jp_box": [0.019, 0.578, 0.125, 0.628],
+                 "en": "STATUS",   "en_box": [0.019, 0.628, 0.089, 0.668] },
+      "value": { "kind": "lexicon:status", "box": [0.128, 0.572, 0.697, 0.63],
+                 "en_box": [0.122, 0.63, 0.697, 0.674] }      // dòng dịch tiếng Anh → bỏ khỏi giá trị
+    },
+    "expiration_date": { "shares_label": "period_of_stay", "value": { "kind": "date", "box": [...] } },
+    …
+  },
+  "ignore": { "photo": [0.705, 0.305, 0.985, 0.86], "isa_logo": [...], "header": [...] }
+}</pre>
+    <ul>
+      <li><code>kind</code> cho biết cách xử lý giá trị: <code>date</code>, <code>card_number</code>, <code>latin</code> (tên), <code>address</code> (<a href="#m5">mục 5</a>),
+        <code>lexicon:&lt;tên danh sách&gt;</code> (<a href="#m1">mục 1</a>, <a href="#m2">mục 2</a>).</li>
+      <li><code>shares_label</code>: trường không có nhãn riêng, nằm chung hàng với trường khác (ngày hết hạn trong ngoặc sau thời hạn; cơ quan cấp trong ngoặc sau loại phép).</li>
+      <li><code>split</code>: hai trường dùng <strong>chung một ô</strong>, tách theo text (<code>before_paren</code> / <code>inside_paren</code>) chứ không theo toạ độ.
+        Lý do: loại phép dài ngắn khác nhau (在留期間更新許可 so với 永住許可), nên ranh giới của phần trong ngoặc không cố định.
+        Thời hạn / ngày hết hạn thì vẫn chia theo toạ độ, vì thời hạn luôn ngắn (≤ 4 ký tự) và ngày luôn có độ dài cố định.</li>
+      <li>Đã triển khai: <code>app/residence_card/data/templates.json</code>, đọc qua <code>residence_card/templates.py</code>. Thêm mục <code>anchors</code>:
+        các dòng in cố định (nhãn, tiêu đề) lấy đúng khung OCR của ảnh mẫu, dùng để khớp template vào ảnh.</li>
+    </ul>
+
+    <h3>Dùng template thế nào</h3>
+    <ol>
+      <li><strong>Khớp template vào ảnh (registration).</strong> Lấy các nhãn đã tìm được bằng regex hoặc nhãn tiếng Anh (thường ≥ 5), ghép với
+        <code>jp_box</code>/<code>en_box</code> tương ứng, rồi giải bình phương tối thiểu một phép <em>co giãn + tịnh tiến</em> (4 tham số) từ template sang ảnh.
+        Cần ≥ 3 nhãn khớp, sai số trung bình &lt; 0.02. Nhờ vậy template dùng được cả khi <strong>không cắt được viền thẻ</strong>
+        (ảnh mẫu ISA vốn đã sát thẻ, <code>card_cropped=false</code>). Không đủ nhãn mà <code>card_cropped=true</code> thì coi phép biến đổi là đồng nhất.
+        Không có cả hai thì không dùng template.</li>
+      <li><strong>Nhận dạng mẫu thẻ.</strong> Thử khớp cả 2 template, chọn cái có nhiều nhãn rơi đúng chỗ hơn. Ví dụ ở mẫu 2026, 就労制限 nằm <em>trên</em> 在留資格,
+        còn ở mẫu 2012 thì ngược lại. Cách này thay hoặc bổ sung cho heuristic regex hiện tại trong <code>checks.card_design</code>.</li>
+      <li><strong>Kiểm tra nhãn.</strong> Nhãn regex tìm được nhưng lệch xa ô kỳ vọng (&gt; 0.05) thì bỏ qua lần khớp đó.
+        Ví dụ <code>在留期間</code> nằm bên trong giá trị <code>在留期間更新許可</code> sẽ không bị nhận nhầm là nhãn.</li>
+      <li><strong>Gán box OCR cho trường.</strong> Box có ≥ 50% diện tích nằm trong ô giá trị (đã nới <code>pad</code>) thì thuộc trường đó.
+        Box dài trùm nhiều ô (vd. <code>1985年12月31日性別女F.国・地域米国</code> là một box) thì không chia theo toạ độ:
+        vẫn tách bằng nhãn trong text như hiện nay, template chỉ dùng để xác nhận.</li>
+      <li><strong>Vùng bỏ qua.</strong> Box có tâm nằm trong ảnh chân dung, logo, con dấu, tiêu đề thì loại trước khi parse.
+        Bổ sung cho cách lọc theo chiều cao hiện có (<code>drop_non_text</code>).</li>
+      <li><strong>Tìm giá trị khi mất nhãn, và OCR lại</strong>: xem <a href="#m4">mục 4</a>. Vùng cắt ra chính là ô giá trị đã được chiếu vào ảnh.</li>
+    </ol>
+
+    <h3>Hiệu chỉnh</h3>
+    <ul>
+      <li>Hiện mỗi mẫu thẻ chỉ đo từ <strong>1 ảnh mẫu ISA</strong>, đo tay từ box OCR và ảnh. Như vậy chưa đủ để chắc cho ảnh chụp thật.</li>
+      <li><code>scripts/calibrate_zones.py</code> sẽ đọc <code>logs/extract.jsonl</code> + toạ độ box, chỉ lấy các trường <code>needs_review=false</code>.
+        Script chiếu box về toạ độ thẻ (dùng phép khớp ở bước 1), rồi lấy phân vị 5% / 95% của từng cạnh làm ô mới.
+        Kết quả ghi đè <code>templates.json</code> và tăng <code>version</code>, kèm số mẫu đã dùng.</li>
+      <li>Test: ảnh mẫu ISA phải gán đúng 100% trường. Thêm ảnh tổng hợp nghiêng/lệch để kiểm tra bước khớp template.</li>
+    </ul>
+
+    <h2 id="zone-mode">★ Option <code>mode=zone</code>: tìm giá trị theo toạ độ <span class="badge ok">đã triển khai 27/10/2026</span></h2>
+    <div class="box"><strong>Khác với thiết kế ban đầu:</strong>
+      <ul>
+        <li>Cần <strong>≥ 3 mốc</strong> (không phải 2): với 2 điểm, phép biến đổi luôn khớp tuyệt đối (sai số 0) nên không kiểm chứng được. Phát hiện khi viết test.</li>
+        <li>Điểm mốc là <strong>tâm</strong> khung OCR (không phải 2 góc): khung OCR rộng hẹp tuỳ lần đọc, và góc khung lệch theo độ nghiêng, còn tâm thì ổn định.</li>
+        <li>Dòng OCR chỉ chạm <strong>một</strong> ô giá trị thì lấy nguyên dòng. Chỉ chia theo ký tự khi dòng trùm nhiều ô, và khi chia thì ngày, số, từ Latin
+          đi thành một cụm. Lý do: khung OCR thường rộng hơn chữ, nên ước lượng vị trí ký tự hay lệch (đã làm mất đầu số thẻ, mất chữ 在 khi thử).</li>
+        <li>Mẫu thẻ vẫn lấy theo heuristic hiện tại (<code>card_design</code>), chưa so 2 template.</li>
+        <li><strong>Chưa làm:</strong> cắt lại + OCR lần 2 (<code>ZONE_RECROP</code>), <code>return_word_box</code>, note "nhãn lệch ô kỳ vọng".</li>
+        <li>Sửa kèm: nhãn 在留資格 không còn khớp nhầm vào <code>在留資格取得許可</code> (lỗi có sẵn ở cả mode nhãn).</li>
+      </ul>
+      Kết quả thử: thẻ mẫu ISA và ảnh mô phỏng (xiên, nền cùng màu, chụp sát nghiêng) cho kết quả theo vị trí trùng 100% theo nhãn. Ảnh chụp sát mất góc
+      còn tìm thêm được ngày cấp phép mà mode nhãn bỏ sót.</div>
+    <h3>Hiện trạng: tìm theo nhãn</h3>
+    <p>Parser gom các dòng OCR thành một đoạn text, tìm nhãn bằng regex (<code>氏名</code>, <code>生年月日</code>…). Giá trị của mỗi trường là đoạn chữ
+      <em>giữa nhãn đó và nhãn kế tiếp</em>. Toạ độ chỉ dùng để xếp dòng (<code>group_rows</code>) và để mượn nhãn tiếng Anh khi nhãn tiếng Nhật đọc lỗi.
+      Parser không biết thẻ nằm ở đâu trong ảnh. Hậu quả: mất nhãn thì mất giá trị, và một nhãn đọc nhầm làm lệch cả đoạn của trường đứng trước nó.</p>
+
+    <h3>Tham số mới</h3>
+    <div class="table-wrap"><table>
+      <tr><th><code>mode</code></th><th>Cách làm</th></tr>
+      <tr><td><code>label</code> (mặc định, như hiện tại)</td><td>Tìm theo nhãn.</td></tr>
+      <tr><td><code>zone</code></td><td>Chiếu <a href="#tpl">template</a> vào ảnh. Dòng OCR nằm trong ô giá trị nào thì thuộc trường đó. Text vẫn qua cùng các bước làm sạch, chuẩn hoá ngày, sửa số thẻ, so danh sách như mode <code>label</code>.</td></tr>
+      <tr><td><code>hybrid</code></td><td>Chạy cả hai rồi hợp nhất (bảng <a href="#zone-merge">bên dưới</a>). Dự kiến thành mặc định sau khi eval cho thấy không tệ hơn <code>label</code>.</td></tr>
+    </table></div>
+    <p class="muted">Áp dụng cho <code>/api/extract?mode=…</code>, <code>pipeline.extract(…, mode=…)</code>, UI (thêm select cạnh "Engine") và <code>build_demo</code>. Engine <code>vl</code> chỉ có bbox theo khối, không theo dòng, nên chỉ hỗ trợ <code>label</code>. Gọi <code>zone</code>/<code>hybrid</code> với <code>vl</code> sẽ trả 422.</p>
+
+    <h3>Ba tình huống ảnh</h3>
+    <div class="tpl-stage">
+      <svg viewBox="0 0 960 300" role="img" aria-label="Ba tình huống: tìm được viền thẻ, không thấy viền thì khớp theo mốc chữ, box OCR gộp nhiều trường">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+        <!-- A: cropped -->
+        <text class="z-text" x="10" y="24" style="font-weight:600">A. Tìm được viền thẻ</text>
+        <rect x="10" y="40" width="280" height="200" rx="8" fill="none" stroke="var(--border)" stroke-width="2"/>
+        <text class="z-text ign" x="18" y="58" style="font-size:12px">ảnh chụp</text>
+        <polygon points="40,120 160,92 176,176 56,204" class="z-jp"/>
+        <g fill="var(--accent)"><circle cx="40" cy="120" r="5"/><circle cx="160" cy="92" r="5"/><circle cx="176" cy="176" r="5"/><circle cx="56" cy="204" r="5"/></g>
+        <line x1="185" y1="148" x2="205" y2="148" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+        <rect x="210" y="118" width="72" height="45" rx="4" class="z-card"/>
+        <rect x="216" y="128" width="40" height="6" class="z-val"/><rect x="216" y="140" width="40" height="6" class="z-val"/><rect x="216" y="152" width="30" height="6" class="z-val"/>
+        <text class="z-text" x="10" y="266" style="font-size:13px">4 góc → nắn 1600×1009 → template áp thẳng</text>
+        <text class="z-text ign" x="10" y="286" style="font-size:13px">tinh chỉnh thêm bằng mốc chữ (hull nới 4%)</text>
+        <!-- B: anchors -->
+        <text class="z-text" x="330" y="24" style="font-weight:600">B. Không thấy viền → khớp theo mốc chữ</text>
+        <rect x="330" y="40" width="280" height="200" rx="8" fill="none" stroke="var(--border)" stroke-width="2"/>
+        <polygon points="380,100 540,75 560,185 400,210" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 6"/>
+        <polygon points="404.7,137.1 499.3,122.4 500.5,129 405.9,143.7" class="z-val"/>
+        <g fill="var(--accent)">
+          <circle cx="392" cy="120.7" r="5"/><circle cx="397.8" cy="144.6" r="5"/><circle cx="401" cy="170.2" r="5"/>
+          <circle cx="458.2" cy="95.6" r="5"/><circle cx="479.2" cy="120.7" r="5"/><circle cx="439.4" cy="153.2" r="5"/>
+        </g>
+        <g class="z-text lbl" style="font-size:11px">
+          <text x="340" y="118">NAME</text><text x="336" y="160">ADDRESS</text><text x="350" y="184">STATUS</text>
+          <text x="436" y="70">在留カード</text><text x="487" y="112">NATIONALITY</text><text x="446" y="168">就労制限</text>
+        </g>
+        <text class="z-text" x="330" y="266" style="font-size:13px">mốc ↔ template → biến đổi (RANSAC)</text>
+        <text class="z-text ign" x="330" y="286" style="font-size:13px">ô xanh = ô địa chỉ chiếu vào ảnh</text>
+        <!-- C: merged box -->
+        <text class="z-text" x="650" y="24" style="font-weight:600">C. Box OCR gộp nhiều trường</text>
+        <rect x="650" y="96" width="300" height="34" rx="4" fill="none" stroke="var(--text)" stroke-width="2"/>
+        <text class="z-text" x="658" y="119" style="font-size:14px">1985年12月31日 性別 女F. 国・地域 米国</text>
+        <rect x="650" y="146" width="112" height="26" class="z-val"/><text class="z-text" x="655" y="164" style="font-size:12px">date_of_birth</text>
+        <rect x="796" y="146" width="40" height="26" class="z-val"/><text class="z-text" x="799" y="164" style="font-size:12px">sex</text>
+        <rect x="900" y="146" width="50" height="26" class="z-val"/><text class="z-text" x="903" y="164" style="font-size:11px">nation.</text>
+        <rect x="764" y="146" width="30" height="26" class="z-jp"/><rect x="838" y="146" width="60" height="26" class="z-jp"/>
+        <text class="z-text" x="650" y="266" style="font-size:13px">ước lượng x từng ký tự → chia theo ô</text>
+        <text class="z-text ign" x="650" y="286" style="font-size:13px">hoặc box từng ký tự (return_word_box)</text>
+      </svg>
+    </div>
+
+    <h3>Bước 1: khớp template vào ảnh (registration)</h3>
+    <p>Module mới <code>residence_card/registration.py</code>, không phụ thuộc engine, đầu vào là <code>list[OcrBox]</code> + kích thước ảnh:</p>
+<pre>register(boxes, page_size, cropped: bool, design) -&gt; Registration | None
+Registration: to_card(x, y) / to_image(u, v), method, anchors_used, residual, rotation_deg, card_fraction</pre>
+    <ol>
+      <li><strong>Tìm mốc.</strong> Một mốc là một box OCR mà text khớp chắc với một nhãn hoặc mốc cố định trong template:
+        <ul>
+          <li>nhãn tiếng Anh (OCR đọc tốt nhất) và nhãn tiếng Nhật đọc được;</li>
+          <li><code>在留カード</code> / <code>RESIDENCE CARD</code>, <code>日本国政府</code>, <code>番号</code>, <code>このカードは</code>, <code>PERIOD OF VALIDITY</code>.</li>
+        </ul>
+        Mỗi mốc cho 2 cặp điểm: góc trên-trái và góc dưới-phải của box. Box gộp nhiều thứ (vd. <code>許可年月日2019年…</code>) chỉ dùng cạnh trái, nếu nhãn nằm đầu box.
+        Template thêm mục <code>anchors</code> cho các mốc không phải nhãn trường (tiêu đề, PERIOD OF VALIDITY).</li>
+      <li><strong>Chọn phép biến đổi</strong> theo số mốc. Dùng RANSAC để loại mốc khớp nhầm, ví dụ chữ <code>STATUS</code> trong dòng dịch của giá trị.
+        <div class="table-wrap"><table>
+          <tr><th>Tình huống</th><th>Phép biến đổi</th><th>Cần</th></tr>
+          <tr><td>A. <code>card_cropped=true</code></td><td>Co giãn theo kích thước ảnh, chỉ dùng khi không đủ mốc</td><td>0 mốc</td></tr>
+          <tr><td>B. Không thấy viền, chụp thẳng hoặc nghiêng</td><td>Similarity: co giãn + xoay + tịnh tiến (4 tham số)</td><td>≥ 3 mốc</td></tr>
+          <tr><td>B. Không thấy viền, chụp xiên</td><td>Homography (8 tham số)</td><td>≥ 4 mốc không thẳng hàng</td></tr>
+        </table></div></li>
+      <li><strong>Điều kiện tin cậy.</strong> Cần cả 4:
+        <ul>
+          <li>residual (sai số trung bình) &lt; 0.02 chiều rộng thẻ;</li>
+          <li>|xoay| ≤ 30° (ppocr đã xoay thẳng 1–30° và xử lý 90°/180° trước đó, nên phần còn lại thường nhỏ);</li>
+          <li>thẻ chiếm ≥ 20% chiều rộng ảnh;</li>
+          <li>với homography: tỉ lệ cạnh của thẻ sau khi chiếu lệch &lt; 15% so với 1.586.</li>
+        </ul>
+        Không đạt thì <code>registration=null</code>: mode <code>zone</code> trả về như mode <code>label</code> kèm warning "Không khớp được template", <code>hybrid</code> chỉ dùng nhãn.</li>
+      <li><strong>Cắt lại (tuỳ chọn, <code>ZONE_RECROP=1</code>).</strong> Khi khớp được nhưng thẻ chỉ chiếm &lt; 50% ảnh: chiếu 4 góc template ra ảnh gốc, nắn bằng
+        <code>preprocess.normalize_card</code> với 4 góc đó, rồi OCR lần 2. Ảnh nhỏ thì chữ nhỏ, OCR lại trên ảnh đã phóng thường đọc tốt hơn hẳn,
+        đổi lại tốn thêm một lượt OCR (vài giây trên CPU). Mặc định tắt.</li>
+    </ol>
+
+    <h3>Bước 2: gán dòng OCR vào ô</h3>
+    <ul>
+      <li>Chiếu polygon của từng box về toạ độ thẻ (<code>to_card</code>). Dùng polygon (<code>rec_polys</code>) chứ không dùng bbox, để không bị phình khi còn nghiêng.</li>
+      <li>Bỏ box có tâm nằm trong vùng <code>ignore</code> (ảnh chân dung, logo, con dấu, tiêu đề).</li>
+      <li>Box có ≥ 50% diện tích nằm trong một ô giá trị (đã nới <code>pad</code>) thì thuộc trường đó. Nhiều box trong cùng một ô thì nối từ trái sang phải.
+        Phần nằm trong <code>en_box</code> (dòng dịch tiếng Anh của tư cách lưu trú) thì bỏ.</li>
+      <li><strong>Box trùm nhiều ô</strong> (hình C). Hai cách, chọn theo kết quả spike:
+        <ol>
+          <li><code>return_word_box</code> của PaddleOCR 3.x trả box từng ký tự, rồi gán từng ký tự vào ô. <span class="badge todo">cần kiểm tra</span> với bản đang pin.</li>
+          <li>Dự phòng: ước lượng x của từng ký tự theo độ rộng (CJK = 1, Latin/số/dấu = 0.55, chia đều theo chiều dài box), cắt chuỗi tại ranh giới ô.
+            Sai lệch 1 ký tự ở ranh giới được nhãn nằm giữa hai ô (ô xanh dương trong hình C) hấp thụ, vì phần rơi vào ô nhãn bị bỏ.</li>
+        </ol></li>
+      <li>Engine ppocr đã nắn nghiêng polygon (<code>estimate_skew</code>), nên bước chiếu chỉ còn bù phần sai số nhỏ.</li>
+    </ul>
+
+    <h3 id="zone-merge">Bước 3 (<code>hybrid</code>): hợp nhất với kết quả theo nhãn</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Theo nhãn</th><th>Theo toạ độ</th><th>Kết quả</th></tr>
+      <tr><td>có</td><td>có, giống nhau (sau chuẩn hoá)</td><td>Giữ, <code>source=label+zone</code>. Đây là tín hiệu tin cậy cao.</td></tr>
+      <tr><td>có</td><td>có, khác nhau</td><td>Lấy theo nhãn, đưa giá trị theo toạ độ vào <code>candidates</code>, <code>needs_review</code>.</td></tr>
+      <tr><td>không</td><td>có</td><td>Lấy theo toạ độ, <code>source=zone</code>, <code>needs_review</code>. Bỏ <code>needs_review</code> khi eval cho thấy đủ tin cậy.</td></tr>
+      <tr><td>có</td><td>không</td><td>Giữ theo nhãn. Nếu nhãn nằm lệch ô kỳ vọng &gt; 0.05 thì thêm note.</td></tr>
+    </table></div>
+    <p>Mẫu thẻ (<code>card_design</code>) cũng lấy từ bước 1: thử khớp cả 2 template, cái nào residual thấp và nhiều mốc hơn thì thắng. Nếu khác với heuristic regex hiện tại thì thêm warning.</p>
+
+    <h3>Thêm vào JSON trả về</h3>
+<pre>"layout": {
+  "mode": "hybrid",
+  "registration": { "design": "2012", "method": "crop | anchors | none", "transform": "similarity | homography",
+                    "anchors_used": 9, "residual": 0.006, "rotation_deg": 3.2, "card_fraction": 0.42 },
+  "zones_px": { "address": [[x,y], [x,y], [x,y], [x,y]], … }   // ô đã chiếu vào ảnh đã xử lý, để UI vẽ
+}
+"fields": { "address": { …, "source": "label | zone | label+zone" } }</pre>
+    <p>UI: thêm checkbox <strong>"Hiện ô template"</strong> để vẽ <code>zones_px</code> lên ảnh, cạnh checkbox "Hiện khung OCR". Nhìn vào là biết khớp đúng hay lệch.</p>
+
+    <h3>Test</h3>
+    <ul>
+      <li>Ảnh mẫu ISA (đã sát thẻ): <code>zone</code> phải ra cùng giá trị với <code>label</code> ở mọi trường, residual &lt; 0.01.</li>
+      <li>Ảnh tổng hợp từ mẫu ISA, mỗi trường hợp chạy cả 2 mẫu thẻ:
+        <ul>
+          <li>xoay ±5°, ±15°, ±25°;</li>
+          <li>thu thẻ còn 30% / 50% / 80% ảnh, đặt trên nền cùng màu để <code>find_card</code> không thấy viền;</li>
+          <li>chụp xiên (phối cảnh);</li>
+          <li>che một góc.</li>
+        </ul>
+        Kiểm tra từng trường bằng ground truth.</li>
+      <li>Box OCR viết tay (không cần Paddle): <code>registration</code> với các mốc đã biết phải khôi phục đúng góc xoay và tỉ lệ. Mốc nhiễu phải bị RANSAC loại.</li>
+      <li>Box gộp <code>1985年12月31日性別女F.国・地域米国</code> phải tách đúng ra 3 trường.</li>
+    </ul>
+
+    <h3>Giới hạn</h3>
+    <ul>
+      <li>Cần ≥ 3 mốc. Ảnh quá mờ đến mức không đọc nổi cả nhãn tiếng Anh thì toạ độ cũng không cứu được (trừ khi <code>card_cropped=true</code>).</li>
+      <li>Template mới đo từ 1 ảnh mẫu mỗi loại thẻ. Ô giá trị đã vẽ rộng, nhưng giá trị rất dài (địa chỉ xuống dòng, tên dài) phải kiểm tra trên ảnh thật.</li>
+      <li>Engine <code>vl</code> và thẻ <code>特定在留カード</code> không hỗ trợ.</li>
+    </ul>
+
+    <h2 id="m0">0. Nền tảng: schema + đo hiệu quả</h2>
+    <h3>Schema <code>Field</code> (thêm, không bỏ trường cũ)</h3>
+<pre>"status_of_residence": {
+  "value": "技術・人文知識・国際業務", "raw": "技術・人文知識・国除業務",
+  "confidence": 0.91, "needs_review": false, "notes": ["Đã chuẩn hoá theo danh sách giá trị chính thức."],
+  "source": "lexicon",                 // ocr | lexicon | inferred:&lt;field&gt; | template_zone | reocr | ctc
+  "match_margin": 0.42,                // điểm top1 − top2; null nếu không phải trường danh sách
+  "candidates": [{"value": "技術・人文知識・国際業務", "score": 0.94}, {"value": "企業内転勤", "score": 0.12}]
+}</pre>
+    <ul>
+      <li><code>candidates</code> tối đa 3, chỉ có ở trường kiểu danh sách. UI hiện dropdown để người duyệt chọn nhanh.</li>
+      <li>Đổi API nên phải cập nhật <code>README.md</code>, <code>CLAUDE.md</code>, <code>static/app.js</code> (hiện source + candidates) và chạy lại <code>build_demo</code>.</li>
+    </ul>
+    <h3>Đo hiệu quả</h3>
+    <ul>
+      <li><code>scripts/make_sample.py</code>: sinh thẻ giả với giá trị lấy ngẫu nhiên từ các danh sách, thêm nhiễu, mờ, nghiêng, lóa.
+        Ground truth lưu cạnh ảnh dưới dạng <code>samples/synthetic/&lt;id&gt;.truth.json</code>.</li>
+      <li><code>scripts/eval_fields.py</code>: chạy <code>pipeline.extract</code> trên bộ mẫu, ghi <code>samples/results/eval_&lt;ngày&gt;.json</code>.</li>
+      <li>Chỉ số theo dõi cho từng trường: <strong>exact-match</strong>, <strong>snap sai</strong> (đổi giá trị thành một giá trị sai mà không bật review),
+        tỉ lệ <code>needs_review</code>.</li>
+      <li><strong>Điều kiện merge</strong> cho mỗi mục sau: snap sai không tăng, exact-match không giảm.</li>
+    </ul>
+
+    <h2 id="m1">1. So khớp có trọng số + độ chênh + candidates</h2>
+    <p>Module mới <code>residence_card/matching.py</code>, không phụ thuộc engine:</p>
+<pre>match(text, choices, prior=None, box_conf=None) -&gt; list[Candidate(value, score, sim)]  # sắp giảm dần
+decide(field, candidates, box_conf)                                                  # gán value/source/notes/needs_review</pre>
+    <h3>Khoảng cách</h3>
+    <ul>
+      <li>Levenshtein có trọng số. Thay ký tự thuộc <code>CONFUSABLE_PAIRS</code> có chi phí <strong>0.2</strong>. Danh sách gồm các cặp trong <code>CONFUSABLES</code>
+        và các cặp nhìn giống nhau: ロ/口, ー/一, カ/力, エ/工, ニ/二, ハ/八, タ/夕, ト/卜, 除/際. Thêm/xoá <code>・</code>, dấu cách, dấu câu có chi phí <strong>0.3</strong>.
+        Mọi thao tác khác có chi phí 1.</li>
+      <li>Căn chỉnh <strong>semi-global</strong>: ký tự rác ở đầu/cuối (phần dịch tiếng Anh sót lại, ký tự của nhãn kế bên) chỉ bị tính 0.3 mỗi ký tự.</li>
+      <li><code>sim = 1 − d / max(len(text), len(choice))</code>. Điểm cuối: <code>score = sim + 0.05 × prior_norm</code>. Prior chỉ dùng để phá thế hoà.</li>
+    </ul>
+    <h3>Quyết định</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Trường hợp</th><th>Kết quả</th></tr>
+      <tr><td>Khớp chính xác</td><td><code>source=ocr</code>, không có note</td></tr>
+      <tr><td><code>sim ≥ 0.6</code> và <code>margin ≥ 0.15</code></td><td>snap, <code>source=lexicon</code>, note "đã chuẩn hoá"</td></tr>
+      <tr><td><code>sim ≥ 0.6</code> và <code>margin &lt; 0.15</code></td><td>snap về top1, <code>needs_review</code>, note "mơ hồ giữa A / B"</td></tr>
+      <tr><td><code>sim &lt; 0.6</code></td><td>giữ raw, vẫn trả <code>candidates</code>, <code>needs_review</code></td></tr>
+      <tr><td>Box conf ≥ 0.95 nhưng không khớp chính xác</td><td>vẫn snap nhưng bắt <code>needs_review</code>: OCR rất chắc mà vẫn lệch là đáng ngờ (có thể giá trị nằm ngoài danh sách)</td></tr>
+    </table></div>
+    <p class="muted">Các ngưỡng 0.6 / 0.15 / 0.95 là điểm khởi đầu, sẽ chỉnh theo kết quả <a href="#m0">eval</a>.</p>
+    <h3>Chỗ cắm</h3>
+    <ul>
+      <li><code>_snap</code> được thay bằng <code>match</code> + <code>decide</code>.</li>
+      <li>Vòng quét difflib trong <code>_work_restriction</code> (khi không có nhãn) được tổng quát hoá thành <code>lexicon_sweep(doc, field)</code>:
+        quét từng box, box nào khớp một danh sách với <code>sim ≥ 0.85</code> thì gán cho trường đó. Dùng cho status, work_restriction, permission_type,
+        nationality. Với engine <code>vl</code> (không có vị trí nhãn tin cậy) đây là cách chính.</li>
+      <li><code>scripts/mine_confusions.py</code>: đọc <code>logs/extract.jsonl</code>, căn chỉnh raw với value đã snap (chỉ các ca margin ≥ 0.3), đếm các cặp thay thế,
+        in ra đề xuất. Người duyệt thêm tay vào <code>patterns.py</code>, không tự học.</li>
+    </ul>
+    <h3>Test</h3>
+    <ul>
+      <li>技能実習2号イ ↔ 2号ロ khác 1 ký tự phải ra kết quả mơ hồ, <code>needs_review</code>.</li>
+      <li><code>资格</code>/<code>国除</code> + rác tiếng Anh vẫn snap đúng, margin lớn.</li>
+      <li>Chuỗi rỗng → <code>value=null</code>. Box conf cao mà lệch → bắt review.</li>
+    </ul>
+
+    <h2 id="m2">2. Bổ sung danh sách giá trị</h2>
+    <p>Danh sách lớn để trong <code>residence_card/data/*.json</code>, mỗi file có <code>source</code> và <code>retrieved</code> (ngày lấy). Danh sách nhỏ giữ trong <code>patterns.py</code>.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Trường</th><th>Danh sách</th><th>Ghi chú</th></tr>
+      <tr><td>status_of_residence</td><td>Giữ 38 giá trị. <strong>Bỏ</strong> 外交, 公用, 短期滞在 khỏi candidate (không được cấp 在留カード), hoặc cho prior = 0.</td><td>Giảm nhầm lẫn miễn phí</td></tr>
+      <tr><td>nationality</td><td>~200 tên theo cách ghi trong 在留外国人統計 (中国, 韓国, ベトナム, フィリピン, 米国, 英国, 台湾…), kèm số người làm prior</td><td><span class="badge todo">cần xác minh</span> cách ghi trên thẻ có trùng bảng thống kê không</td></tr>
+      <tr><td>permission_type</td><td>在留資格取得許可, 在留資格変更許可, 在留期間更新許可, 永住許可, 上陸許可</td><td>Đổi từ regex sang <code>match</code></td></tr>
+      <tr><td>issuing_authority</td><td>8 cục khu vực (札幌, 仙台, 東京, 名古屋, 大阪, 広島, 高松, 福岡) + 7 支局 (成田空港, 羽田空港, 横浜, 中部空港, 関西空港, 神戸, 那覇),
+        nhân hai cách ghi: <code>…出入国在留管理局長</code> (từ 01/04/2019) và <code>…入国管理局長</code> (trước đó)</td><td>Kiểm tra cách ghi khớp thời kỳ của <code>permission_date</code> (<a href="#m3">mục 3</a>). <span class="badge todo">cần xác minh</span> cách ghi của 支局</td></tr>
+      <tr><td>period_of_stay</td><td>Các mốc theo 施行規則 別表第二 (5年, 4年3月, 4年, 3年3月, 3年, 2年3月, 2年, 1年3月, 1年, 6月, 4月, 3月, 15日) + 無期限</td><td>Một số status có "thời hạn do Bộ trưởng chỉ định", không đóng → chỉ kiểm định dạng. <span class="badge todo">cần xác minh</span> 無期限 có in trên thẻ 永住者</td></tr>
+      <tr><td>sex</td><td>男/女 ↔ M/F</td><td>Đồng thuận hai nguồn: mâu thuẫn thì <code>needs_review</code></td></tr>
+    </table></div>
+
+    <h2 id="m3">3. Suy luận kết hợp nhiều trường</h2>
+    <p>Module mới <code>residence_card/constraints.py</code>, bảng luật trong <code>data/status_rules.json</code>:</p>
+<pre>{ "留学": { "work_restrictions": ["就労不可"],
+           "periods": ["4年3月","4年","3年3月","3年","2年3月","2年","1年3月","1年","6月","3月"],
+           "permission_types": ["上陸許可","在留資格変更許可","在留期間更新許可","在留資格取得許可"],
+           "card_validity": "= expiration" }, … }</pre>
+    <h3>Bộ giải <code>resolve_joint</code></h3>
+    <ol>
+      <li>Đầu vào: top-3 candidates của status, work_restriction, period_of_stay, permission_type. Tối đa 3⁴ = 81 tổ hợp, duyệt hết.</li>
+      <li>Điểm một tổ hợp = Σ score của từng trường − <strong>0.3</strong> × số luật vi phạm.</li>
+      <li>Một trường <strong>chỉ được đổi</strong> sang candidate khác khi margin của chính nó &lt; 0.15. Trường đọc rõ không bao giờ bị lật.</li>
+      <li>Trường bị đổi: <code>source="inferred:&lt;field&gt;"</code>, <code>needs_review=true</code>, note "chọn theo &lt;field&gt;=&lt;value&gt;".</li>
+      <li>Hai trường cùng đọc rõ mà vẫn vi phạm luật: <strong>không sửa gì</strong>, chỉ thêm warning (có thể thẻ đặc biệt, hoặc bảng luật sai).</li>
+      <li>Thẻ mẫu 2026 (không in period/permission): chỉ áp dụng status ↔ work_restriction.</li>
+    </ol>
+    <h3>Bảng luật status ↔ work_restriction (bản nháp)</h3>
+    <div class="box warn">Bảng soạn từ hiểu biết chung về 入管法. <strong>Phải đối chiếu với tài liệu ISA và 施行規則 別表第二 trước khi bật.</strong>
+      Lúc đầu chỉ dùng để trừ điểm, không làm luật cứng.</div>
+    <div class="table-wrap"><table>
+      <tr><th>Status</th><th>work_restriction</th><th>period_of_stay</th></tr>
+      <tr><td>永住者</td><td>就労制限なし</td><td>無期限</td></tr>
+      <tr><td>日本人の配偶者等, 永住者の配偶者等</td><td>就労制限なし</td><td>5年, 3年, 1年, 6月</td></tr>
+      <tr><td>定住者</td><td>就労制限なし</td><td>5年, 3年, 1年, 6月, hoặc chỉ định (≤ 5年)</td></tr>
+      <tr><td>留学</td><td>就労不可</td><td>4年3月 … 3月 (các mốc lẻ +3月)</td></tr>
+      <tr><td>家族滞在</td><td>就労不可</td><td>5年 … 3月 (các mốc lẻ +3月)</td></tr>
+      <tr><td>文化活動</td><td>就労不可</td><td>3年, 1年, 6月, 3月</td></tr>
+      <tr><td>研修</td><td>就労不可</td><td>1年, 6月, 3月</td></tr>
+      <tr><td>特定活動</td><td>指定書により指定された就労活動のみ可 <em>hoặc</em> 就労不可</td><td>5年, 3年, 1年, 6月, 3月, hoặc chỉ định</td></tr>
+      <tr><td>高度専門職1号イ/ロ/ハ</td><td>指定書記載機関での在留資格に基づく就労活動のみ可</td><td>5年</td></tr>
+      <tr><td>高度専門職2号</td><td>在留資格に基づく就労活動のみ可 <span class="badge todo">cần xác minh</span></td><td>無期限</td></tr>
+      <tr><td>特定技能1号/2号, 技能実習 (mọi号)</td><td>指定書記載機関での在留資格に基づく就労活動のみ可</td><td>chỉ định (không đóng) / 2号: 3年, 1年, 6月</td></tr>
+      <tr><td>教授, 芸術, 宗教, 報道, 経営・管理, 法律・会計業務, 医療, 研究, 教育, 技術・人文知識・国際業務, 企業内転勤, 介護, 興行, 技能</td>
+        <td>在留資格に基づく就労活動のみ可</td><td>5年, 3年, 1年, 3月 (経営・管理 thêm 6月, 4月; 興行 thêm 6月, 15日)</td></tr>
+    </table></div>
+    <h3>Mở rộng <code>cross_check</code> (chỉ sinh warning, không sửa giá trị)</h3>
+    <ul>
+      <li>永住者 / 高度専門職2号: <code>valid_until ≈ issue_date + 7 năm</code> (cho lệch ±1 ngày).</li>
+      <li>Status khác: <code>valid_until == expiration_date</code>.</li>
+      <li>Người dưới 16 tuổi: hạn thẻ là sinh nhật 16 tuổi, hoặc ngày nào sớm hơn. Ngoại lệ này phải xét trước để không báo nhầm.</li>
+      <li><code>issuing_authority</code> có <code>入国管理局長</code> mà <code>permission_date ≥ 2019-04-01</code> (hoặc ngược lại) thì cảnh báo.</li>
+      <li><code>permission_type=永住許可</code> mà status ≠ 永住者 thì cảnh báo, và cho vào <code>resolve_joint</code> như một luật.</li>
+    </ul>
+
+    <h2 id="m4">4. Template vùng + OCR lại vùng</h2>
+    <h3>Template</h3>
+    <p>Dùng template ở <a href="#tpl">mục Template toạ độ</a>, kèm bước khớp template vào ảnh (không bắt buộc <code>card_cropped=true</code>).</p>
+    <h3>Thay đổi API parser</h3>
+<pre>parse_residence_card(boxes, page_size: tuple[int, int] | None = None, cropped: bool = False)
+  -&gt; result  (+ result["refine_requests"] = [{field, zone_px, kind: "lexicon"|"format"}])   # nội bộ, pipeline xoá trước khi trả API
+resolve_reads(result, field, reads: list[tuple[str, float]]) -&gt; None                      # parser hợp nhất các lần đọc</pre>
+    <p>Tham số tuỳ chọn nên test cũ chạy nguyên. Parser vẫn không import engine.</p>
+    <h3>Luồng</h3>
+    <ol>
+      <li><strong>Dùng vùng để tìm giá trị:</strong> trường không có nhãn JP, không có nhãn EN và <code>lexicon_sweep</code> cũng không tìm ra → lấy các box có tâm nằm trong vùng.
+        Gán <code>source=template_zone</code>, <code>needs_review</code>.</li>
+      <li><strong>OCR lại</strong> (trong <code>pipeline.py</code>, chỉ engine ppocr): với mỗi <code>refine_request</code>, cắt vùng (padding 8px), tạo 3 biến thể
+        (phóng ×2, CLAHE, nhị phân Otsu), chỉ chạy <strong>recognition</strong> (không chạy detection). Gom tất cả các lần đọc rồi gọi <code>resolve_reads</code>:
+        <ul>
+          <li>Trường lexicon: cộng điểm <code>match</code> qua mọi lần đọc, chọn tổng cao nhất.</li>
+          <li>Trường định dạng (ngày, số thẻ): bỏ phiếu đa số cho cả chuỗi. Nếu hoà thì bỏ phiếu theo từng vị trí ký tự (các chuỗi cùng độ dài).</li>
+          <li>Đổi được giá trị thì <code>source=reocr</code>, giữ <code>needs_review</code> nếu margin vẫn thấp.</li>
+        </ul></li>
+      <li><strong>Giới hạn:</strong> tối đa 4 trường / request, tổng ≤ 500ms. Hết ngân sách thì dừng, ghi <code>timing_ms.reocr</code>.</li>
+    </ol>
+    <p>Biến môi trường mới <code>REOCR</code>: code mặc định 0, compose bật 1 (giống <code>DEBUG_SAVE_IMAGES</code>). Engine <code>vl</code> không có vùng nên chỉ dùng <code>lexicon_sweep</code>.</p>
+
+    <h2 id="m5">5. Địa chỉ phân cấp</h2>
+    <h3>Dữ liệu</h3>
+    <ul>
+      <li>都道府県 + 市区町村: lấy từ 全国地方公共団体コード của 総務省, khoảng 1.900 dòng, bundle luôn.</li>
+      <li>町域: lấy từ KEN_ALL của Japan Post, chỉ giữ cột (都道府県, 市区町村, 町域) và bỏ trùng. Nén gzip khoảng 2–3MB, đặt ở <code>data/towns.json.gz</code>,
+        nạp lười khi lần đầu cần. <code>scripts/build_address_data.py</code> tải và dựng lại file này.</li>
+      <li>アドレス・ベース・レジストリ (Digital Agency) đầy đủ hơn nhưng nặng hơn nhiều. Để sau, chỉ chuyển khi KEN_ALL không đủ.</li>
+    </ul>
+    <h3>Thuật toán (<code>residence_card/address.py</code>)</h3>
+    <ol>
+      <li><strong>都道府県:</strong> semi-global match phần đầu chuỗi với 47 tên. Cần <code>sim ≥ 0.7</code> và margin ≥ 0.15.</li>
+      <li><strong>市区町村:</strong> chỉ tìm trong tỉnh đã chọn. Xử lý <code>…郡…町/村</code> và <code>…市…区</code> (政令市). Cần <code>sim ≥ 0.75</code>.</li>
+      <li><strong>町域:</strong> chỉ tìm trong 市区町村 đã chọn, bỏ qua tiền tố <code>大字</code>/<code>字</code>. Ngưỡng chặt <code>sim ≥ 0.8</code>.</li>
+      <li><strong>Phần còn lại</strong> (丁目, 番地, 号, toà nhà, phòng): giữ raw, chỉ áp dụng <code>ADDRESS_NUMERAL_FIX</code>.</li>
+      <li><strong>Dừng ở cấp mơ hồ đầu tiên:</strong> các cấp phía sau giữ raw.</li>
+    </ol>
+<pre>"address": { "value": "東京都新宿区西新宿二丁目8番1号", …,
+  "parts": { "prefecture": "東京都", "city": "新宿区", "town": "西新宿", "rest": "二丁目8番1号", "matched_level": "town" } }</pre>
+    <h3>Lưu ý</h3>
+    <ul>
+      <li>Địa chỉ mặt trước có thể đã cũ (chuyển nhà thì ghi ở mặt sau), tên 町域 cũng có thể đã đổi (sáp nhập). Khớp danh sách <strong>không</strong> có nghĩa là địa chỉ đúng.</li>
+      <li>Sửa ở cấp 町域 luôn bắt <code>needs_review</code>. Sửa ở cấp tỉnh/thành phố với margin lớn thì không cần.</li>
+    </ul>
+
+    <h2 id="m6">6. Chấm điểm lại bằng xác suất CTC</h2>
+    <ul>
+      <li><strong>Không làm trie beam search toàn phần.</strong> Danh sách chỉ ≤ vài trăm giá trị, nên chỉ <strong>rescore</strong>: tính <code>log P(candidate | ảnh dòng)</code> bằng thuật toán
+        forward CTC (giống CTC loss) trên ma trận softmax T×|V| của model recognition.</li>
+      <li><strong>Phía engine</strong>: <code>ocr/ppocr_rescore.py</code>. Không sửa <code>ppocr_model.py</code> để giữ cache layer model trong Docker.
+        <ul>
+          <li>Nạp model rec qua <code>paddle.inference</code>, đọc dictionary từ <code>inference.yml</code> trong thư mục model.</li>
+          <li>Tự tiền xử lý ảnh (resize h=48, normalize) cho đúng như PaddleOCR.</li>
+          <li>API: <code>rescore(crop, candidates) -&gt; list[(cand, logprob)]</code>. Candidate có ký tự nằm ngoài dictionary thì bị loại.</li>
+        </ul></li>
+      <li><strong>Luồng</strong>: pipeline chỉ gọi rescore cho trường lexicon có margin &lt; 0.15 (dùng chung <code>refine_requests</code> với <a href="#m4">mục 4</a>, crop lấy theo polygon của dòng).
+        Điểm mới = <code>0.5 × sim + 0.5 × softmax(logprob)</code> tính trên các candidate. Gán <code>source=ctc</code>.</li>
+      <li><strong>Bonus</strong>: đường greedy cho xác suất từng ký tự. Nếu lấy được, <code>OcrBox</code> có thêm <code>char_scores</code> tuỳ chọn và
+        <code>Document.score</code> tính được theo ký tự, giúp <a href="#m1">mục 1</a> cho ký tự conf thấp thay rẻ hơn.</li>
+      <li>Engine <code>vl</code> không áp dụng.</li>
+    </ul>
+    <div class="box warn"><strong>Rủi ro lớn nhất:</strong> lấy được logits từ PaddleOCR 3.x / paddle 3.2.2 đang pin mà không phá pipeline hiện tại.
+      Làm <strong>spike khoảng 1 ngày</strong> trước. Nếu không ổn thì bỏ mục 6, các mục 0–5 không phụ thuộc vào nó.</div>
+
+    <h2 id="decisions">Các quyết định đã chốt (theo đề xuất)</h2>
+    <div class="table-wrap"><table>
+      <tr><th>Câu hỏi</th><th>Chốt</th></tr>
+      <tr><td>Nguồn danh sách nationality; 永住者 có in 無期限 không</td><td>Dùng cách ghi trong 在留外国人統計 (法務省/e-Stat), đối chiếu với mẫu ISA + ảnh thật trong log.
+        Trong lúc chưa xác minh: 無期限 có trong danh sách nhưng snap về nó luôn bắt <code>needs_review</code>.</td></tr>
+      <tr><td>Ai soạn bảng luật status ↔ work_restriction ↔ period</td><td>Claude soạn từ tài liệu ISA / 施行規則 別表第二, ghi nguồn từng dòng, gửi duyệt (bản nháp ở <a href="#m3">mục 3</a>). Chưa duyệt thì chỉ dùng để trừ điểm.</td></tr>
+      <tr><td>Bundle KEN_ALL vào image</td><td>Có: chỉ cột tên, gzip ~2–3MB, nạp lười, kèm script dựng lại.</td></tr>
+      <tr><td>Ngân sách độ trễ OCR lại</td><td>≤ 500ms / request, tối đa 4 trường. <code>REOCR</code> code mặc định 0, compose bật 1.</td></tr>
+    </table></div>
+
+    <h2 id="plan">Thứ tự triển khai</h2>
+    <div class="flow">
+      <div><b>★</b> Template toạ độ</div>
+      <div><b>★</b> mode=zone / hybrid (cần template)</div>
+      <div><b>0</b> Schema + eval</div>
+      <div><b>1</b> Matching (cần 0)</div>
+      <div><b>2</b> Danh sách (cần 1)</div>
+      <div><b>3</b> Ràng buộc chéo (cần 1, 2)</div>
+      <div><b>4</b> Vùng + OCR lại (cần ★, 1)</div>
+      <div><b>5</b> Địa chỉ (cần 1)</div>
+      <div><b>6</b> Spike CTC: song song, độc lập</div>
+    </div>
+    <ul>
+      <li>Mỗi mục là một commit/PR riêng, kèm test và cập nhật <code>CLAUDE.md</code> (mục "Kiến trúc &amp; logic").</li>
+      <li>Mục 3 chỉ bật luật cứng sau khi bảng luật được duyệt. Mục 6 chỉ làm tiếp nếu spike thành công.</li>
+    </ul>
+    <p class="muted">Góp ý: ghi theo id mục (vd. "#m3: bỏ luật 特定活動") rồi gửi trong chat.</p>
+  </article>
+
+  <script>
+    const IMAGES = {
+      "2012": "/static/samples/residence_card_current_processed.jpg",
+      "2026": "/static/samples/residence_card_new_2026_processed.jpg",
+    };
+    const W = 1600, H = 1009;
+    const svg = document.getElementById("tplSvg");
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const fmt = (b) => (b ? `[${b.map((v) => v.toFixed(3)).join(", ")}]` : "—");
+    let zones = null;
+
+    function rect(b, cls, title, text, textCls) {
+      const [x0, y0, x1, y1] = [b[0] * W, b[1] * H, b[2] * W, b[3] * H];
+      let s = `<rect class="${cls}" x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="4"><title>${esc(title)}</title></rect>`;
+      if (text) s += `<text class="z-text ${textCls || ""}" x="${x0 + 6}" y="${y0 + 21}">${esc(text)}</text>`;
+      return s;
+    }
+
+    function draw() {
+      if (!zones) return;
+      const design = document.getElementById("tplDesign").value;
+      const t = zones[design];
+      const show = (id) => document.getElementById(id).checked;
+      let s = `<defs><pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="14" height="14" fill="none"/><line x1="0" y1="0" x2="0" y2="14" stroke="currentColor" stroke-opacity=".25" stroke-width="5"/></pattern></defs>`;
+      s += `<rect class="z-card" x="0" y="0" width="${W}" height="${H}" rx="40"/>`;
+      if (show("tplImage")) s += `<image href="${IMAGES[design]}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" opacity=".55"/>`;
+      if (show("tplIgnore"))
+        for (const [k, b] of Object.entries(t.ignore)) s += rect(b, "z-ign", `bỏ qua: ${k} ${fmt(b)}`, k, "ign");
+      for (const [key, f] of Object.entries(t.fields)) {
+        if (show("tplLabels") && f.label) {
+          s += rect(f.label.jp_box, "z-jp", `${key} · nhãn JP「${f.label.jp}」 ${fmt(f.label.jp_box)}`);
+          if (f.label.en_box) s += rect(f.label.en_box, "z-en", `${key} · nhãn EN "${f.label.en}" ${fmt(f.label.en_box)}`);
+        }
+        if (show("tplValues")) {
+          s += rect(f.value.box, "z-val", `${key} · giá trị (${f.value.kind}) ${fmt(f.value.box)}`, key);
+          if (f.value.en_box) s += rect(f.value.en_box, "z-val-en", `${key} · dòng dịch tiếng Anh ${fmt(f.value.en_box)}`);
+        }
+      }
+      svg.style.color = "var(--muted)";
+      svg.innerHTML = s;
+
+      let rows = `<tr><th>Trường</th><th>Nhãn JP</th><th>jp_box</th><th>en_box</th><th>value.box</th><th>kind</th></tr>`;
+      for (const [key, f] of Object.entries(t.fields)) {
+        const lbl = f.label ? esc(f.label.jp) : `<span class="muted">chung nhãn ${esc(f.shares_label)}</span>`;
+        rows += `<tr><td>${esc(key)}</td><td>${lbl}</td><td>${fmt(f.label?.jp_box)}</td><td>${fmt(f.label?.en_box)}</td><td>${fmt(f.value.box)}</td><td>${esc(f.value.kind)}</td></tr>`;
+      }
+      for (const [k, b] of Object.entries(t.ignore)) rows += `<tr><td class="muted">${esc(k)}</td><td class="muted">bỏ qua</td><td></td><td></td><td>${fmt(b)}</td><td></td></tr>`;
+      document.getElementById("tplTable").innerHTML = rows;
+    }
+
+    document.querySelectorAll(".tpl-controls select, .tpl-controls input").forEach((el) => el.addEventListener("change", draw));
+    fetch("/api/zones", { cache: "no-cache" })
+      .then((r) => r.json())
+      .then((d) => { zones = d; draw(); })
+      .catch(() => { svg.outerHTML = `<p class="status error">Không tải được /api/zones.</p>`; });
+  </script>
+</body>
+</html>

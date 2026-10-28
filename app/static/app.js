@@ -1,4 +1,5 @@
-const FIELD_LABELS = {
+// Field names per result.document_type: [Vietnamese, as printed on the card]
+const RESIDENCE_FIELDS = {
   card_number: ["Số thẻ", "番号"],
   name: ["Họ tên", "氏名"],
   date_of_birth: ["Ngày sinh", "生年月日"],
@@ -15,6 +16,18 @@ const FIELD_LABELS = {
   issue_date: ["Ngày cấp thẻ", "交付年月日"],
   valid_until: ["Thẻ có hiệu lực đến", "有効期限"],
 };
+const VN_ID_FIELDS = {
+  id_number: ["Số định danh cá nhân", "No."],
+  full_name: ["Họ và tên", "Full name"],
+  date_of_birth: ["Ngày sinh", "Date of birth"],
+  sex: ["Giới tính", "Sex"],
+  nationality: ["Quốc tịch", "Nationality"],
+  date_of_expiry: ["Có giá trị đến", "Date of expiry"],
+  place_of_origin: ["Quê quán", "Place of origin"],
+  place_of_residence: ["Nơi thường trú", "Place of residence"],
+};
+const FIELD_LABELS = { residence_card: RESIDENCE_FIELDS, vn_id_card: VN_ID_FIELDS };
+const VL_DOCUMENTS = ["jp_residence"]; // vl_service only runs the Japanese setup
 const LOW_SCORE = 0.85;
 
 const $ = (id) => document.getElementById(id);
@@ -34,7 +47,9 @@ function setStatus(text, cls = "") {
 async function upload(file) {
   if (!file) return;
   lastFileName = file.name.replace(/\.[^.]+$/, "") || "result";
-  const engine = $("engine").value;
+  const documentType = $("document").value;
+  const engine = VL_DOCUMENTS.includes(documentType) ? $("engine").value : "ppocr";
+  const mode = engine === "vl" ? "label" : $("mode").value; // VL has no per-line boxes to place
   setStatus(
     engine === "vl" ? "Đang nhận dạng bằng PaddleOCR-VL… (trên CPU có thể mất vài phút)" : "Đang nhận dạng… (lần đầu có thể mất vài chục giây)",
     "loading",
@@ -44,7 +59,8 @@ async function upload(file) {
   form.append("file", file);
   const crop = $("crop").checked;
   try {
-    const res = await fetch(`/api/extract?crop=${crop}&engine=${engine}`, { method: "POST", body: form });
+    const query = new URLSearchParams({ crop, engine, mode, document: documentType });
+    const res = await fetch(`/api/extract?${query}`, { method: "POST", body: form });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
     render(body);
@@ -69,15 +85,17 @@ function render(r) {
   $("preview").src = r.processed_image;
   const svg = $("overlay");
   svg.setAttribute("viewBox", `0 0 ${r.ocr.image_size.join(" ")}`);
-  svg.innerHTML = boxesSvg(r.ocr.lines);
-  svg.style.display = $("showBoxes").checked ? "" : "none";
+  svg.innerHTML = `<g id="boxesLayer">${boxesSvg(r.ocr.lines)}</g><g id="zonesLayer">${zonesSvg(r.layout)}</g>`;
+  syncLayers();
+  const reg = r.layout?.registration;
   $("meta").textContent =
     `ID ${r.request_id} · ảnh gốc ${r.ocr.original_size.join("×")} · ` +
     `${r.ocr.model} · ${r.ocr.lines.length} dòng · độ tin cậy TB ${r.mean_ocr_confidence ?? "–"} · ` +
     `${r.ocr.card_cropped ? "đã cắt & nắn thẻ" : "không tìm thấy viền thẻ, dùng ảnh gốc"} · ` +
+    (reg ? `khớp mẫu thẻ: ${reg.anchors_used} mốc, sai số ${reg.residual ?? "–"}, xoay ${reg.rotation_deg}° · ` : "") +
     `tiền xử lý ${t.preprocess}ms, OCR ${t.ocr}ms`;
 
-  $("tab-fields").innerHTML = fieldsTableHtml(r.fields);
+  $("tab-fields").innerHTML = fieldsTableHtml(r.fields, r.document_type);
 
   // JSON (without the base64 image, which is only for display)
   const { processed_image, ...clean } = r;
@@ -110,10 +128,25 @@ function boxesSvg(lines) {
     .join("");
 }
 
-function fieldsTableHtml(fields) {
+function zonesSvg(layout) {
+  return Object.entries(layout?.zones_px || {})
+    .map(([key, quad]) => `<polygon class="zone" points="${quad.map((p) => p.join(",")).join(" ")}"><title>${esc(key)}</title></polygon>`)
+    .join("");
+}
+
+function syncLayers() {
+  const boxes = document.getElementById("boxesLayer"), zones = document.getElementById("zonesLayer");
+  if (boxes) boxes.style.display = $("showBoxes").checked ? "" : "none";
+  if (zones) zones.style.display = $("showZones").checked ? "" : "none";
+}
+
+const SOURCE_TAGS = { zone: "theo vị trí", "label+zone": "nhãn + vị trí khớp" };
+
+function fieldsTableHtml(fields, documentType) {
+  const names = FIELD_LABELS[documentType] || {};
   const rows = Object.entries(fields)
     .map(([key, f]) => {
-      const [vi, jp] = FIELD_LABELS[key] || [key, ""];
+      const [vi, jp] = names[key] || [key, ""];
       const conf = f.confidence == null ? "" : ` ${(f.confidence * 100).toFixed(0)}%`;
       const notPrinted = !f.value && !f.needs_review;
       const badge = notPrinted
@@ -126,7 +159,8 @@ function fieldsTableHtml(fields) {
         : `<span class="val empty">${notPrinted ? "không có trên mẫu thẻ này" : "không đọc được"}</span>`;
       const raw = f.raw && f.raw !== f.value ? `<span class="raw">OCR: ${esc(f.raw)}</span>` : "";
       const notes = f.notes.map((n) => `<span class="note">${esc(n)}</span>`).join("");
-      return `<tr><th>${esc(vi)}<span class="jp">${esc(jp)}</span></th><td>${val}${badge}${raw}${notes}</td></tr>`;
+      const source = SOURCE_TAGS[f.source] && f.value ? `<span class="badge plain">${SOURCE_TAGS[f.source]}</span>` : "";
+      return `<tr><th>${esc(vi)}<span class="jp">${esc(jp)}</span></th><td>${val}${badge}${source}${raw}${notes}</td></tr>`;
     })
     .join("");
   return `<table>${rows}</table>`;
@@ -145,6 +179,8 @@ const DESIGN_LABELS = {
   "2012": "Mẫu cũ (đến 13/06/2026)",
   "2026": "Mẫu mới (từ 14/06/2026)",
   specified_2026: "特定在留カード — chưa hỗ trợ",
+  "2024": "Thẻ căn cước mẫu 2024",
+  cccd_2021: "Căn cước công dân gắn chip (2021)",
 };
 
 // "Mẫu chính thức" view: precomputed results on the ISA specimen cards (scripts/build_demo.py)
@@ -199,7 +235,7 @@ function sampleCardHtml(s) {
           <button class="rerun" data-rerun="${esc(s.image)}">Chạy lại trực tiếp</button>
           ${warningsHtml(r)}
         </div>
-        <div>${fieldsTableHtml(r.fields)}</div>
+        <div>${fieldsTableHtml(r.fields, r.document_type)}</div>
       </div>
     </article>`;
 }
@@ -248,9 +284,27 @@ $("downloadJson").addEventListener("click", () => {
   URL.revokeObjectURL(a.href);
 });
 
-$("showBoxes").addEventListener("change", (e) => {
-  $("overlay").style.display = e.target.checked ? "" : "none";
+$("showBoxes").addEventListener("change", syncLayers);
+$("showZones").addEventListener("change", syncLayers);
+// Document type: remembered per browser; engine=vl is only offered for the Japanese card.
+function syncEngine() {
+  const vlAllowed = VL_DOCUMENTS.includes($("document").value);
+  $("engine").querySelector('option[value="vl"]').disabled = !vlAllowed;
+  if (!vlAllowed) $("engine").value = "ppocr";
+  $("mode").disabled = $("engine").value === "vl";
+}
+try {
+  const saved = localStorage.getItem("document");
+  if (saved && $("document").querySelector(`option[value="${saved}"]`)) $("document").value = saved;
+} catch {}
+$("document").addEventListener("change", () => {
+  syncEngine();
+  try {
+    localStorage.setItem("document", $("document").value);
+  } catch {}
 });
+$("engine").addEventListener("change", syncEngine);
+syncEngine();
 
 // Upload: click, drag & drop, paste
 fileInput.addEventListener("change", () => {
@@ -276,4 +330,83 @@ drop.addEventListener("drop", (e) => upload(e.dataTransfer.files[0]));
 window.addEventListener("paste", (e) => {
   const item = [...e.clipboardData.items].find((i) => i.type.startsWith("image/"));
   if (item) upload(item.getAsFile());
+});
+
+// Camera. getUserMedia only works in a secure context (https or localhost): a phone opening the demo at
+// http://<LAN IP> falls back to <input capture>, which opens the phone's own camera app (better photos anyway).
+const camera = { stream: null, facing: "environment" };
+
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+    $("cameraInput").click();
+    return;
+  }
+  try {
+    await startStream();
+    $("camera").hidden = false;
+  } catch (err) {
+    setStatus(`Không mở được camera (${err.name || err.message}), chuyển sang chọn ảnh.`, "error");
+    $("cameraInput").click();
+  }
+}
+
+async function startStream() {
+  stopStream();
+  camera.stream = await navigator.mediaDevices.getUserMedia({
+    // ask for the highest resolution: text on the card needs ≥ 1500px across the card
+    video: { facingMode: { ideal: camera.facing }, width: { ideal: 3840 }, height: { ideal: 2160 } },
+    audio: false,
+  });
+  $("cameraVideo").srcObject = camera.stream;
+}
+
+function stopStream() {
+  camera.stream?.getTracks().forEach((t) => t.stop());
+  camera.stream = null;
+}
+
+function closeCamera() {
+  stopStream();
+  $("cameraVideo").srcObject = null;
+  $("camera").hidden = true;
+}
+
+function takePhoto() {
+  const video = $("cameraVideo");
+  if (!video.videoWidth) return;
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+  canvas.toBlob(
+    (blob) => {
+      closeCamera();
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      upload(new File([blob], `camera_${stamp}.jpg`, { type: "image/jpeg" }));
+    },
+    "image/jpeg",
+    0.92,
+  );
+}
+
+$("cameraBtn").addEventListener("click", openCamera);
+$("cameraShot").addEventListener("click", takePhoto);
+$("cameraClose").addEventListener("click", closeCamera);
+$("cameraSwitch").addEventListener("click", async () => {
+  camera.facing = camera.facing === "environment" ? "user" : "environment";
+  try {
+    await startStream();
+  } catch (err) {
+    setStatus(`Không đổi được camera: ${err.name || err.message}`, "error");
+  }
+});
+$("camera").addEventListener("click", (e) => {
+  if (e.target === $("camera")) closeCamera();
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("camera").hidden) closeCamera();
+});
+$("cameraInput").addEventListener("change", () => {
+  upload($("cameraInput").files[0]);
+  $("cameraInput").value = "";
 });

@@ -1,0 +1,110 @@
+{
+ "perspective": {
+  "card_cropped": true,
+  "deskew_deg": 0.0,
+  "lines": 49,
+  "quality": "ok",
+  "fields": {
+   "card_number": {
+    "value": "AB12345678CD",
+    "needs_review": false
+   },
+   "name": {
+    "value": "TURNER ELIZABETH",
+    "needs_review": false
+   },
+   "date_of_birth": {
+    "value": "1985-12-31",
+    "needs_review": false
+   },
+   "nationality": {
+    "value": "米国",
+    "needs_review": true
+   },
+   "status_of_residence": {
+    "value": "留学",
+    "needs_review": false
+   },
+   "period_of_stay": {
+    "value": "4年3月",
+    "needs_review": false
+   },
+   "valid_until": {
+    "value": "2023-07-01",
+    "needs_review": false
+   }
+  }
+ },
+ "low_contrast_tilt": {
+  "card_cropped": true,
+  "deskew_deg": 0.0,
+  "lines": 47,
+  "quality": "ok",
+  "fields": {
+   "card_number": {
+    "value": "AB12345678CD",
+    "needs_review": false
+   },
+   "name": {
+    "value": "TURNER ELIZABETH",
+    "needs_review": false
+   },
+   "date_of_birth": {
+    "value": "1985-12-31",
+    "needs_review": false
+   },
+   "nationality": {
+    "value": "米国",
+    "needs_review": false
+   },
+   "status_of_residence": {
+    "value": "留学",
+    "needs_review": false
+   },
+   "period_of_stay": {
+    "value": "4年3月",
+    "needs_review": false
+   },
+   "valid_until": {
+    "value": "2023-07-01",
+    "needs_review": false
+   }
+  }
+ },
+ "closeup_tilt": {
+  "card_cropped": false,
+  "deskew_deg": 6.0,
+  "lines": 45,
+  "quality": "ok",
+  "fields": {
+   "card_number": {
+    "value": "BI23456780GO",
+    "needs_review": true
+   },
+   "name": {
+    "value": "TURNER ELIZABETH",
+    "needs_review": false
+   },
+   "date_of_birth": {
+    "value": "1985-12-31",
+    "needs_review": false
+   },
+   "nationality": {
+    "value": "米国",
+    "needs_review": false
+   },
+   "status_of_residence": {
+    "value": "留学",
+    "needs_review": false
+   },
+   "period_of_stay": {
+    "value": "4年3月",
+    "needs_review": false
+   },
+   "valid_until": {
+    "value": "2023-07-01",
+    "needs_review": false
+   }
+  }
+ }
+}

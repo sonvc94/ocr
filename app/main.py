@@ -1,4 +1,4 @@
-"""FastAPI app: POST an image of a residence card, get the extracted fields back as JSON.
+"""FastAPI app: POST an image of a card (Japanese residence card or Vietnamese identity card), get the fields back as JSON.
 
 Uploaded images are processed in memory. Logging of personal data (full results, images) is
 opt-in, see config.py and request_log.py.
@@ -19,13 +19,16 @@ from PIL import UnidentifiedImageError
 from . import config, pipeline, request_log
 from .ocr import ppocr_model, vl_client
 from .preprocess import encode_jpeg, load_image
+from .residence_card.templates import TEMPLATES as JP_TEMPLATES
+from .vn_id_card.templates import TEMPLATES as VN_TEMPLATES
 
 STATIC_DIR = Path(__file__).parent / "static"
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    ppocr_model.get_ocr()  # load models at startup so the first request is not slow
+    for lang in ppocr_model.MODELS:
+        ppocr_model.get_ocr(lang)  # load models at startup so the first request is not slow
     yield
 
 
@@ -38,7 +41,7 @@ class RevalidatedStaticFiles(StaticFiles):
         return response
 
 
-app = FastAPI(title="Residence Card OCR Demo", lifespan=lifespan)
+app = FastAPI(title="Card OCR Demo", lifespan=lifespan)
 app.mount("/static", RevalidatedStaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -52,9 +55,15 @@ def index():
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/api/zones")
+def zones(document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENTS)})$")):
+    """Card templates (label/value positions) used by mode=zone/hybrid; drawn on static/design.html."""
+    return JP_TEMPLATES if document == "jp_residence" else VN_TEMPLATES
+
+
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "model": ppocr_model.MODEL_NAME, "vl_url": config.VL_URL}
+    return {"status": "ok", "models": {lang: ppocr_model.model_name(lang) for lang in ppocr_model.MODELS}, "vl_url": config.VL_URL}
 
 
 @app.post("/api/extract")
@@ -63,7 +72,13 @@ def extract(
     crop: bool = True,
     include_image: bool = True,
     engine: str = Query("ppocr", pattern=f"^({'|'.join(pipeline.ENGINES)})$"),
+    mode: str = Query("label", pattern=f"^({'|'.join(pipeline.MODES)})$"),
+    document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENTS)})$"),
 ):
+    if engine == "vl" and mode != "label":
+        raise HTTPException(422, "mode=zone/hybrid chỉ hỗ trợ engine=ppocr (VL không trả khung theo từng dòng).")
+    if engine == "vl" and document not in pipeline.VL_DOCUMENTS:
+        raise HTTPException(422, "engine=vl chỉ hỗ trợ thẻ cư trú Nhật (document=jp_residence).")
     data = file.file.read(config.MAX_UPLOAD_BYTES + 1)
     if len(data) > config.MAX_UPLOAD_BYTES:
         raise HTTPException(413, "Ảnh vượt quá 10MB.")
@@ -75,7 +90,7 @@ def extract(
     request_log.save_image(request_id, "original", data, request_log.upload_suffix(file.filename))
 
     try:
-        result, processed = pipeline.extract(img, original_size, crop=crop, engine=engine)
+        result, processed = pipeline.extract(img, original_size, crop=crop, engine=engine, mode=mode, document=document)
     except vl_client.VlUnavailable as exc:
         raise HTTPException(503, str(exc))
     result["request_id"] = request_id

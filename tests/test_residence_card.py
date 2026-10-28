@@ -106,6 +106,14 @@ def test_work_restriction_snapped_to_official_value():
     assert f["needs_review"]
 
 
+def test_permission_type_containing_status_label():
+    # "在留資格" inside 在留資格取得許可 is a value, not the status label
+    card = [line("在留資格取得許可(東京出入国在留管理局長)", 300, 708, w=800) if "更新許可" in b.text else b for b in CARD]
+    v = values(parse_residence_card(card))
+    assert v["permission_type"] == "在留資格取得許可"
+    assert v["status_of_residence"] == "技術・人文知識・国際業務"
+
+
 def test_not_a_residence_card():
     r = parse_residence_card([line("運転免許証", 0, 0)])
     assert r["warnings"]

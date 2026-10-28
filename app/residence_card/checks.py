@@ -5,8 +5,9 @@ from __future__ import annotations
 import re
 from datetime import date
 
-from .fields import Field
-from .layout import Document
+from ..card_core import quality
+from ..card_core.field import Field
+from ..card_core.layout import Document
 from .patterns import FIELD_LABELS
 
 
@@ -20,25 +21,7 @@ def card_design(text: str, labels: dict) -> str:
 
 
 def assess_quality(doc: Document, jp_labels_found: int) -> dict:
-    """Flag images where OCR clearly struggled, so results are not trusted silently."""
-    reasons = []
-    expected = len(FIELD_LABELS)
-    mean = doc.mean_score
-    low_share = sum(s < 0.8 for s in doc.ocr_scores) / len(doc.ocr_scores) if doc.ocr_scores else 1.0
-    if mean is None:
-        reasons.append("Không đọc được chữ nào trên ảnh.")
-    elif mean < 0.9:
-        reasons.append(f"Độ tin cậy OCR trung bình thấp ({mean:.2f}).")
-    if doc.ocr_scores and low_share > 0.2:
-        reasons.append(f"{low_share:.0%} dòng chữ có độ tin cậy dưới 0.8.")
-    if jp_labels_found < expected * 0.6:
-        reasons.append(f"Chỉ nhận ra {jp_labels_found}/{expected} nhãn tiếng Nhật.")
-    return {
-        "level": "low" if reasons else "ok",
-        "reasons": reasons,
-        "advice": "Nên chụp/scan lại rõ hơn (chiều ngang thẻ ≥ 1500px, không lóa, không watermark) hoặc nhập tay các trường cần kiểm tra."
-        if reasons else None,
-    }
+    return quality.assess_quality(doc, jp_labels_found, len(FIELD_LABELS), "tiếng Nhật")
 
 
 def cross_check(fields: dict[str, Field]) -> list[str]:

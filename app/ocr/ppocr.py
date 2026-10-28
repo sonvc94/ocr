@@ -1,4 +1,4 @@
-"""PP-OCRv5 engine: run the shared pipeline and straighten tilted text lines."""
+"""PP-OCR engine: run the shared pipeline for the card's language and straighten tilted text lines."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ DESKEW_MIN_DEG = 1.0
 DESKEW_MAX_DEG = 30.0
 
 
-def run_ocr(img: np.ndarray) -> tuple[list[OcrBox], np.ndarray, float]:
+def run_ocr(img: np.ndarray, lang: str = "ja") -> tuple[list[OcrBox], np.ndarray, float]:
     """Return the text boxes, the image they refer to (rotated if orientation/tilt was corrected)
     and the tilt in degrees that was straightened (0 if none).
 
@@ -24,7 +24,7 @@ def run_ocr(img: np.ndarray) -> tuple[list[OcrBox], np.ndarray, float]:
     """
     lines: list[tuple[str, float, np.ndarray]] = []
     used = img
-    for res in predict(img):
+    for res in predict(img, lang):
         doc_pre = res.get("doc_preprocessor_res")
         if doc_pre is not None and doc_pre.get("output_img") is not None:
             used = doc_pre["output_img"]

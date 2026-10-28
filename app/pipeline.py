@@ -8,11 +8,18 @@ import numpy as np
 
 from .ocr import vl_client
 from .ocr.ppocr import run_ocr
-from .ocr.ppocr_model import MODEL_NAME
+from .ocr.ppocr_model import model_name
 from .preprocess import normalize_card
-from .residence_card import parse_residence_card
+from .residence_card import MODES, parse_residence_card
+from .vn_id_card import parse_vn_id_card
 
 ENGINES = ("ppocr", "vl")
+# document type -> (parser, OCR language). Both are ID-1 cards, so cropping/flattening is shared.
+DOCUMENTS = {
+    "jp_residence": (parse_residence_card, "ja"),
+    "vn_id": (parse_vn_id_card, "vi"),
+}
+VL_DOCUMENTS = ("jp_residence",)  # vl_service runs the Japanese PaddleOCR-VL setup only
 
 VL_WARNING = (
     "PaddleOCR-VL không trả độ tin cậy theo dòng: needs_review chỉ dựa vào định dạng và kiểm tra chéo, "
@@ -20,11 +27,24 @@ VL_WARNING = (
 )
 
 
-def extract(img: np.ndarray, original_size: tuple[int, int], crop: bool = True, engine: str = "ppocr") -> tuple[dict, np.ndarray]:
+def extract(
+    img: np.ndarray,
+    original_size: tuple[int, int],
+    crop: bool = True,
+    engine: str = "ppocr",
+    mode: str = "label",
+    document: str = "jp_residence",
+) -> tuple[dict, np.ndarray]:
     """Return the result and the processed image its boxes refer to.
 
+    mode=zone/hybrid need per-line boxes, which only engine=ppocr gives (VL boxes are whole blocks).
     Raises vl_client.VlUnavailable when engine="vl" and the VL service cannot be reached.
     """
+    if engine == "vl" and mode != "label":
+        raise ValueError("mode=zone/hybrid chỉ hỗ trợ engine=ppocr.")
+    if engine == "vl" and document not in VL_DOCUMENTS:
+        raise ValueError("engine=vl chỉ hỗ trợ thẻ cư trú Nhật.")
+    parse, lang = DOCUMENTS[document]
     t0 = time.perf_counter()
     cropped = False
     if crop:
@@ -36,16 +56,16 @@ def extract(img: np.ndarray, original_size: tuple[int, int], crop: bool = True, 
         boxes, vl_resp = vl_client.run_vl(img)
         model = vl_resp["model"]
     else:
-        boxes, img, deskew = run_ocr(img)
-        model = MODEL_NAME
+        boxes, img, deskew = run_ocr(img, lang)
+        model = model_name(lang)
     t2 = time.perf_counter()
-    result = parse_residence_card(boxes)
+    h, w = img.shape[:2]
+    result = parse(boxes, page_size=(w, h), cropped=cropped, mode=mode)
     t3 = time.perf_counter()
     if vl_resp is not None:
         result["warnings"].append(VL_WARNING)
         result["vl_blocks"] = vl_resp["blocks"]
 
-    h, w = img.shape[:2]
     result["ocr"] = {
         "engine": engine,
         "model": model,

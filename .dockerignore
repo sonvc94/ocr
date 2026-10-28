@@ -9,3 +9,5 @@ samples
 logs
 # separate service with its own Dockerfile (and a >1GB .venv when run natively)
 vl_service
+# OCR of a real person's card (personal data), local only
+tests/fixtures/vn_real2021_*

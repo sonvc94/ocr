@@ -31,6 +31,26 @@ def test_find_card_low_contrast_tilted():
     assert cv2.contourArea(rect) < 1.25 * cv2.contourArea(corners)
 
 
+def test_find_card_small_on_wood_grain():
+    # Pale cyan card filling ~18% of a portrait phone photo on orange wood grain: the grain breaks the
+    # card outline at full resolution and touches it (log 6337de321938, fd35bf5e2740, 27/10/2026)
+    rng = np.random.default_rng(0)
+    h, w = 2000, 1125
+    xs = np.arange(w)[None, :] + 25 * np.sin(np.arange(h)[:, None] / 90)
+    grain = (np.sin(xs / 6) * 25 + rng.normal(0, 12, (h, w))).astype(np.float32)
+    img = np.clip(np.stack([60 + grain, 120 + grain, 180 + grain], axis=2), 0, 255).astype(np.uint8)
+    cw = 780
+    corners = cv2.boxPoints(((560, 900), (cw, cw / CARD_ASPECT), -2)).astype(np.float32)
+    cv2.fillPoly(img, [corners.astype(np.int32)], (215, 225, 170))
+    for i in range(6):
+        cv2.rectangle(img, (420, 760 + i * 50), (850, 780 + i * 50), (40, 40, 40), -1)
+    rect = find_card(img)
+    assert rect is not None
+    for c in corners:
+        assert cv2.pointPolygonTest(rect.reshape(-1, 1, 2), tuple(float(v) for v in c), True) > -15
+    assert cv2.contourArea(rect) < 1.15 * cv2.contourArea(corners)
+
+
 def test_tight_crop_is_left_alone():
     # A card that already fills the image (web scan) has no edge to find: no inner panel must be cropped
     img, _ = card_photo(0, card_gray=230, bg_gray=230)

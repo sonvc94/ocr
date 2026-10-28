@@ -3,16 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Residence Card OCR</title>
+  <title>Card OCR</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <header>
-    <h1>在留カード OCR <span class="tag">demo</span></h1>
-    <p class="sub">Upload ảnh mặt trước thẻ cư trú → trích xuất thông tin dạng JSON.</p>
+    <h1>OCR thẻ: 在留カード · Thẻ căn cước <span class="tag">demo</span></h1>
+    <p class="sub">Upload hoặc chụp ảnh mặt trước thẻ cư trú Nhật / thẻ căn cước Việt Nam → trích xuất thông tin dạng JSON.</p>
     <nav id="views" class="views">
       <button data-view="upload" class="active">Thử ảnh của bạn</button>
       <button data-view="samples">Mẫu chính thức (ISA)</button>
+      <a class="view-link" href="/static/how-it-works.html">Cách hoạt động</a>
+      <a class="view-link next" href="/static/design.html">Thiết kế (review)</a>
     </nav>
   </header>
 
@@ -29,13 +31,31 @@
           <small>JPEG / PNG / WEBP, tối đa 10MB</small>
         </div>
       </label>
+      <div class="capture-row">
+        <button id="cameraBtn" type="button">📷 Chụp ảnh bằng camera</button>
+        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+      </div>
       <div class="options">
+        <label>Giấy tờ
+          <select id="document">
+            <option value="jp_residence">Thẻ cư trú Nhật (在留カード)</option>
+            <option value="vn_id">Thẻ căn cước / CCCD VN</option>
+          </select>
+        </label>
         <label><input id="crop" type="checkbox" checked> Tự cắt &amp; nắn thẻ</label>
         <label><input id="showBoxes" type="checkbox" checked> Hiện khung OCR</label>
+        <label><input id="showZones" type="checkbox" checked> Hiện ô template</label>
+        <label>Cách đọc
+          <select id="mode" title="Theo nhãn: tìm nhãn in sẵn rồi lấy chữ phía sau. Theo vị trí: lấy chữ trong ô cố định của mẫu thẻ.">
+            <option value="label">Theo nhãn</option>
+            <option value="hybrid">Nhãn + vị trí</option>
+            <option value="zone">Chỉ theo vị trí</option>
+          </select>
+        </label>
         <label>Engine
           <select id="engine">
-            <option value="ppocr">PP-OCRv5 (nhanh)</option>
-            <option value="vl">PaddleOCR-VL (chậm, thử nghiệm)</option>
+            <option value="ppocr">PP-OCR (nhanh)</option>
+            <option value="vl">PaddleOCR-VL (chậm, thử nghiệm, chỉ thẻ Nhật)</option>
           </select>
         </label>
       </div>
@@ -67,6 +87,21 @@
       <div id="tab-lines" class="tab" hidden></div>
     </section>
   </main>
+
+  <div id="camera" class="camera" hidden>
+    <div class="camera-box">
+      <div class="camera-stage">
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <div class="card-guide"></div>
+      </div>
+      <p class="camera-hint">Đặt thẻ vừa khung, đủ sáng, tránh lóa và bóng tay.</p>
+      <div class="camera-actions">
+        <button id="cameraShot" type="button" class="primary">Chụp</button>
+        <button id="cameraSwitch" type="button">Đổi camera</button>
+        <button id="cameraClose" type="button">Huỷ</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/app.js"></script>
 </body>

@@ -5,8 +5,6 @@ from __future__ import annotations
 import re
 import unicodedata
 
-CONFIDENCE_THRESHOLD = 0.85
-
 # Label patterns, in the order they appear on the card. Negative lookaheads keep a label
 # from matching inside a value (e.g. "在留期間更新許可" is a permission type, not a label).
 LABELS: dict[str, str] = {
@@ -16,7 +14,7 @@ LABELS: dict[str, str] = {
     "sex": r"性\s*別",
     "nationality": r"国\s*籍\s*[・･·]?\s*(?:地\s*[域城])?|国\s*[・･·]\s*地\s*[域城]",
     "address": r"住\s*居\s*地",
-    "status_of_residence": r"在\s*留\s*資\s*格(?!に基づく|変更)",
+    "status_of_residence": r"在\s*留\s*資\s*格(?!に基づく|変更|取得)",
     "work_restriction": r"就\s*労\s*制\s*限\s*(?:の\s*)?有\s*無",
     "period_of_stay": r"在\s*留\s*期\s*間(?!更新)\s*(?:[(（]\s*満\s*了\s*日\s*[)）])?",
     "permission_type": r"許\s*可\s*(?:の\s*)?種\s*類",
