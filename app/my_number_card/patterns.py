@@ -15,9 +15,7 @@ LABELS = {
 }
 VALID_MARKER_RE = LABELS["valid_marker"]
 
-# "2035年 3月31日まで有効" (Western year); era years accepted too in case a card prints one.
-ERAS = {"令和": 2018, "平成": 1988, "昭和": 1925}
-DATE_RE = re.compile(r"(令\s*和|平\s*成|昭\s*和)?\s*(\d{1,4}|元)\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+# The expiry is "2035年 3月31日まで有効" (card_core.pattern_card.JP_DATE_RE, era years accepted too).
 # The birth date line ends with 生 ("昭和60年 1月 1日生").
 BIRTH_SUFFIX_RE = re.compile(r"\s*生")
 # Issuer: head of the municipality, printed as "○○市長" / "○○区長" / "○○町長" / "○○村長". The lookahead keeps

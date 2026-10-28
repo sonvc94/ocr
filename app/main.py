@@ -1,4 +1,5 @@
-"""FastAPI app: POST an image of a card (Japanese residence card, My Number card or Vietnamese identity card), get the fields back as JSON.
+"""FastAPI app: POST an image of a Japanese document (residence card, My Number card, driver's license, passport,
+health insurance card) or a Vietnamese identity card, get the fields back as JSON.
 
 Uploaded images are processed in memory. Logging of personal data (full results, images) is
 opt-in, see config.py and request_log.py.
@@ -58,7 +59,7 @@ def index():
 @app.get("/api/zones")
 def zones(document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENTS)})$")):
     """Card templates (label/value positions) used by mode=zone/hybrid; drawn on static/design.html."""
-    return {"jp_residence": JP_TEMPLATES, "vn_id": VN_TEMPLATES}.get(document, {})  # My Number: no template
+    return {"jp_residence": JP_TEMPLATES, "vn_id": VN_TEMPLATES}.get(document, {})  # pattern-only documents: no template
 
 
 @app.get("/api/health")
@@ -83,7 +84,7 @@ def extract(
     if engine == "vl" and mode != "label":
         raise HTTPException(422, "mode=zone/hybrid chỉ hỗ trợ engine=ppocr (VL không trả khung theo từng dòng).")
     if engine == "vl" and document not in pipeline.VL_DOCUMENTS:
-        raise HTTPException(422, "engine=vl chỉ hỗ trợ thẻ Nhật (document=jp_residence|jp_mynumber).")
+        raise HTTPException(422, f"engine=vl chỉ hỗ trợ giấy tờ Nhật (document={'|'.join(pipeline.VL_DOCUMENTS)}).")
     data = file.file.read(config.MAX_UPLOAD_BYTES + 1)
     if len(data) > config.MAX_UPLOAD_BYTES:
         raise HTTPException(413, "Ảnh vượt quá 10MB.")

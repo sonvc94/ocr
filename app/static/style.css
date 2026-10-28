@@ -175,6 +175,7 @@ a { color: var(--accent); }
 .schematic > text { fill: #1c2430; }
 .schematic > text.lbl { fill: #5d6b7c; }
 .schematic > text.title { font-weight: 700; }
+.schematic > text.mrz { font-family: "OCR B", "Courier New", monospace; letter-spacing: 2px; }
 .doc-fields td.num { width: 28px; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
 .doc-fields th { width: 40%; }
 .doc-fields th code { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }

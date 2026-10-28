@@ -1,6 +1,7 @@
-# OCR thẻ demo: 在留カード · Thẻ căn cước VN
+# OCR giấy tờ demo: giấy tờ Nhật · Thẻ căn cước VN
 
-Website demo: upload hoặc chụp bằng camera ảnh **mặt trước thẻ cư trú Nhật (在留カード)** hoặc **thẻ căn cước Việt Nam
+Website demo: upload hoặc chụp bằng camera ảnh **giấy tờ Nhật** (thẻ cư trú 在留カード, My Number, bằng lái, hộ chiếu, thẻ bảo hiểm y tế;
+mỗi loại chỉ lấy vài trường, xem tab "Giấy tờ hỗ trợ") hoặc **thẻ căn cước Việt Nam
 (mẫu 2024 và Căn cước công dân gắn chip 2021)** → trích xuất thông tin ra JSON. OCR bằng PaddleOCR (PP-OCRv5 cho tiếng Nhật, PP-OCRv6 cho
 nhận dạng tiếng Việt có dấu), trích xuất trường bằng rule. Chạy hoàn toàn local, ảnh chỉ xử lý trong bộ nhớ.
 
@@ -38,7 +39,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `document` | `jp_residence` | `jp_residence` (thẻ cư trú Nhật), `jp_mynumber` (thẻ My Number 個人番号カード, chỉ lấy nơi cấp + hạn thẻ) hoặc `vn_id` (thẻ căn cước VN mẫu 2024 / CCCD gắn chip 2021, chỉ `engine=ppocr`, `vl` trả 422) |
+| `document` | `jp_residence` | Giấy tờ Nhật: `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書). Việt Nam: `vn_id` (thẻ căn cước 2024 / CCCD gắn chip 2021, chỉ `engine=ppocr`, `vl` trả 422) |
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc, thẻ nhỏ trên nền vân gỗ) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 | `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
@@ -51,8 +52,7 @@ Mỗi trường trả về dạng:
 ```
 
 Các trường (`document_type` cho biết loại thẻ):
-- `residence_card`: `card_number, name, date_of_birth, sex, nationality, address, status_of_residence, work_restriction,
-  period_of_stay, expiration_date, permission_type, issuing_authority, permission_date, issue_date, valid_until`.
+- `residence_card`: chỉ `card_number` (các mục khác vẫn đọc nội bộ để nhận mẫu thẻ, không trả về).
 - `vn_id_card`: `id_number, full_name, date_of_birth, sex` (`Nam`/`Nữ`), `nationality, date_of_expiry` (ngày ISO hoặc
   `"Không thời hạn"`). `card_design`: `2024` (thẻ căn cước từ 01/07/2024) hoặc `cccd_2021` (Căn cước công dân gắn chip), tự nhận
   theo tiêu đề thẻ. `cccd_2021` có thêm `place_of_origin` (quê quán), `place_of_residence` (nơi thường trú). Mẫu 2024: nơi cư trú,
@@ -60,10 +60,14 @@ Các trường (`document_type` cho biết loại thẻ):
   luôn `needs_review`.
 - `my_number_card` (mặt trước thẻ My Number): chỉ `issuer` (nơi cấp, in dạng `○○市長`/`○○区長`/`○○町長`/`○○村長`) và
   `expiry_date` (ngày ISO, từ dòng `YYYY年 M月 D日まで有効`). Không có template → `zone`/`hybrid` chạy như `label` kèm warning.
+- `driver_license`: `license_number` (12 chữ số trong `第…号`), `issue_date` (ngày sau `交付`, ISO).
+- `passport` (hộ chiếu Nhật): `passport_number` (2 chữ + 7 số; kiểm bằng check digit của dòng MRZ khi đọc được).
+- `health_insurance_card`: `card_type` (tên thẻ như in, vd `国民健康保険被保険者証`), `insurer_name` (`保険者名称` / `交付者名`), `issue_date` (ISO).
+- Các loại `my_number_card`, `driver_license`, `passport`, `health_insurance_card` đọc theo nhãn/mẫu chữ, chưa có template: `zone`/`hybrid` chạy như `label` kèm warning.
 
 `source`: `label` (theo nhãn), `zone` (theo vị trí), `label+zone` (hai cách cho cùng kết quả). `layout` cho biết mode,
 kết quả khớp mẫu thẻ vào ảnh (`registration`: số mốc dùng, sai số, góc xoay; `null` nếu không khớp được → chỉ dùng kết quả
-theo nhãn kèm warning) và `zones_px` (ô giá trị đã chiếu vào ảnh, để vẽ). `GET /api/zones?document=jp_residence|vn_id` trả
+theo nhãn kèm warning) và `zones_px` (ô giá trị đã chiếu vào ảnh, để vẽ). `GET /api/zones?document=jp_residence|vn_id` (loại khác trả `{}`) trả
 template toạ độ của các mẫu thẻ. `GET /api/health` liệt kê model OCR theo ngôn ngữ và thiết bị (`device`: `cpu`/`gpu:0`).
 
 `ocr.card_cropped` cho biết đã tìm được viền thẻ để cắt hay chưa; `ocr.deskew_deg` là góc nghiêng (độ) đã được nắn
@@ -97,6 +101,9 @@ app/
     checks.py          Nhận mẫu thẻ, đánh giá chất lượng ảnh, kiểm tra chéo ngày tháng
     parser.py          parse_residence_card: ghép các bước trên
   my_number_card/      Thẻ My Number: chỉ nơi cấp + hạn thẻ, đọc theo mẫu chữ (patterns, parser)
+  driver_license/      Bằng lái Nhật: số + ngày cấp
+  passport/            Hộ chiếu Nhật: số hộ chiếu (MRZ + số in)
+  health_insurance/    Thẻ bảo hiểm y tế Nhật: loại thẻ, đơn vị bảo hiểm, ngày cấp
   vn_id_card/          Thẻ căn cước VN 2024 + CCCD gắn chip 2021: cùng cấu trúc (patterns, fields, checks, parser, data/templates.json)
   static/              Giao diện (HTML/JS thuần); how-it-works.html giải thích cách hoạt động cho người không chuyên; tab "Giấy tờ hỗ trợ" (docs.js) liệt kê giấy tờ Nhật + trường lấy được kèm hình minh hoạ
 scripts/               make_sample / make_sample_vn (sinh thẻ giả), build_demo (kết quả mẫu cho UI), build_howto (ảnh minh hoạ),

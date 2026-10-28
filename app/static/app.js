@@ -30,8 +30,25 @@ const MY_NUMBER_FIELDS = {
   issuer: ["Nơi cấp", "○○市長"],
   expiry_date: ["Có hiệu lực đến", "まで有効"],
 };
-const FIELD_LABELS = { residence_card: RESIDENCE_FIELDS, vn_id_card: VN_ID_FIELDS, my_number_card: MY_NUMBER_FIELDS };
-const VL_DOCUMENTS = ["jp_residence", "jp_mynumber"]; // vl_service only runs the Japanese setup
+const DRIVER_LICENSE_FIELDS = {
+  license_number: ["Số bằng lái", "番号 第…号"],
+  issue_date: ["Ngày cấp", "交付"],
+};
+const PASSPORT_FIELDS = { passport_number: ["Số hộ chiếu", "旅券番号 / Passport No."] };
+const HEALTH_INSURANCE_FIELDS = {
+  card_type: ["Loại thẻ", "…被保険者証 / 資格確認書"],
+  insurer_name: ["Đơn vị bảo hiểm (nơi cấp)", "保険者名称 / 交付者名"],
+  issue_date: ["Ngày cấp", "交付年月日"],
+};
+const FIELD_LABELS = {
+  residence_card: RESIDENCE_FIELDS,
+  vn_id_card: VN_ID_FIELDS,
+  my_number_card: MY_NUMBER_FIELDS,
+  driver_license: DRIVER_LICENSE_FIELDS,
+  passport: PASSPORT_FIELDS,
+  health_insurance_card: HEALTH_INSURANCE_FIELDS,
+};
+const VL_DOCUMENTS = ["jp_residence", "jp_mynumber", "jp_driver_license", "jp_passport", "jp_health_insurance"]; // vl_service only runs the Japanese setup
 const LOW_SCORE = 0.85;
 
 const $ = (id) => document.getElementById(id);

@@ -15,13 +15,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Tổng quan
 
-Demo OCR mặt trước thẻ: thẻ cư trú Nhật (在留カード, `document=jp_residence`), thẻ My Number (個人番号カード, `document=jp_mynumber`,
-chỉ nơi cấp + hạn thẻ) và thẻ căn cước Việt Nam mẫu 2024 / CCCD gắn chip 2021 (`document=vn_id`). Upload hoặc chụp camera → JSON các trường. Chạy hoàn toàn local.
+Demo OCR mặt trước giấy tờ. Nhật (người dùng chỉ cần vài trường mỗi loại, 28/10/2026): thẻ cư trú (在留カード, `document=jp_residence`,
+chỉ số thẻ), My Number (個人番号カード, `jp_mynumber`, nơi cấp + hạn thẻ), bằng lái (運転免許証, `jp_driver_license`, số 12 chữ số + ngày cấp),
+hộ chiếu Nhật (旅券, `jp_passport`, số hộ chiếu), thẻ bảo hiểm y tế (健康保険証/資格確認書, `jp_health_insurance`, loại thẻ + đơn vị bảo hiểm
++ ngày cấp). Việt Nam: thẻ căn cước mẫu 2024 / CCCD gắn chip 2021 (`document=vn_id`, đủ trường). Upload hoặc chụp camera → JSON các trường. Chạy hoàn toàn local.
 
 ```
-Upload → preprocess (EXIF rotate, tìm viền thẻ ID-1, cắt + nắn phẳng: dùng chung cho 2 loại thẻ)
+Upload → preprocess (EXIF rotate, tìm viền thẻ ID-1, cắt + nắn phẳng: dùng chung, trừ hộ chiếu)
        → OCR (engine=ppocr: PP-OCR theo ngôn ngữ thẻ ja|vi | engine=vl: PaddleOCR-VL qua vl_service, chỉ thẻ Nhật)
-       → parse_residence_card | parse_my_number_card | parse_vn_id_card (theo nhãn, + theo vị trí nếu mode=zone|hybrid)
+       → parser theo loại giấy tờ (theo nhãn/mẫu chữ, + theo vị trí nếu mode=zone|hybrid và loại đó có template)
        → kiểm tra chéo + đánh giá chất lượng → JSON
 ```
 
@@ -60,15 +62,17 @@ Biến môi trường: `OCR_MODEL_SIZE`, `OCR_ENABLE_MKLDNN` (mặc định 1, c
 ## Kiến trúc & logic
 
 ### app/ (FastAPI, Docker linux/amd64, cổng 8000)
-Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `ocr/*`, `residence_card/*`, `my_number_card/*`, `vn_id_card/*`) → `card_core/*`;
+Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `ocr/*`, package từng giấy tờ: `residence_card`, `my_number_card`,
+`driver_license`, `passport`, `health_insurance`, `vn_id_card`) → `card_core/*`;
 `ocr/types.OcrBox` là định dạng dòng OCR dùng chung (parser không import engine, engine không import parser; 2 package thẻ
 không import nhau).
 - `main.py`: chỉ lo HTTP: `/`, `/api/health` (model theo ngôn ngữ, `device` thật đang chạy), `/api/zones?document=` (template toạ độ),
-  `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=jp_residence|jp_mynumber|vn_id`
-  (`vl` + `zone`/`hybrid` → 422; `vl` + `vn_id` → 422). `/api/zones?document=jp_mynumber` trả `{}` (không có template). Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
+  `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=<khoá của pipeline.DOCUMENTS>`
+  (`vl` + `zone`/`hybrid` → 422; `vl` + `vn_id` → 422). `/api/zones` chỉ có template cho `jp_residence`, `vn_id`; loại khác trả `{}`. Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
   Lúc khởi động nạp sẵn mọi model trong `ppocr_model.MODELS` (2 model ~740MB RAM tổng).
-- `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại thẻ → (hàm parse, ngôn ngữ OCR);
-  `VL_DOCUMENTS` = loại thẻ cho phép engine=vl (`jp_residence`, `jp_mynumber`). Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
+- `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại giấy tờ → (hàm parse, ngôn ngữ OCR, có cắt thẻ ID-1 không).
+  `jp_residence` = `partial(parse_residence_card, keys=("card_number",))`. `jp_passport` không cắt: trang hộ chiếu là ID-3, chụp mở
+  2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. `VL_DOCUMENTS` = mọi khoá `jp_*`. Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
   deskew_deg, size, lines) + `timing_ms` (preprocess không tính bước decode ảnh). API và `scripts/build_demo.py` cùng dùng.
 - `config.py`: biến môi trường của app (log, VL). Riêng `OCR_MODEL_SIZE`/`OCR_ENABLE_MKLDNN`/`OCR_DEVICE` đọc trong `ocr/ppocr_model.py`.
 - `request_log.py`: log 1 dòng tóm tắt/request (không có PII, có `doc=` loại thẻ). `LOG_RESPONSES=1` → ghi full kết quả vào `logs/extract.jsonl`;
@@ -129,21 +133,40 @@ không import nhau).
     issuing_authority, permission_date, issue_date — chỉ lưu trong chip IC → trả `null`, `needs_review=false`),
     `specified_2026` (特定在留カード gộp My Number, chưa hỗ trợ → mọi trường `needs_review`). `cross_check`: ngày sinh < ngày cấp, hết hạn ≥ ngày cấp…
   - `templates.py`: template mẫu `2012`, `2026` (ảnh mẫu ISA).
-  - `parser.py`: ghép các bước + `ZONE_SPEC`; `mode=zone|hybrid` gọi registration/zones sau khi biết `card_design` (không có template cho `specified_2026`),
+  - `parser.py` `parse_residence_card(..., keys=None)`: `keys` giới hạn trường trả về (API chỉ trả `card_number` theo yêu cầu 28/10/2026);
+    vẫn đọc mọi trường (nhận mẫu thẻ, chất lượng cần chúng) nhưng bỏ `cross_check` giữa các ngày và lọc `zones_px`. Test gọi không có `keys` (đủ trường).
+    Ghép các bước + `ZONE_SPEC`; `mode=zone|hybrid` gọi registration/zones sau khi biết `card_design` (không có template cho `specified_2026`),
     kết quả ở `layout` (`mode`, `registration`, `zones_px`); `Field.source` = `label|zone|label+zone`. Fallback nhãn tiếng Anh (`_anchor_labels`: `NAME`, `DATE OF BIRTH`, `ADDRESS`…) →
     liệt kê ở `labels_from_english_anchor`, luôn `needs_review`.
   - `needs_review` khi: không đọc được, conf < 0.85, đã tự sửa, fail kiểm tra chéo, hoặc quality `low` (trường kanji).
 - `my_number_card/` (thẻ My Number mặt trước, `document_type=my_number_card`, OCR `ja`): API `parse_my_number_card`. Người dùng chỉ cần
   2 trường (28/10/2026): `issuer` và `expiry_date`; các trường khác trên thẻ (họ tên, địa chỉ, ngày sinh, giới tính) cố ý không lấy.
   Cả 2 không có nhãn in sẵn → đọc theo mẫu chữ trên text phẳng (`Document`), không template, `mode=zone|hybrid` chạy như `label` + warning.
+  Dùng chung `card_core/pattern_card.py` với 3 package bên dưới: `JP_DATE_RE`/`jp_date` (năm 西暦 hoặc 令和/平成/昭和/元年, cả dạng `R5. 4. 1`;
+  năm < 1900 không có niên hiệu → `None`), `build_result` (cùng dạng kết quả parser có template; quality `low` → mọi trường có giá trị `needs_review`;
+  `mode≠label` → warning không có template).
   - `expiry_date`: ngày (`DATE_RE`, nhận cả 和暦 令和/平成/昭和) có `まで有効` ngay sau (cách ≤ 3 ký tự, khác box/dòng cũng được); bỏ ngày
     có `生` theo sau (ngày sinh). Không đọc được `まで有効` → lấy ngày muộn nhất, `needs_review` + note.
   - `issuer`: `ISSUER_RE` = cụm kanji/kana kết thúc `市|区|町|村` + `長`, không được có kanji ngay sau (loại địa chỉ kiểu `千代田区長田町`);
-    lấy match **cuối** vì nơi cấp in dưới địa chỉ. Quality `low` → `issuer` `needs_review`.
+    lấy match **cuối** vì nơi cấp in dưới địa chỉ.
   - Quality: đếm 4 chữ in (`個人番号カード`, `氏名`, `住所`, `まで有効`). `cross_check`: thẻ hết hạn → warning; hạn > 10 năm kể từ hôm nay
     → `needs_review` (thẻ cấp tối đa 10 năm).
   - Chưa thử trên ảnh thẻ thật (không có mẫu trong `samples/`), test chỉ dùng box viết tay (`tests/test_my_number_card.py`).
     Layout thẻ mẫu mới 2026 (次期マイナンバーカード) chưa kiểm; tiêu đề nhận cả `マイナンバーカード`.
+- `driver_license/` (運転免許証, `document_type=driver_license`): `license_number` = 12 chữ số trong `第 … 号` (OCR tách số bằng dấu cách,
+  sửa O/I/S… → số, có sửa thì note); không thấy `第…号` → dãy 12 chữ số bất kỳ + note. Kiểm tra: 2 số đầu ∈ `COMMISSION_CODES` (mã 公安委員会;
+  Hokkaido 10–14). Không kiểm check digit (số thứ 11) vì chưa xác minh được thuật toán. `issue_date` = ngày ngay sau `交付` (≤ 4 ký tự);
+  không đọc được `交付` → nếu chỉ còn đúng 1 ngày không phải ngày sinh (`…生`) / hạn (`…まで有効`) thì lấy + note. Ngày cấp tương lai → `needs_review`.
+- `passport/` (hộ chiếu Nhật, chỉ hộ chiếu Nhật theo yêu cầu, `document_type=passport`): `passport_number` từ 2 nguồn: MRZ dòng 2
+  (`MRZ2_RE` = 9 ký tự + check digit + `JPN`, bỏ khoảng trắng, `«`/`く`… → `<`) và số in sau nhãn `旅券番号/Passport No.` (≤ 40 ký tự, thường ở
+  dòng dưới; bỏ dòng MRZ). Sửa ký tự theo vị trí (2 chữ + 7 số). MRZ đúng check digit (ICAO 7-3-1) → lấy MRZ; số in khác → note. MRZ sai check
+  → lấy số in (MRZ khác → note); chỉ có MRZ sai → lấy + note. Không đúng dạng `[A-Z]{2}\d{7}` → `needs_review`. Không thấy 日本国/JAPAN → warning.
+- `health_insurance/` (`document_type=health_insurance_card`): `card_type` = tiêu đề (`SCHEMES` 国民健康保険/健康保険/後期高齢者医療/船員保険/共済組合
+  + `KINDS` 被保険者証/被扶養者証/資格確認書/組合員証/加入者証, bỏ khoảng trắng; thiếu phần loại bảo hiểm → note). Thẻ ngừng cấp từ 02/12/2024,
+  資格確認書 thay thế cùng bố cục nên nhận cả hai. `insurer_name` = phần còn lại của dòng sau `保険者名称` / `交付者名` / `保険者` (không phải
+  `被保険者`, `保険者番号`…), cắt ở nhãn kế tiếp, bỏ dấu `印`; dòng trống → dòng dưới. `issue_date` = ngày sau `交付年月日`/`発行年月日` (≤ 6 ký tự),
+  không có → ngày ngay trước `交付` (協会けんぽ in `令和 5年 4月 1日交付`). Ngày cấp tương lai → `needs_review`.
+- Cả 3 package trên: chưa thử trên ảnh thật (không có mẫu), test bằng box viết tay (`tests/test_jp_documents.py`).
 - `vn_id_card/` (thẻ VN mặt trước, `document_type=vn_id_card`): API `parse_vn_id_card`. 2 mẫu (`patterns.DESIGNS`), chọn bằng
   `parser.card_design`: tiêu đề "CĂN CƯỚC CÔNG DÂN"/"Citizen Identity" → `cccd_2021` (CCCD gắn chip, 2021–06/2024, còn hiệu lực tới
   hạn in trên thẻ; mẫu mã vạch 2016 cùng tiêu đề nhưng chưa thử), còn lại → `2024` (thẻ căn cước từ 01/07/2024). Mỗi mẫu có nhãn
@@ -190,7 +213,8 @@ không import nhau).
   độ phân giải tối đa, khung ngắm tỉ lệ ID-1, chụp ra JPEG rồi đi qua cùng luồng upload); chỉ chạy ở secure context (https/localhost) →
   mở từ điện thoại qua `http://<IP LAN>` thì rơi về `<input capture="environment">` (mở app camera của máy). View "Giấy tờ hỗ trợ" (`docs.js`, nạp trước `app.js`): chỉ giấy tờ Nhật; mỗi mẫu = ảnh thẻ mẫu ISA đã nắn
   (`static/samples`) + ô giá trị đánh số lấy từ `/api/zones` (cùng template mode zone), bảng trường (danh mục viết tay trong `docs.js`,
-  ví dụ = `samples/results.json`); My Number vẽ sơ đồ SVG (vị trí ước lượng). **Thêm/bớt trường hoặc loại thẻ Nhật thì sửa `DOCS` trong `docs.js`.**
+  ví dụ = `samples/results.json`); giấy tờ không có ảnh mẫu (My Number, bằng lái, hộ chiếu, bảo hiểm) vẽ sơ đồ SVG từ `SCHEMATICS`
+  (vị trí ước lượng, chữ giả). **Thêm/bớt trường hoặc loại giấy tờ Nhật thì sửa `DOCS` (+ `SCHEMATICS`) trong `docs.js` và `FIELD_LABELS` trong `app.js`.**
   `main.py` gắn `?v=mtime` cho `app.js`, `docs.js`, `style.css`. `how-it-works.html` (link "Cách hoạt động"): giải thích luồng xử lý cho người non-tech,
   ảnh minh hoạ thật trong `static/howto/` sinh bằng `scripts/build_howto.py` → **đổi luồng preprocess/OCR/parse thì cập nhật
   trang này** và chạy lại script. `design.html` (link "Thiết kế (review)" ở trang chủ) (vẽ template từ `/api/zones`): bản thiết kế đoán giá trị theo
@@ -224,6 +248,8 @@ không import nhau).
 - `test_vn_id_card.py`: thẻ VN trên box viết tay + fixture OCR thật (nhãn bị đọc méo, ư/ơ thành u'/o', ngày hết hạn dưới ảnh,
   zone/hybrid trên ảnh chụp, kiểm tra chéo số định danh/hạn thẻ); `cccd_2021` trên box viết tay (người giả) và fixture OCR ảnh thật
   `tests/fixtures/vn_real2021_*.json` (git-ignore, chứa PII; test chỉ kiểm cấu trúc + kiểm tra chéo, không ghi giá trị thật; tự skip khi thiếu).
+- `test_jp_documents.py`: bằng lái, hộ chiếu (MRZ đúng/sai check digit, `«` thay `<`), bảo hiểm (協会けんぽ, 国保 với `R5. 4. 1`, 資格確認書),
+  `jp_residence` chỉ trả `card_number`, hộ chiếu không cắt thẻ.
 - `test_my_number_card.py`: thẻ My Number trên box viết tay (nơi cấp kana, địa chỉ chứa `区長`, thiếu `まで有効`, kiểm tra chéo hạn thẻ).
 - `test_zones.py`: mode zone/hybrid trên fixture (trùng mode nhãn, thẻ nhỏ + nghiêng, mất nhãn, < 3 mốc, crop).
 - `test_preprocess.py`: ảnh tổng hợp bằng OpenCV (thẻ nhạt màu nghiêng, bị che góc; ảnh đã cắt sát) + `estimate_skew`/`rotate`.

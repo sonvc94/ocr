@@ -49,10 +49,17 @@ KANJI_FIELDS = ("nationality", "address", "status_of_residence", "work_restricti
 
 
 def parse_residence_card(
-    boxes: list[OcrBox], page_size: tuple[int, int] | None = None, cropped: bool = False, mode: str = "label"
+    boxes: list[OcrBox],
+    page_size: tuple[int, int] | None = None,
+    cropped: bool = False,
+    mode: str = "label",
+    keys: tuple[str, ...] | None = None,
 ) -> dict:
     """`page_size` (width, height) is the image the boxes refer to; `cropped` tells whether it is the card
-    already cut out and flattened. Both only matter for mode=zone/hybrid."""
+    already cut out and flattened. Both only matter for mode=zone/hybrid.
+
+    `keys` limits the fields returned (the API asks for `card_number` only, see pipeline.DOCUMENTS); every field
+    is still read, the card design and quality depend on them, but the cross-checks between dates are skipped."""
     boxes = drop_non_text(boxes)
     ocr_boxes = boxes
     ocr_doc = Document(boxes, normalize)
@@ -111,7 +118,11 @@ def parse_residence_card(
         for key in KANJI_FIELDS:
             fields[key].needs_review = True
 
-    warnings += cross_check(fields)
+    if keys is None:
+        warnings += cross_check(fields)
+    else:
+        fields = {k: fields[k] for k in keys}
+        layout["zones_px"] = {k: v for k, v in layout["zones_px"].items() if k in keys}
 
     return {
         "document_type": "residence_card",
