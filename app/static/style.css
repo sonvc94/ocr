@@ -182,6 +182,7 @@ a { color: var(--accent); }
 .guide { max-width: 1000px; margin: 0 auto; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; font-size: 15px; line-height: 1.65; }
 @media (max-width: 900px) { .guide { padding: 16px; } }
 .guide h2 { font-size: 19px; margin: 32px 0 8px; padding-top: 8px; border-top: 1px solid var(--border); scroll-margin-top: 12px; }
+.guide h3 { font-size: 16px; margin: 20px 0 4px; }
 .guide .lead { font-size: 16px; margin-top: 0; }
 .guide ul, .guide ol { padding-left: 22px; }
 .guide li { margin: 4px 0; }

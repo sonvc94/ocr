@@ -29,7 +29,7 @@
         Mọi bước chạy trên máy nội bộ, ảnh chỉ xử lý trong bộ nhớ.</p>
 
       <nav class="guide-toc">
-        <a href="#g-flow">Sơ đồ</a><a href="#g-input">1. Đầu vào</a><a href="#g-size">2. Ảnh lớn, ảnh nhỏ</a>
+        <a href="#g-flow">Sơ đồ</a><a href="#g-input">1. Đầu vào</a><a href="#g-size">2. Đổi cỡ ảnh</a>
         <a href="#g-rotate">3. Xoay ảnh</a><a href="#g-crop">4. Tìm và cắt viền</a><a href="#g-ocr">5. Đọc chữ</a>
         <a href="#g-detect">6. Nhận diện loại</a><a href="#g-label">7. Theo nhãn</a><a href="#g-zone">8. Theo vị trí</a>
         <a href="#g-check">9. Kiểm tra</a><a href="#g-output">10. Kết quả</a><a href="#g-limits">Giới hạn</a>
@@ -60,27 +60,69 @@
         <li>API: <code>POST /api/extract?document=auto&amp;mode=label|zone|hybrid&amp;engine=ppocr|vl&amp;crop=true</code>.</li>
       </ul>
 
-      <h2 id="g-size">2. Ảnh lớn, ảnh nhỏ</h2>
-      <p>Ảnh đến từ nhiều nguồn: ảnh điện thoại 4000px trở lên, ảnh scan, hay ảnh mẫu cắt từ trang web chỉ vài trăm px. Kích thước được
-        đưa về khoảng cố định ở nhiều chỗ để mọi bước sau làm việc với chữ có cỡ gần giống nhau:</p>
+      <h2 id="g-size">2. Ảnh lớn, ảnh nhỏ: đổi cỡ ảnh</h2>
+      <p>Ảnh đến từ nhiều nguồn: ảnh điện thoại 4000px trở lên, ảnh scan, hay ảnh mẫu cắt từ trang web chỉ vài trăm px. Ảnh bị đổi cỡ ở
+        6 chỗ: 4 chỗ trong <code>app/preprocess.py</code> và 2 chỗ bên trong PaddleOCR.</p>
       <table class="guide-table">
-        <tr><th>Bước</th><th>Xử lý</th><th>Vì sao</th></tr>
-        <tr><td>Đọc ảnh</td><td>Cạnh dài &gt; 2000px → thu nhỏ về 2000px. Cạnh dài &lt; 1200px → phóng lên 1600px (nội suy bicubic).
-          Kích thước gốc vẫn ghi trong kết quả (<code>ocr.original_size</code>).</td>
-          <td>Ảnh quá lớn làm OCR chậm mà không thêm độ chính xác. Ảnh quá nhỏ làm mất nét kana và nét mảnh; phóng lên trước giúp đọc lại được một phần.</td></tr>
-        <tr><td>Tìm viền (lần 3)</td><td>Thu ảnh về 600px và làm mờ trước khi tìm cạnh.</td>
-          <td>Ở cỡ gốc, vân gỗ / vân nền tạo hàng nghìn cạnh nhỏ làm đứt viền thẻ; thu nhỏ làm vân biến mất mà viền thẻ vẫn còn.</td></tr>
-        <tr><td>Cắt + nắn thẻ</td><td>Thẻ luôn được nắn về đúng <strong>1600×1009px</strong> (tỉ lệ thẻ ID-1, 85.6×54mm),
-          dù trong ảnh gốc thẻ to hay nhỏ.</td>
-          <td>OCR luôn thấy chữ cùng cỡ; vị trí các ô trên thẻ trùng với bản đồ mẫu.</td></tr>
-        <tr><td>Bản đồ vị trí (template)</td><td>Toạ độ ghi theo tỉ lệ 0–1 của thẻ, sai số đo theo phần trăm chiều rộng thẻ (≤ 2%).
-          Thẻ phải chiếm ≥ 20% chiều ngang ảnh.</td>
-          <td>Không phụ thuộc độ phân giải; thẻ quá nhỏ trong khung thì vị trí không đủ tin cậy.</td></tr>
-        <tr><td>Đánh giá chất lượng</td><td>Độ tin cậy OCR thấp → khuyến nghị chụp lại với chiều ngang thẻ ≥ 1500px.</td>
-          <td>Phóng to không tạo ra chi tiết đã mất.</td></tr>
+        <tr><th>#</th><th>Ở đâu</th><th>Đổi thành</th><th>Cách nội suy</th><th>Ảnh hưởng kết quả</th></tr>
+        <tr><td>1</td><td>Đọc ảnh</td><td>Cạnh dài về 1200–2000px</td><td>Thu: <code>INTER_AREA</code>; phóng: bicubic</td><td>Có: quyết định độ chi tiết còn lại</td></tr>
+        <tr><td>2</td><td>Tìm viền lần 3</td><td>Cạnh dài 600px</td><td><code>INTER_AREA</code></td><td>Không: chỉ để tìm 4 góc</td></tr>
+        <tr><td>3</td><td>Nắn thẻ</td><td>Đúng 1600×1009px</td><td>Bilinear</td><td>Có</td></tr>
+        <tr><td>4</td><td>Xoay thẳng 1–30°</td><td>Khung to ra cho vừa ảnh xoay, chữ giữ nguyên cỡ</td><td>Bicubic</td><td>Gần như không</td></tr>
+        <tr><td>5</td><td>PaddleOCR: tìm dòng chữ</td><td>Gần như giữ nguyên (bội số 32, tối đa 4000px)</td><td></td><td>Chữ quá nhỏ thì bị bỏ sót</td></tr>
+        <tr><td>6</td><td>PaddleOCR: đọc chữ</td><td>Mỗi dòng chữ kéo về cao 48px</td><td></td><td>Lý do của các con số ở bước 1 và 3</td></tr>
       </table>
-      <p class="note">Ví dụ giới hạn: ảnh mẫu bằng lái chỉ 338px. Sau khi phóng lên, số bằng lái vẫn đọc đúng, nhưng chữ nhỏ <code>交付</code>
-        bị đọc thành <code>节</code> và mất niên hiệu của ngày cấp, nên ngày cấp không lấy được.</p>
+
+      <h3>Bên trong PaddleOCR (bước 5–6)</h3>
+      <ul>
+        <li><strong>Tìm dòng chữ</strong> chạy trên cả ảnh, gần như ở đúng cỡ đưa vào (chỉ phóng khi cạnh ngắn &lt; 64px, thu khi cạnh dài &gt; 4000px).
+          Chữ phải đủ to mới được nhận là một dòng; chữ quá nhỏ bị bỏ sót, 2 dòng sát nhau dễ bị gộp.</li>
+        <li><strong>Đọc chữ</strong> cắt từng dòng và kéo về <strong>cao đúng 48px</strong>. Chữ cao 15px phải phóng hơn 3 lần, phóng từ ảnh nhoè thì vẫn nhoè;
+          chữ cao 40–60px gần cỡ model quen nên đọc tốt nhất; chữ to hơn cũng bị thu về 48px, không lợi gì.</li>
+      </ul>
+      <p>Vì vậy mục tiêu của các bước đổi cỡ phía trước là đưa chữ trên thẻ về khoảng <strong>20–60px</strong> trước khi vào OCR.</p>
+
+      <h3>Nắn thẻ về 1600×1009 (bước 3)</h3>
+      <p>Thẻ ID-1 rộng 85.6mm, nên 1600px ≈ <strong>18.7 px/mm</strong>: chữ in thường cao khoảng 2.5mm → khoảng 47px (đúng cỡ OCR đọc tốt), chữ in nhỏ
+        khoảng 1.2mm → khoảng 22px (vẫn đọc được). Mọi thẻ sau khi nắn có cùng kích thước, nên bản đồ vị trí dùng chung một hệ toạ độ và chữ to nhỏ
+        như nhau dù thẻ trong ảnh gốc to hay nhỏ.</p>
+      <p class="note">Độ chi tiết thật của thẻ là <strong>chiều rộng thẻ trong ảnh sau bước 1</strong>, không phải 1600. Thẻ chỉ rộng 900px thì bước nắn
+        phóng lên ×1.78 bằng nội suy: chữ to hơn nhưng không nét hơn.</p>
+
+      <h3>Chuẩn hoá khi đọc ảnh (bước 1)</h3>
+<pre>cạnh dài &gt; 2000px   → thu về 2000px    (INTER_AREA: mỗi điểm mới = trung bình vùng cũ, không răng cưa / vân sọc)
+cạnh dài 1200–2000  → giữ nguyên
+cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 điểm xung quanh, nét mượt)</pre>
+      <ul>
+        <li><strong>Chặn trên ở 2000</strong>: tìm dòng chữ chạy trên cả ảnh, thời gian tăng theo số điểm ảnh. 4032×3024 (12 triệu điểm) so với
+          2000×1500 (3 triệu) tốn khoảng 4 lần thời gian, mà trên CPU một lần OCR đã 7–10 giây. Phần chi tiết vượt quá 1600px trên thẻ đằng nào
+          cũng bị bỏ ở bước 3.</li>
+        <li><strong>Phóng ảnh nhỏ lên 1600</strong>: ảnh 509px thì thẻ chỉ khoảng 6 px/mm, chữ nhỏ cao khoảng 7px. Bước tìm dòng chữ hay bỏ sót những
+          dòng như vậy, nét 1px của kana dính vào nhau. Phóng bằng bicubic trước khi OCR làm nét dày và mượt hơn nên tìm được nhiều dòng hơn.
+          Phóng không tạo ra thông tin mới: nét đã mất trong ảnh gốc thì vẫn mất.</li>
+        <li><strong>Ngưỡng 1200, đích 1600</strong>: ảnh trên 1200px chữ đã gần đủ to, phóng thêm chỉ tốn thời gian; khi đã phải phóng thì phóng
+          thẳng lên 1600, bằng chiều rộng thẻ chuẩn.</li>
+        <li>Kích thước gốc vẫn ghi trong kết quả (<code>ocr.original_size</code>) để biết kết quả xấu có phải do ảnh quá nhỏ; mọi toạ độ trả về
+          (khung chữ, ô template) tính trên ảnh đã xử lý (<code>ocr.image_size</code>).</li>
+      </ul>
+
+      <h3>Tìm viền ở 600px (bước 2)</h3>
+      <p>Chỉ lần thử 3 (nền có vân) thu ảnh về 600px để vân nền biến mất trước khi tìm cạnh; ảnh nhỏ chỉ dùng để tìm 4 góc, bước nắn vẫn dùng
+        ảnh của bước 1. Chi tiết 3 lần thử ở <a href="#g-crop">mục 4</a>.</p>
+
+      <h3>Ví dụ (số liệu từ các ảnh trong project)</h3>
+      <table class="guide-table">
+        <tr><th>Ảnh</th><th>Sau bước 1</th><th>Cắt viền</th><th>Sau bước 3</th><th>Chữ nhỏ trên thẻ cao khoảng</th></tr>
+        <tr><td>Thẻ cư trú mẫu ISA 509×320 (đã là thẻ)</td><td>1600×1006 (×3.1)</td><td>Không cần</td><td>giữ 1600×1006</td><td>22px nhưng nhoè (nguồn chỉ 7px)</td></tr>
+        <tr><td>Bằng lái mẫu 338×225</td><td>1600×1065 (×4.7)</td><td>Có</td><td>1600×1009</td><td>22px, rất nhoè (nguồn 5px) → <code>交付</code> đọc thành <code>节</code></td></tr>
+        <tr><td>Hộ chiếu mẫu 800×538</td><td>1600×1076 (×2)</td><td>Không (hộ chiếu)</td><td>giữ nguyên</td><td>đủ, đọc đúng cả MRZ</td></tr>
+        <tr><td>Ảnh điện thoại 4032×3024, thẻ chiếm 2/3 chiều ngang (2688px)</td><td>2000×1500 (×0.5), thẻ ≈ 1333px</td><td>Có</td><td>1600×1009 (×1.2)</td><td>≈ 22px, khá nét</td></tr>
+        <tr><td>Ảnh điện thoại 4032×3024, thẻ nhỏ (rộng 1814px)</td><td>thẻ ≈ 900px</td><td>Có (thường lần 3)</td><td>1600×1009 (×1.78)</td><td>≈ 22px nhưng chỉ có chi tiết của ≈ 12px</td></tr>
+      </table>
+      <p class="note"><strong>Điểm yếu hiện tại</strong> (2 dòng cuối): ảnh điện thoại bị thu nhỏ trước, rồi mới cắt thẻ và phóng lên lại. Ở dòng cuối,
+        ảnh gốc có thẻ rộng 1814px, đủ để nắn thẳng xuống 1600 mà không mất gì, nhưng sau bước 1 chỉ còn 900px. Cách sửa: vẫn tìm góc trên ảnh đã
+        thu nhỏ, nhưng nắn thẻ từ ảnh gốc độ phân giải đầy đủ (nhân toạ độ góc theo tỉ lệ); thời gian OCR không đổi. Chưa làm.</p>
+      <p>Khuyến nghị khi chụp: thẻ chiếm khoảng 2/3 khung hình và chiều ngang thẻ trong ảnh ≥ 1500px. Khi độ tin cậy OCR thấp, kết quả kèm lời khuyên chụp lại.</p>
 
       <h2 id="g-rotate">3. Xoay ảnh đúng chiều</h2>
       <ol>
@@ -94,15 +136,57 @@
       </ol>
 
       <h2 id="g-crop">4. Tìm và cắt viền thẻ</h2>
-      <p>Hệ thống tìm tứ giác có tỉ lệ gần thẻ ID-1, rồi nắn phối cảnh về hình chữ nhật 1600×1009. Có 3 lần thử, lần sau chỉ chạy khi lần trước không thấy:</p>
+      <p>Hệ thống tìm tứ giác có tỉ lệ gần thẻ ID-1 (85.6×54mm, dài/rộng ≈ 1.586), rồi nắn phối cảnh về hình chữ nhật 1600×1009.
+        Có <strong>3 lần thử</strong> (hàm <code>find_card</code>): lần sau chỉ chạy khi lần trước không tìm thấy, tìm thấy ở lần nào thì dừng ở lần đó.</p>
+
+      <h3>Lần 1: viền rõ (trường hợp thường gặp nhất)</h3>
+      <p>Dành cho thẻ đặt trên nền tối, trơn, viền thẻ tương phản rõ với nền.</p>
       <ol>
-        <li><strong>Viền rõ</strong> (thẻ trên nền tối): tìm cạnh thường, lấy đường bao ngoài lớn nhất có tỉ lệ lệch &lt; 25%.</li>
-        <li><strong>Viền mờ</strong> (thẻ nhạt trong bao nhựa, ngón tay che một góc): tìm cạnh nhạy hơn, nối các khe hở, dùng bao lồi để
-          bắc qua góc bị che. Điều kiện chặt hơn (tỉ lệ lệch &lt; 15%, 2 cạnh đối diện dài gần bằng nhau, chiếm 30–95% ảnh), rồi nới khung 4%
-          vì bao lồi hay lẹm vào thẻ.</li>
-        <li><strong>Nền có vân</strong> (thẻ nhỏ trên bàn gỗ): thu nhỏ còn 600px, làm mờ, tìm cạnh trên từng kênh màu (thẻ và nền khác nhau
-          về màu nhiều hơn độ sáng), nới khung 2%.</li>
+        <li>Chuyển ảnh sang xám, làm mờ nhẹ (Gauss 5×5) để bớt nhiễu.</li>
+        <li>Tìm cạnh (Canny) với ngưỡng 50/150, mức bình thường: chỉ lấy những chỗ độ sáng đổi rõ rệt. Làm dày cạnh 2 lần để nối các chỗ đứt nhỏ.</li>
+        <li>Lấy <strong>đường bao ngoài cùng</strong> của mỗi vật (<code>RETR_EXTERNAL</code>): bỏ qua chữ và hình bên trong thẻ.</li>
+        <li>Xét 5 đường bao lớn nhất; đường bao nhỏ hơn 20% ảnh thì dừng lần này.</li>
+        <li>Nhận là thẻ nếu xấp xỉ được bằng <strong>4 góc</strong> và tỉ lệ dài/rộng lệch so với thẻ ID-1 <strong>dưới 25%</strong>
+          (ngưỡng rộng vì ảnh chụp xiên làm thẻ hơi méo).</li>
       </ol>
+      <p>Lần này có từ đầu và được giữ nguyên khi thêm 2 lần sau, để những ảnh vốn chạy tốt không bị đổi kết quả.</p>
+
+      <h3>Lần 2: viền mờ (thẻ nhạt, bao nhựa, bị che góc)</h3>
+      <p>Thêm vào sau khi gặp ảnh thật: thẻ nhạt màu trong bao nhựa, viền gần như lẫn vào nền, ngón tay che một góc thẻ.</p>
+      <ol>
+        <li>Tìm cạnh với ngưỡng <strong>thấp hơn (20/60)</strong>, nhạy hơn nên bắt được cả viền mờ.</li>
+        <li><strong>Đóng khe hở</strong> (morphological close 7×7, 2 lần) để nối các đoạn viền bị đứt thành đường liền.</li>
+        <li>Lấy <strong>mọi đường bao</strong> (<code>RETR_LIST</code>), kể cả đường bao nằm trong đường bao khác: bao nhựa hay nền có thể tạo
+          một đường bao lớn bên ngoài, còn viền thẻ thật nằm bên trong.</li>
+        <li>Lấy <strong>bao lồi</strong> (convex hull) của mỗi đường bao, như căng sợi dây thun quanh nó: góc bị ngón tay che làm viền thụt vào,
+          bao lồi bắc thẳng qua nên vẫn ra 4 góc.</li>
+        <li>Vì nhạy nên dễ nhận nhầm, điều kiện <strong>chặt hơn lần 1</strong>: tỉ lệ dài/rộng lệch <strong>dưới 15%</strong>; 2 cạnh đối diện dài
+          lệch nhau không quá 15% (gần hình chữ nhật thật); chiếm <strong>30–95% ảnh</strong>. Dưới 30% để không nhận nhầm một khung nhỏ trên thẻ
+          (ảnh chân dung, ô chữ); trên 95% để không nhận nhầm mép ảnh khi ảnh đã cắt sát thẻ.</li>
+        <li><strong>Nới khung 4%</strong>, vì bao lồi hay lẹm vào trong thẻ.</li>
+      </ol>
+
+      <h3>Lần 3: thẻ nhỏ trên nền có vân</h3>
+      <p>Thêm vào khi thử ảnh thẻ thật chụp trên bàn gỗ, thẻ chỉ chiếm khoảng 18% ảnh. Ở cỡ gốc, mỗi thớ gỗ là một đường cạnh: viền thẻ bị
+        cắt ngang và dính vào nền, đường bao không còn là hình chữ nhật.</p>
+      <ol>
+        <li><strong>Thu ảnh về 600px</strong> (cạnh dài): thớ gỗ rộng vài px bị trung bình hoá thành màu nền đều, viền thẻ (đường thẳng dài,
+          tương phản cao) vẫn còn.</li>
+        <li><strong>Chuyển sang hệ màu Lab</strong> (độ sáng tách khỏi 2 kênh màu): thẻ xanh nhạt và gỗ cam có độ sáng gần nhau nhưng màu rất khác,
+          nên viền nổi rõ trên kênh màu.</li>
+        <li><strong>Làm mờ trung vị 9×9</strong> từng kênh: xoá vân còn sót nhưng giữ cạnh sắc.</li>
+        <li>Tìm cạnh trên cả 3 kênh rồi gộp; thử ngưỡng 30/90 → 20/60 → 50/150, dừng ở cặp đầu tiên tìm được thẻ.</li>
+        <li>Nhận là thẻ nếu chiếm 8–95% ảnh, tỉ lệ lệch dưới 25% và 2 cạnh đối diện lệch không quá 15%.</li>
+        <li>Đưa 4 góc về toạ độ ảnh đầy đủ và <strong>nới khung 2%</strong>. Ảnh 600px chỉ dùng để tìm góc; bước cắt và nắn dùng ảnh đầy đủ
+          độ phân giải nên không mất chữ.</li>
+      </ol>
+
+      <table class="guide-table">
+        <tr><th>Lần</th><th>Dành cho</th><th>Tìm cạnh</th><th>Điều kiện nhận là thẻ</th></tr>
+        <tr><td>1</td><td>Viền rõ, nền tối</td><td>Bình thường (50/150)</td><td>Lỏng: tỉ lệ lệch &lt; 25%, ≥ 20% ảnh</td></tr>
+        <tr><td>2</td><td>Viền mờ, bao nhựa, bị che góc</td><td>Nhạy (20/60) + nối khe hở + bao lồi</td><td>Chặt: lệch &lt; 15%, gần hình chữ nhật, 30–95% ảnh</td></tr>
+        <tr><td>3</td><td>Thẻ nhỏ trên nền có vân</td><td>Ảnh 600px, từng kênh màu Lab</td><td>Lệch &lt; 25%, gần hình chữ nhật, 8–95% ảnh</td></tr>
+      </table>
       <p>Không tìm thấy viền thì dùng nguyên ảnh (<code>ocr.card_cropped=false</code>); vẫn đọc được, nhờ bước nắn nghiêng ở mục 3.
         <strong>Hộ chiếu</strong> không bao giờ được cắt: trang hộ chiếu không phải cỡ thẻ ID-1, và cuốn hộ chiếu mở 2 trang có tỉ lệ gần bằng
         1 trang nên dễ bị cắt nhầm cả cuốn.</p>
@@ -229,7 +313,7 @@
         <li>Chỉ đọc mặt trước; chưa thử trên ảnh chụp giấy tờ thật của My Number, bằng lái, hộ chiếu, bảo hiểm (mới thử trên ảnh mẫu chính thức).</li>
         <li>Chỉ thẻ cư trú có bản đồ vị trí; các loại khác chỉ đọc theo nhãn / mẫu chữ.</li>
         <li>特定在留カード (thẻ cư trú gộp My Number) chưa hỗ trợ: nhận ra được nhưng mọi trường đều bị gắn cờ.</li>
-        <li>Ảnh quá nhỏ hoặc mờ: phóng to không khôi phục được chữ nhỏ (xem mục 2).</li>
+        <li>Ảnh quá nhỏ hoặc mờ: phóng to không khôi phục được chữ nhỏ; thẻ nhỏ trong ảnh điện thoại lớn mất chi tiết vì ảnh bị thu nhỏ trước khi cắt (xem mục 2).</li>
       </ul>
     </article>
   </div>

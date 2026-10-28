@@ -87,6 +87,10 @@ không import nhau).
   Canny trên từng kênh Lab (30/90 → 20/60 → 50/150), `RETR_LIST`, diện tích ≥ 8% ảnh, sai lệch tỉ lệ < 0.25 + 2 cạnh đối lệch ≤ 15%,
   nới 2%. Thêm cho ảnh thẻ chụp trên bàn gỗ (ảnh CCCD VN thật, lúc còn hỗ trợ thẻ VN), thẻ chỉ ~18% ảnh (log `6337de321938`, `fd35bf5e2740`, `87f5cca695f8`, 27/10/2026):
   ở cỡ gốc vân gỗ làm đứt viền thẻ và dính vào viền nên contour ngoài cùng thành hình thang; thẻ xanh vs gỗ cam khác nhau rõ về màu hơn độ sáng.
+- Đổi cỡ ảnh (giải thích đầy đủ ở tab "Luồng xử lý", mục 2): `load_image` cạnh dài > 2000 → 2000 (`INTER_AREA`), < 1200 → 1600 (bicubic);
+  nắn thẻ → 1600×1009 (≈ 18.7 px/mm, chữ nhỏ ≈ 22px); PaddleOCR det giữ cỡ (limit_side_len 64 min, max 4000), rec kéo mỗi dòng về cao 48px.
+  **Điểm yếu đã biết, chưa sửa**: thu nhỏ ở `load_image` xảy ra trước khi cắt thẻ → thẻ nhỏ trong ảnh điện thoại lớn bị mất chi tiết rồi phóng
+  lại (thẻ 1814px → 900px → 1600). Hướng sửa: tìm góc trên ảnh nhỏ, warp từ ảnh gốc đầy đủ.
 - `ocr/ppocr_model.py`: `MODELS` = ngôn ngữ → (det, rec), mỗi ngôn ngữ 1 instance + lock riêng (predictor không thread-safe),
   phân loại hướng 0/90/180/270, `device=OCR_DEVICE` (`device_name()` cho health). `ja`: PP-OCRv5 `OCR_MODEL_SIZE=server|mobile`.
   **Không được import gì từ app**: Dockerfile chỉ copy file này (+ 2 `__init__.py` rỗng) vào layer tải model
