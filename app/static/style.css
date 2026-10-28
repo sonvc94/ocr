@@ -161,3 +161,22 @@ a { color: var(--accent); }
 }
 .camera-hint { margin: 10px 0; color: var(--muted); font-size: 14px; }
 .camera-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* "Giấy tờ hỗ trợ" view (docs.js) */
+.doc-figure svg { overflow: visible; }
+.doc-figure .field-zone rect { fill: color-mix(in srgb, var(--accent) 10%, transparent); stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.doc-figure .field-zone rect.num-bg { fill: var(--accent); stroke: none; }
+.doc-figure .field-zone text { fill: #fff; font-size: 24px; font-weight: 700; text-anchor: middle; }
+.doc-figure .field-zone.hl rect:not(.num-bg) { fill: color-mix(in srgb, var(--warn) 30%, transparent); stroke: var(--warn); stroke-width: 3; }
+.doc-figure .field-zone.hl rect.num-bg { fill: var(--warn); }
+.stage svg.schematic { position: static; height: auto; }
+.schematic rect.card { fill: #eef3f8; stroke: #9fb3c8; stroke-width: 3; }
+.schematic rect.slot { fill: none; stroke: #9fb3c8; stroke-width: 2; stroke-dasharray: 8 6; }
+.schematic > text { fill: #1c2430; }
+.schematic > text.lbl { fill: #5d6b7c; }
+.schematic > text.title { font-weight: 700; }
+.doc-fields td.num { width: 28px; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+.doc-fields th { width: 40%; }
+.doc-fields th code { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.doc-fields tr.absent th, .doc-fields tr.absent td { opacity: 0.6; }
+.doc-fields tr[data-field]:hover { background: color-mix(in srgb, var(--warn) 8%, transparent); }

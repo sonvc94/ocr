@@ -188,7 +188,10 @@ không import nhau).
 - `static/`: UI HTML/JS thuần (chọn loại giấy tờ `document`, nhớ trong localStorage; thẻ VN khoá engine VL; chọn `mode`, vẽ `zones_px`
   khi bật "Hiện ô template"; tên trường hiển thị theo `document_type`). Nút "Chụp ảnh bằng camera": `getUserMedia` (camera sau, xin
   độ phân giải tối đa, khung ngắm tỉ lệ ID-1, chụp ra JPEG rồi đi qua cùng luồng upload); chỉ chạy ở secure context (https/localhost) →
-  mở từ điện thoại qua `http://<IP LAN>` thì rơi về `<input capture="environment">` (mở app camera của máy). `how-it-works.html` (link "Cách hoạt động"): giải thích luồng xử lý cho người non-tech,
+  mở từ điện thoại qua `http://<IP LAN>` thì rơi về `<input capture="environment">` (mở app camera của máy). View "Giấy tờ hỗ trợ" (`docs.js`, nạp trước `app.js`): chỉ giấy tờ Nhật; mỗi mẫu = ảnh thẻ mẫu ISA đã nắn
+  (`static/samples`) + ô giá trị đánh số lấy từ `/api/zones` (cùng template mode zone), bảng trường (danh mục viết tay trong `docs.js`,
+  ví dụ = `samples/results.json`); My Number vẽ sơ đồ SVG (vị trí ước lượng). **Thêm/bớt trường hoặc loại thẻ Nhật thì sửa `DOCS` trong `docs.js`.**
+  `main.py` gắn `?v=mtime` cho `app.js`, `docs.js`, `style.css`. `how-it-works.html` (link "Cách hoạt động"): giải thích luồng xử lý cho người non-tech,
   ảnh minh hoạ thật trong `static/howto/` sinh bằng `scripts/build_howto.py` → **đổi luồng preprocess/OCR/parse thì cập nhật
   trang này** và chạy lại script. `design.html` (link "Thiết kế (review)" ở trang chủ) (vẽ template từ `/api/zones`): bản thiết kế đoán giá trị theo
   danh sách/vị trí: mục ★ (template + mode zone/hybrid) đã triển khai, mục 0–6 **chưa**. Khi làm mục nào thì cập nhật cả trang này lẫn phần kiến trúc ở trên.

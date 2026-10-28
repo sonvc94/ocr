@@ -49,7 +49,7 @@ app.mount("/static", RevalidatedStaticFiles(directory=STATIC_DIR), name="static"
 def index():
     # Version asset URLs by mtime so copies cached before an update (browser or proxy) are bypassed.
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    for name in ("app.js", "style.css"):
+    for name in ("app.js", "docs.js", "style.css"):
         version = int((STATIC_DIR / name).stat().st_mtime)
         html = html.replace(f"/static/{name}\"", f"/static/{name}?v={version}\"")
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})

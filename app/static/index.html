@@ -13,6 +13,7 @@
     <nav id="views" class="views">
       <button data-view="upload" class="active">Thử ảnh của bạn</button>
       <button data-view="samples">Mẫu chính thức (ISA)</button>
+      <button data-view="docs">Giấy tờ hỗ trợ</button>
       <a class="view-link" href="/static/how-it-works.html">Cách hoạt động</a>
       <a class="view-link next" href="/static/design.html">Thiết kế (review)</a>
     </nav>
@@ -20,6 +21,10 @@
 
   <div id="view-samples" class="samples-view" hidden>
     <div id="samples"><p class="status loading">Đang tải…</p></div>
+  </div>
+
+  <div id="view-docs" class="samples-view" hidden>
+    <div id="docs"><p class="status loading">Đang tải…</p></div>
   </div>
 
   <main id="view-upload">
@@ -104,6 +109,7 @@
     </div>
   </div>
 
+  <script src="/static/docs.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

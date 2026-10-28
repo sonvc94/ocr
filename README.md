@@ -98,7 +98,7 @@ app/
     parser.py          parse_residence_card: ghép các bước trên
   my_number_card/      Thẻ My Number: chỉ nơi cấp + hạn thẻ, đọc theo mẫu chữ (patterns, parser)
   vn_id_card/          Thẻ căn cước VN 2024 + CCCD gắn chip 2021: cùng cấu trúc (patterns, fields, checks, parser, data/templates.json)
-  static/              Giao diện (HTML/JS thuần); how-it-works.html giải thích cách hoạt động cho người không chuyên
+  static/              Giao diện (HTML/JS thuần); how-it-works.html giải thích cách hoạt động cho người không chuyên; tab "Giấy tờ hỗ trợ" (docs.js) liệt kê giấy tờ Nhật + trường lấy được kèm hình minh hoạ
 scripts/               make_sample / make_sample_vn (sinh thẻ giả), build_demo (kết quả mẫu cho UI), build_howto (ảnh minh hoạ),
                        download_models, bench_vi_rec (so model OCR tiếng Việt), make_vn_fixtures (OCR → fixture test)
 vl_service/            Service PaddleOCR-VL (chạy native trên host, cổng 8011) + vl_probe.py

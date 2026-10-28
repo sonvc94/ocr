@@ -248,7 +248,9 @@ function showView(view) {
   document.querySelectorAll("#views button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
   $("view-upload").hidden = view !== "upload";
   $("view-samples").hidden = view !== "samples";
+  $("view-docs").hidden = view !== "docs";
   if (view === "samples") loadSamples();
+  if (view === "docs") loadDocs();
   try {
     localStorage.setItem("view", view);
   } catch {}
@@ -258,7 +260,8 @@ $("views").addEventListener("click", (e) => {
   if (e.target.dataset?.view) showView(e.target.dataset.view);
 });
 try {
-  if (localStorage.getItem("view") === "samples") showView("samples");
+  const savedView = localStorage.getItem("view");
+  if (savedView === "samples" || savedView === "docs") showView(savedView);
 } catch {}
 
 function cleanJson() {
