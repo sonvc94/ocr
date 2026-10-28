@@ -169,13 +169,6 @@ a { color: var(--accent); }
 .doc-figure .field-zone text { fill: #fff; font-size: 24px; font-weight: 700; text-anchor: middle; }
 .doc-figure .field-zone.hl rect:not(.num-bg) { fill: color-mix(in srgb, var(--warn) 30%, transparent); stroke: var(--warn); stroke-width: 3; }
 .doc-figure .field-zone.hl rect.num-bg { fill: var(--warn); }
-.stage svg.schematic { position: static; height: auto; }
-.schematic rect.card { fill: #eef3f8; stroke: #9fb3c8; stroke-width: 3; }
-.schematic rect.slot { fill: none; stroke: #9fb3c8; stroke-width: 2; stroke-dasharray: 8 6; }
-.schematic > text { fill: #1c2430; }
-.schematic > text.lbl { fill: #5d6b7c; }
-.schematic > text.title { font-weight: 700; }
-.schematic > text.mrz { font-family: "OCR B", "Courier New", monospace; letter-spacing: 2px; }
 .doc-fields td.num { width: 28px; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
 .doc-fields th { width: 40%; }
 .doc-fields th code { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
