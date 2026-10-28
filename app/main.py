@@ -78,7 +78,7 @@ def extract(
     include_image: bool = True,
     engine: str = Query("ppocr", pattern=f"^({'|'.join(pipeline.ENGINES)})$"),
     mode: str = Query("label", pattern=f"^({'|'.join(pipeline.MODES)})$"),
-    document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENTS)})$"),
+    document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENT_CHOICES)})$"),
 ):
     if engine == "vl" and mode != "label":
         raise HTTPException(422, "mode=zone/hybrid chỉ hỗ trợ engine=ppocr (VL không trả khung theo từng dòng).")
@@ -96,6 +96,9 @@ def extract(
         result, processed = pipeline.extract(img, original_size, crop=crop, engine=engine, mode=mode, document=document)
     except vl_client.VlUnavailable as exc:
         raise HTTPException(503, str(exc))
+    except pipeline.UnknownDocument as exc:
+        request_log.logger.info("extract id=%s document=auto: not detected, scores=%s", request_id, exc.scores)
+        raise HTTPException(422, str(exc))
     result["request_id"] = request_id
     request_log.log_result(request_id, file.filename, result)
 

@@ -43,6 +43,8 @@ const $ = (id) => document.getElementById(id);
 const drop = $("drop"), fileInput = $("file"), statusEl = $("status");
 let lastResult = null;
 let lastFileName = "result";
+let selectedFile = null; // chosen image, sent only when the user presses "Nhận dạng"
+let previewUrl = null;
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -53,9 +55,28 @@ function setStatus(text, cls = "") {
   statusEl.className = "status " + cls;
 }
 
+// Choosing an image (picker, drag & drop, paste, camera) only previews it: the user then picks the document type
+// and options and presses "Nhận dạng". The image stays selected, so options can be changed and the run repeated.
+function selectFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  lastFileName = file.name.replace(/\.[^.]+$/, "") || "result";
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = URL.createObjectURL(file);
+  $("viewer").hidden = false;
+  $("preview").src = previewUrl;
+  $("overlay").innerHTML = "";
+  $("meta").textContent = `Ảnh đã chọn: ${file.name} · ${(file.size / 1024).toFixed(0)} KB (chưa nhận dạng)`;
+  $("warnings").innerHTML = "";
+  $("tabs").hidden = true;
+  $("tab-fields").innerHTML = $("tab-lines").innerHTML = $("json").textContent = "";
+  $("submit").disabled = false;
+  setStatus(`Đã chọn ảnh "${file.name}". Chọn loại giấy tờ, tuỳ chọn rồi bấm "Nhận dạng".`);
+  $("submit").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 async function upload(file) {
   if (!file) return;
-  lastFileName = file.name.replace(/\.[^.]+$/, "") || "result";
   const documentType = $("document").value;
   const engine = $("engine").value;
   const mode = engine === "vl" ? "label" : $("mode").value; // VL has no per-line boxes to place
@@ -64,6 +85,8 @@ async function upload(file) {
     "loading",
   );
   $("warnings").innerHTML = "";
+  $("submit").disabled = true;
+  $("submit").textContent = "Đang nhận dạng…";
   const form = new FormData();
   form.append("file", file);
   const crop = $("crop").checked;
@@ -75,6 +98,9 @@ async function upload(file) {
     render(body);
   } catch (err) {
     setStatus("Lỗi: " + err.message, "error");
+  } finally {
+    $("submit").disabled = false;
+    $("submit").textContent = "Nhận dạng";
   }
 }
 
@@ -85,7 +111,14 @@ function render(r) {
   const fields = Object.values(r.fields);
   const found = fields.filter((f) => f.value).length;
   const review = fields.filter((f) => f.needs_review).length;
-  setStatus(`Xong trong ${(total / 1000).toFixed(1)}s — trích được ${found}/${fields.length} trường, ${review} trường cần kiểm tra lại.`);
+  const det = r.document_detection;
+  const detected = det
+    ? `Tự nhận diện: ${$("document").querySelector(`option[value="${det.detected}"]`)?.textContent || det.detected}` +
+      `${det.confident ? "" : " (không chắc chắn)"} · `
+    : "";
+  setStatus(
+    `${detected}Xong trong ${(total / 1000).toFixed(1)}s — trích được ${found}/${fields.length} trường, ${review} trường cần kiểm tra lại.`,
+  );
 
   $("warnings").innerHTML = warningsHtml(r);
 
@@ -210,7 +243,8 @@ async function loadSamples() {
         showView("upload");
         $("document").value = b.dataset.document;
         syncEngine();
-        upload(new File([blob], b.dataset.rerun.split("/").pop(), { type: blob.type }));
+        selectFile(new File([blob], b.dataset.rerun.split("/").pop(), { type: blob.type }));
+        upload(selectedFile); // the sample already carries its document type: run straight away
       })
     );
   } catch (err) {
@@ -319,7 +353,7 @@ syncEngine();
 
 // Upload: click, drag & drop, paste
 fileInput.addEventListener("change", () => {
-  upload(fileInput.files[0]);
+  selectFile(fileInput.files[0]);
   fileInput.value = ""; // allow re-selecting the same file
 });
 drop.addEventListener("keydown", (e) => {
@@ -337,10 +371,10 @@ drop.addEventListener("keydown", (e) => {
     drop.classList.remove("over");
   })
 );
-drop.addEventListener("drop", (e) => upload(e.dataTransfer.files[0]));
+drop.addEventListener("drop", (e) => selectFile(e.dataTransfer.files[0]));
 window.addEventListener("paste", (e) => {
   const item = [...e.clipboardData.items].find((i) => i.type.startsWith("image/"));
-  if (item) upload(item.getAsFile());
+  if (item) selectFile(item.getAsFile());
 });
 
 // Camera. getUserMedia only works in a secure context (https or localhost): a phone opening the demo at
@@ -393,7 +427,7 @@ function takePhoto() {
     (blob) => {
       closeCamera();
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      upload(new File([blob], `camera_${stamp}.jpg`, { type: "image/jpeg" }));
+      selectFile(new File([blob], `camera_${stamp}.jpg`, { type: "image/jpeg" }));
     },
     "image/jpeg",
     0.92,
@@ -402,6 +436,7 @@ function takePhoto() {
 
 $("cameraBtn").addEventListener("click", openCamera);
 $("cameraShot").addEventListener("click", takePhoto);
+$("submit").addEventListener("click", () => upload(selectedFile));
 $("cameraClose").addEventListener("click", closeCamera);
 $("cameraSwitch").addEventListener("click", async () => {
   camera.facing = camera.facing === "environment" ? "user" : "environment";
@@ -418,6 +453,6 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("camera").hidden) closeCamera();
 });
 $("cameraInput").addEventListener("change", () => {
-  upload($("cameraInput").files[0]);
+  selectFile($("cameraInput").files[0]);
   $("cameraInput").value = "";
 });

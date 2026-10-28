@@ -43,6 +43,7 @@
       <div class="options">
         <label>Giấy tờ
           <select id="document">
+            <option value="auto">Tự nhận diện</option>
             <option value="jp_residence">Thẻ cư trú Nhật (在留カード)</option>
             <option value="jp_mynumber">Thẻ My Number (個人番号カード)</option>
             <option value="jp_driver_license">Bằng lái xe Nhật (運転免許証)</option>
@@ -67,6 +68,7 @@
           </select>
         </label>
       </div>
+      <button id="submit" type="button" class="submit" disabled>Nhận dạng</button>
       <div id="viewer" class="viewer" hidden>
         <div class="stage">
           <img id="preview" alt="Ảnh đã xử lý">

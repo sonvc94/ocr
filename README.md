@@ -3,6 +3,9 @@
 Website demo: upload hoặc chụp bằng camera ảnh **giấy tờ Nhật** (thẻ cư trú 在留カード, My Number, bằng lái, hộ chiếu, thẻ bảo hiểm y tế;
 mỗi loại chỉ lấy vài trường, xem tab "Giấy tờ hỗ trợ") → trích xuất thông tin ra JSON. OCR bằng PaddleOCR (PP-OCRv5), trích xuất trường bằng rule. Chạy hoàn toàn local, ảnh chỉ xử lý trong bộ nhớ.
 
+Chọn/kéo thả/dán ảnh hoặc chụp xong chỉ hiện ảnh xem trước; chọn loại giấy tờ + tuỳ chọn rồi bấm **Nhận dạng** để chạy
+(đổi tuỳ chọn rồi bấm lại được, không cần chọn lại ảnh).
+
 Nút **📷 Chụp ảnh bằng camera**: trên `localhost`/HTTPS mở camera ngay trong trang (có khung ngắm theo tỉ lệ thẻ);
 mở từ điện thoại qua `http://<IP máy>:8000` thì trình duyệt không cho dùng camera trong trang, nút này mở app camera của máy.
 
@@ -37,7 +40,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `document` | `jp_residence` | Giấy tờ Nhật: `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書) |
+| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không nhận ra → 422; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書) |
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc, thẻ nhỏ trên nền vân gỗ) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 | `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
@@ -57,6 +60,9 @@ Các trường (`document_type` cho biết loại thẻ):
 - `passport` (hộ chiếu Nhật): `passport_number` (2 chữ + 7 số; kiểm bằng check digit của dòng MRZ khi đọc được).
 - `health_insurance_card`: `card_type` (tên thẻ như in, vd `国民健康保険被保険者証`), `insurer_name` (`保険者名称` / `交付者名`), `issue_date` (ISO).
 - Các loại `my_number_card`, `driver_license`, `passport`, `health_insurance_card` đọc theo nhãn/mẫu chữ, chưa có template: `zone`/`hybrid` chạy như `label` kèm warning.
+
+Mọi kết quả có `document` (loại đã đọc). Với `document=auto` có thêm `document_detection`: `detected`, `confident`
+(false khi loại thứ hai gần điểm → kèm warning), `scores` theo từng loại.
 
 `source`: `label` (theo nhãn), `zone` (theo vị trí), `label+zone` (hai cách cho cùng kết quả). `layout` cho biết mode,
 kết quả khớp mẫu thẻ vào ảnh (`registration`: số mốc dùng, sai số, góc xoay; `null` nếu không khớp được → chỉ dùng kết quả

@@ -23,6 +23,7 @@ hộ chiếu Nhật (旅券, `jp_passport`, số hộ chiếu), thẻ bảo hi�
 ```
 Upload → preprocess (EXIF rotate, tìm viền thẻ ID-1, cắt + nắn phẳng: dùng chung, trừ hộ chiếu)
        → OCR (engine=ppocr: PP-OCRv5 tiếng Nhật | engine=vl: PaddleOCR-VL qua vl_service)
+       → (document=auto: detect.py chọn loại giấy tờ từ chữ OCR)
        → parser theo loại giấy tờ (theo nhãn/mẫu chữ, + theo vị trí nếu mode=zone|hybrid và loại đó có template)
        → kiểm tra chéo + đánh giá chất lượng → JSON
 ```
@@ -59,13 +60,21 @@ Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `
 `ocr/types.OcrBox` là định dạng dòng OCR dùng chung (parser không import engine, engine không import parser; 2 package thẻ
 không import nhau).
 - `main.py`: chỉ lo HTTP: `/`, `/api/health` (model theo ngôn ngữ, `device` thật đang chạy), `/api/zones?document=` (template toạ độ),
-  `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=<khoá của pipeline.DOCUMENTS>`
-  (`vl` + `zone`/`hybrid` → 422). `/api/zones` chỉ có template cho `jp_residence`; loại khác trả `{}`. Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
+  `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=auto|<khoá của pipeline.DOCUMENTS>`
+  (`vl` + `zone`/`hybrid` → 422; `auto` không nhận ra → 422 + log điểm). API mặc định vẫn `jp_residence` (không đổi hành vi client cũ), UI mặc định `auto`. `/api/zones` chỉ có template cho `jp_residence`; loại khác trả `{}`. Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
   Lúc khởi động nạp sẵn mọi model trong `ppocr_model.MODELS` (hiện chỉ `ja`).
 - `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại giấy tờ → (hàm parse, ngôn ngữ OCR, có cắt thẻ ID-1 không).
   `jp_residence` = `partial(parse_residence_card, keys=("card_number",))`. `jp_passport` không cắt: trang hộ chiếu là ID-3, chụp mở
-  2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. Mọi loại đều cho phép engine=vl. Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
+  2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. Mọi loại đều cho phép engine=vl. Mọi kết quả có `document` (loại đã parse).
+  `document=auto` (`DOCUMENT_CHOICES`): cắt thẻ ID-1 → OCR `ja` (`_ocr`) → `detect.detect_document` → nếu ra hộ chiếu mà ảnh đã bị cắt thì OCR lại
+  ảnh gốc (như `jp_passport`; 2 lần OCR) → parse; thêm `document_detection` (`detected`, `confident`, `scores`), không chắc → warning;
+  không loại nào đạt ngưỡng → `UnknownDocument`. Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
   deskew_deg, size, lines) + `timing_ms` (preprocess không tính bước decode ảnh). API và `scripts/build_demo.py` cùng dùng.
+- `detect.py`: `MARKERS` = loại giấy tờ → [(regex chữ in, điểm)]: tiêu đề 3 (在留カード, 個人番号カード, 運転免許証, 公安委員会, MRZ `P<JPN` / dòng 2,
+  …被保険者証/資格確認書), nhãn riêng 1–2 (在留資格, 電子証明書, 第…号, 旅券番号, 保険者番号…). Bỏ chữ in trên nhiều loại (氏名, 住所, まで有効, 日本国).
+  So trên text đã gom dòng (`Document` + `jp_normalize`: OCR hay tách `個人番号`|`カード` thành 2 khung). Chọn điểm cao nhất nếu ≥ `MIN_SCORE` 3;
+  `confident` khi điểm nhì < 75% điểm nhất. 特定在留カード có thêm `特定在留` để thắng My Number. Kiểm trên OCR thật của 9 ảnh mẫu (`tests/test_detect.py`)
+  + API trên 8 ảnh mẫu (`samples/results/*.ppocr.auto.json`): đúng hết, đều `confident`.
 - `config.py`: biến môi trường của app (log, VL). Riêng `OCR_MODEL_SIZE`/`OCR_ENABLE_MKLDNN`/`OCR_DEVICE` đọc trong `ocr/ppocr_model.py`.
 - `request_log.py`: log 1 dòng tóm tắt/request (không có PII, có `doc=` loại thẻ). `LOG_RESPONSES=1` → ghi full kết quả vào `logs/extract.jsonl`;
   `DEBUG_SAVE_IMAGES=1` → lưu ảnh gốc + ảnh đã xử lý vào `logs/images/`. Cả hai chứa PII, compose đang bật mặc định.
@@ -164,7 +173,9 @@ không import nhau).
   Kết quả: hộ chiếu 2/2 đúng (MRZ khớp), 資格確認書 3/3 đúng, My Number chỉ hạn thẻ (nơi cấp `□□市長` bị dấu みほん che, OCR không ra chữ),
   bằng lái chỉ số (ảnh 338px: `交付` đọc thành `节`, ngày mất niên hiệu). OCR lưu thành `tests/fixtures/official_*_ocr.json` để test hồi quy.
   Chưa thử ảnh chụp giấy tờ thật.
-- `static/`: UI HTML/JS thuần (chọn loại giấy tờ `document`, nhớ trong localStorage; engine VL khoá chọn `mode`; chọn `mode`, vẽ `zones_px`
+- `static/`: UI HTML/JS thuần. Chọn ảnh (chọn file, kéo thả, dán, camera) chỉ xem trước (`selectFile`), **không tự gửi**: người dùng chọn
+  giấy tờ (mặc định "Tự nhận diện" = `auto`, trạng thái ghi loại đã nhận) /tuỳ chọn rồi bấm "Nhận dạng" (`#submit` → `upload(selectedFile)`); ảnh giữ lại để đổi tuỳ chọn và chạy lại (yêu cầu 28/10/2026).
+  "Chạy lại trực tiếp" ở tab mẫu vẫn chạy ngay (mẫu đã có `document`). (chọn loại giấy tờ `document`, nhớ trong localStorage; engine VL khoá chọn `mode`; chọn `mode`, vẽ `zones_px`
   khi bật "Hiện ô template"; tên trường hiển thị theo `document_type`). Nút "Chụp ảnh bằng camera": `getUserMedia` (camera sau, xin
   độ phân giải tối đa, khung ngắm tỉ lệ ID-1, chụp ra JPEG rồi đi qua cùng luồng upload); chỉ chạy ở secure context (https/localhost) →
   mở từ điện thoại qua `http://<IP LAN>` thì rơi về `<input capture="environment">` (mở app camera của máy). Tab "Mẫu chính thức":
@@ -204,6 +215,8 @@ không import nhau).
 - `make_sample.py` sinh thẻ giả; `build_demo.py` chạy pipeline trên mọi ảnh mẫu chính thức (`SAMPLES`: `src`, `document`, nguồn từng ảnh)
   → `static/samples/` (ảnh + `results.json`, tab "Mẫu chính thức" và ví dụ trong tab "Giấy tờ hỗ trợ"); `build_howto.py` đặt thẻ mẫu ISA
   vào ảnh giả lập (xiên, nền cùng màu, chụp sát nghiêng), chạy pipeline thật, ghi ảnh + `summary.json` vào `static/howto`; `download_models.py` tải model khi build.
+- `test_detect.py`: nhận diện trên OCR ảnh mẫu chính thức, không nhận ra / không chắc, chữ giản thể; `pipeline.extract(document="auto")` với
+  `_ocr`/`normalize_card` giả (hộ chiếu OCR lại ảnh gốc, `UnknownDocument`).
 - `test_jp_documents.py`: bằng lái, hộ chiếu (MRZ đúng/sai check digit, `«` thay `<`), bảo hiểm (協会けんぽ, 国保 với `R5. 4. 1`, 資格確認書),
   `jp_residence` chỉ trả `card_number`, hộ chiếu không cắt thẻ; OCR thật của ảnh mẫu chính thức (`official_*_ocr.json`).
 - `test_my_number_card.py`: thẻ My Number trên box viết tay (nơi cấp kana, địa chỉ chứa `区長`, thiếu `まで有効`, kiểm tra chéo hạn thẻ).
