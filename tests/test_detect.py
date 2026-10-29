@@ -31,6 +31,15 @@ def fixture_boxes(name: str) -> list[OcrBox]:
         ("official_passport_2025_ocr.json", "jp_passport"),
         ("official_passport_2020_ocr.json", "jp_passport"),
         ("official_health_insurance_shikaku_kakuninsho_ocr.json", "jp_health_insurance"),
+        ("official_special_permanent_resident_ocr.json", "jp_special_permanent"),
+        ("official_special_permanent_resident_2026_ocr.json", "jp_special_permanent"),
+        ("official_special_permanent_resident_specified_2026_ocr.json", "jp_special_permanent"),
+        ("official_driving_history_ocr.json", "jp_driving_history"),  # also has 公安委員会 / 第…号 / 二・小・原
+        ("official_driving_history_aichi_ocr.json", "jp_driving_history"),  # 298px; OCR reads 運転経歷 (traditional 歷)
+        ("official_juki_card_ocr.json", "jp_juki_card"),
+        ("official_juki_card_yokohama_ocr.json", "jp_juki_card"),  # 住民基本台帐力一ド
+        ("official_resident_record_ocr.json", "jp_resident_record"),
+        ("official_pension_notice_ocr.json", "jp_pension_book"),
     ],
 )
 def test_detects_official_specimens(fixture, document):

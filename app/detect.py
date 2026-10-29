@@ -27,6 +27,7 @@ _ = re.compile
 MARKERS: dict[str, list[tuple[re.Pattern, int]]] = {
     "jp_residence": [
         (_(r"在\s*留\s*カ\s*[ー一-]?\s*ド|RESIDENCE\s*CARD", re.I), 3),
+        (_(r"特\s*別\s*永\s*住\s*者"), -3),  # 特別永住者証明書 shares 住居地 / 国籍・地域
         (_(r"特\s*定\s*在\s*留"), 3),  # 特定在留カード also carries My Number wording
         (_(r"在\s*留\s*資\s*格"), 2),
         (_(r"就\s*労\s*制\s*限"), 2),
@@ -41,6 +42,7 @@ MARKERS: dict[str, list[tuple[re.Pattern, int]]] = {
     ],
     "jp_driver_license": [
         (_(r"運\s*転\s*免\s*許\s*証"), 3),
+        (_(r"運\s*転\s*経\s*歴"), -8),  # 運転経歴証明書 carries the same 公安委員会 / 第…号 / 条件 lines
         (_(r"公\s*安\s*委\s*員\s*会"), 3),
         (_(r"第\s*\d[\d\s]{10,16}\s*号"), 2),
         (_(r"免\s*許\s*の?\s*条\s*件"), 2),
@@ -60,6 +62,31 @@ MARKERS: dict[str, list[tuple[re.Pattern, int]]] = {
         (_(r"保\s*険\s*者\s*名\s*称|交\s*付\s*者\s*名"), 2),
         (_(r"健\s*康\s*保\s*険"), 1),
     ],
+    "jp_special_permanent": [
+        (_(r"特\s*別\s*永\s*住\s*者|SPECIAL\s*PERMANENT", re.I), 3),
+        (_(r"住\s*居\s*地"), 1),
+        (_(r"有\s*効\s*期\s*間\s*の?\s*満\s*了"), 1),
+    ],
+    "jp_driving_history": [
+        (_(r"運\s*転\s*経\s*歴"), 3),  # title 運転経歴証明書
+        (_(r"公\s*安\s*委\s*員\s*会"), 1),
+    ],
+    "jp_juki_card": [
+        (_(r"住\s*民\s*基\s*本\s*台\s*帳\s*カ\s*[ー一-]?\s*ド|住\s*基\s*カ\s*[ー一-]?\s*ド"), 3),
+        (_(r"有\s*効\s*期\s*限"), 1),
+    ],
+    "jp_resident_record": [
+        (_(r"住\s*民\s*票"), 3),
+        (_(r"世\s*帯\s*主"), 2),
+        (_(r"住\s*民\s*と\s*な\s*っ\s*た"), 2),
+        (_(r"住\s*民\s*票\s*コ\s*[ー一-]?\s*ド"), 1),
+        (_(r"前\s*住\s*所|続\s*柄"), 1),
+    ],
+    "jp_pension_book": [
+        (_(r"年\s*金\s*手\s*帳|基\s*礎\s*年\s*金\s*番\s*号\s*通\s*知\s*書"), 3),
+        (_(r"基\s*礎\s*年\s*金\s*番\s*号"), 2),
+        (_(r"国\s*民\s*年\s*金|日\s*本\s*年\s*金\s*機\s*構"), 1),
+    ],
 }
 
 
@@ -70,6 +97,12 @@ GUESS_HINTS: dict[str, list[tuple[re.Pattern, int]]] = {
     "jp_driver_license": [(_(r"(?<!\d)\d{12}(?!\d)"), 1), (_(r"運\s*転|免\s*許"), 1)],
     "jp_passport": [(_(r"(?<![A-Z0-9])[A-Z]{2}\d{7}(?![A-Z0-9])"), 1), (_(r"<<<"), 1)],
     "jp_health_insurance": [(_(r"記\s*号"), 1), (_(r"保\s*険"), 1)],
+    # the certificate number has the residence card's shape: left to jp_residence (far more common)
+    "jp_special_permanent": [(_(r"永\s*住"), 1)],
+    "jp_driving_history": [(_(r"経\s*歴"), 1)],
+    "jp_juki_card": [(_(r"住\s*基|台\s*帳"), 1)],
+    "jp_resident_record": [(_(r"世\s*帯"), 1), (_(r"本\s*籍|筆\s*頭\s*者"), 1)],
+    "jp_pension_book": [(_(r"(?<!\d)\d{4}\s*[-－ー]\s*\d{6}(?!\d)"), 2), (_(r"年\s*金"), 1)],
 }
 
 

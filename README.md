@@ -43,7 +43,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không chắc thì đoán; không đoán được vẫn trả 200 với chữ OCR, xem dưới; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書) |
+| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không chắc thì đoán; không đoán được vẫn trả 200 với chữ OCR, xem dưới; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書), `jp_special_permanent` (特別永住者証明書), `jp_driving_history` (運転経歴証明書), `jp_juki_card` (住基カード), `jp_resident_record` (住民票の写し, không tự cắt ảnh), `jp_pension_book` (年金手帳 / 基礎年金番号通知書, không tự cắt ảnh) |
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc, thẻ nhỏ trên nền vân gỗ) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 | `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
@@ -61,6 +61,13 @@ Các trường (`document_type` cho biết loại thẻ):
   `expiry_date` (ngày ISO, từ dòng `YYYY年 M月 D日まで有効`). Không có template → `zone`/`hybrid` chạy như `label` kèm warning.
 - `driver_license`: `license_number` (12 chữ số trong `第…号`), `issue_date` (ngày sau `交付`, ISO).
 - `passport` (hộ chiếu Nhật): `passport_number` (2 chữ + 7 số; kiểm bằng check digit của dòng MRZ khi đọc được).
+- `special_permanent_resident_certificate`: `certificate_number` (2 chữ + 8 số + 2 chữ như thẻ cư trú), `expiry_date` (sau `有効期間の満了日` / trước `まで有効`).
+- `driving_history_certificate` (運転経歴証明書, cùng mẫu bằng lái): `license_number`, `issue_date` như `driver_license`.
+- `juki_card` (住基カード): `issuer` (`○○市長`), `expiry_date` (sau `有効期限`). Ngừng cấp 12/2015, hạn 10 năm → mọi thẻ đã hết hạn, luôn có warning.
+- `resident_record` (住民票の写し): `issuer` (`○○市長` cuối trang), `certified_date` (ngày sau `…証明する`), `address` (sau `住所`).
+  **Số My Number (個人番号) bị che** (`****`) trong `full_text`/`ocr.lines`/`vl_blocks` và tô đen trên ảnh trả về, không bao giờ được trích xuất
+  (番号法). Trên loại khác, dãy 12 chữ số chỉ bị che khi nằm cạnh/ngay dưới chữ `個人番号`. Có che → warning.
+- `pension_book` (年金手帳 / 基礎年金番号通知書): `basic_pension_number` (`1234-567890`), `issue_date` (chỉ khi có nhãn `交付`/`発行`).
 - `health_insurance_card`: `card_type` (tên thẻ như in, vd `国民健康保険被保険者証`), `insurer_name` (`保険者名称` / `交付者名`), `issue_date` (ISO).
 - Các loại `my_number_card`, `driver_license`, `passport`, `health_insurance_card` đọc theo nhãn/mẫu chữ, chưa có template: `zone`/`hybrid` chạy như `label` kèm warning.
 

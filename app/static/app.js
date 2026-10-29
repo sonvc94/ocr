@@ -30,12 +30,38 @@ const HEALTH_INSURANCE_FIELDS = {
   insurer_name: ["Đơn vị bảo hiểm (nơi cấp)", "保険者名称 / 交付者名"],
   issue_date: ["Ngày cấp", "交付年月日"],
 };
+const DRIVING_HISTORY_FIELDS = {
+  license_number: ["Số bằng lái (đã trả lại)", "番号 第…号"],
+  issue_date: ["Ngày cấp giấy chứng nhận", "交付"],
+};
+const SPECIAL_PERMANENT_FIELDS = {
+  certificate_number: ["Số giấy chứng nhận", "番号"],
+  expiry_date: ["Hạn", "有効期間の満了日"],
+};
+const JUKI_CARD_FIELDS = {
+  issuer: ["Nơi cấp", "○○市長"],
+  expiry_date: ["Hạn thẻ", "有効期限"],
+};
+const RESIDENT_RECORD_FIELDS = {
+  issuer: ["Nơi cấp (chứng nhận)", "○○市長"],
+  certified_date: ["Ngày chứng nhận", "証明日"],
+  address: ["Địa chỉ", "住所"],
+};
+const PENSION_FIELDS = {
+  basic_pension_number: ["Số hưu trí cơ bản", "基礎年金番号"],
+  issue_date: ["Ngày cấp", "交付年月日"],
+};
 const FIELD_LABELS = {
   residence_card: RESIDENCE_FIELDS,
   my_number_card: MY_NUMBER_FIELDS,
   driver_license: DRIVER_LICENSE_FIELDS,
   passport: PASSPORT_FIELDS,
   health_insurance_card: HEALTH_INSURANCE_FIELDS,
+  special_permanent_resident_certificate: SPECIAL_PERMANENT_FIELDS,
+  driving_history_certificate: DRIVING_HISTORY_FIELDS,
+  juki_card: JUKI_CARD_FIELDS,
+  resident_record: RESIDENT_RECORD_FIELDS,
+  pension_book: PENSION_FIELDS,
 };
 const LOW_SCORE = 0.85;
 

@@ -55,9 +55,12 @@ class OcrInfo(BaseModel):
 class ExtractResponse(BaseModel):
     request_id: str = Field(description="Mã request (12 ký tự), có trong log server; gửi kèm khi báo lỗi.")
     document: str | None = Field(description="Loại giấy tờ đã đọc (`jp_residence`, `jp_mynumber`, `jp_driver_license`, `jp_passport`, "
-                                             "`jp_health_insurance`); `null` khi `document=auto` không nhận ra.")
+                                             "`jp_health_insurance`, `jp_special_permanent`, `jp_driving_history`, `jp_juki_card`, "
+                                             "`jp_resident_record`, `jp_pension_book`); `null` khi `document=auto` không nhận ra.")
     document_type: str | None = Field(description="Tên kiểu kết quả: `residence_card`, `my_number_card`, `driver_license`, `passport`, "
-                                                  "`health_insurance_card`; `null` khi không nhận ra.")
+                                                  "`health_insurance_card`, `special_permanent_resident_certificate`, "
+                                                  "`driving_history_certificate`, `juki_card`, `resident_record`, `pension_book`; "
+                                                  "`null` khi không nhận ra.")
     side: str = Field(description="Luôn là `front` (chỉ đọc mặt trước).")
     card_design: str | None = Field(description="Thẻ cư trú: mẫu thẻ `2012` / `2026` / `specified_2026`; loại khác `null`.")
     fields: dict[str, ExtractedField] = Field(description="Các trường theo loại giấy tờ (xem mô tả endpoint). `{}` khi không nhận ra giấy tờ.")

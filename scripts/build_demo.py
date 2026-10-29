@@ -22,6 +22,11 @@ ISA = {
     "source_page": "https://www.moj.go.jp/isa/applications/procedures/whatzairyu_00001.html",
     "source_pdf": "https://www.moj.go.jp/isa/content/001465339.pdf",
 }
+ISA_SPRC = {
+    "source_name": "Cục Xuất nhập cảnh (ISA)",
+    "source_page": "https://www.moj.go.jp/isa/applications/procedures/tetuduki_tokubetu_shomeisho_00001.html",
+    "source_pdf": "https://www.moj.go.jp/isa/content/001465342.pdf",
+}
 
 SAMPLES = [
     ISA | {
@@ -89,6 +94,56 @@ SAMPLES = [
         "description": "Mẫu cho người dưới 70 tuổi của bảo hiểm y tế quốc dân, ảnh 752×469px. Đơn vị cấp in ở 交付者名.",
         "source_name": "Thành phố Nagoya (名古屋市)",
         "source_page": "https://www.city.nagoya.jp/kurashi/hoken/1011736/1011750/1011753.html",
+    },    ISA_SPRC | {
+        "id": "special_permanent_resident",
+        "src": "samples/official/special_permanent_resident.jpg",
+        "document": "jp_special_permanent",
+        "title": "特別永住者証明書 — mẫu hiện hành (cấp đến 13/06/2026)",
+        "description": "Ảnh mẫu 522×332px cắt từ tờ hướng dẫn của Cục Xuất nhập cảnh. Lấy số giấy chứng nhận và hạn.",
+    },
+    ISA_SPRC | {
+        "id": "special_permanent_resident_2026",
+        "src": "samples/official/special_permanent_resident_2026.jpg",
+        "document": "jp_special_permanent",
+        "title": "特別永住者証明書 — mẫu mới (cấp từ 14/06/2026)",
+        "description": "Mẫu mới in số ở dải phía dưới, ảnh 684×436px cùng tờ hướng dẫn.",
+    },
+    {
+        "id": "driving_history",
+        "src": "samples/official/driving_history.jpg",
+        "document": "jp_driving_history",
+        "title": "運転経歴証明書 — giấy chứng nhận lịch sử lái xe",
+        "description": "Hình minh hoạ mẫu mới (vẽ từ PDF, cắt mặt trước). Cùng mẫu với bằng lái: số bằng lái đã trả lại (第…号) và ngày cấp (交付).",
+        "source_name": "Tỉnh Okayama (岡山県)",
+        "source_page": "https://www.pref.okayama.jp/uploaded/life/963605_9262306_misc.pdf",
+    },
+    {
+        "id": "juki_card",
+        "src": "samples/official/juki_card.jpg",
+        "document": "jp_juki_card",
+        "title": "住民基本台帳カード — thẻ 住基 (có ảnh)",
+        "description": "Sơ đồ mẫu thẻ của Bộ Nội vụ (vẽ từ PDF, khung ảnh để trống); nơi cấp là chữ giữ chỗ △△市. Thẻ ngừng cấp 12/2015, mọi thẻ đã hết hạn.",
+        "source_name": "Bộ Nội vụ và Truyền thông (総務省)",
+        "source_page": "https://www.soumu.go.jp/main_sosiki/kenkyu/kouteki_kojin/pdf/080916_1_si7.pdf",
+    },
+    {
+        "id": "resident_record",
+        "src": "samples/official/resident_record.jpg",
+        "document": "jp_resident_record",
+        "title": "住民票の写し — giấy chứng nhận cư trú (cả trang)",
+        "description": "Mẫu bố cục chuẩn từ 26/05/2025, ảnh 760×1083px. Địa chỉ đọc được; ngày chứng nhận là chữ giữ chỗ (令和●年●月●●日) nên không lấy. "
+                       "Số My Number trên mẫu đã ghi 【省略】; nếu có số thật sẽ bị che.",
+        "source_name": "Thành phố Kobe (神戸市)",
+        "source_page": "https://www.city.kobe.lg.jp/a53715/20250507_system-std.html",
+    },
+    {
+        "id": "pension_notice",
+        "src": "samples/official/pension_notice.jpg",
+        "document": "jp_pension_book",
+        "title": "基礎年金番号通知書 — thông báo số hưu trí cơ bản (thay 年金手帳)",
+        "description": "Hình minh hoạ: số in là XXXX-XXXXXX, ngày cấp 令和X年X月X日 (chữ giữ chỗ) nên không có giá trị nào để lấy — đúng là không bịa ra số.",
+        "source_name": "Bộ Y tế, Lao động và Phúc lợi / Cơ quan Hưu trí Nhật (厚生労働省・日本年金機構)",
+        "source_page": "https://www.city.adachi.tokyo.jp/koreiryo/kurashi/hoken/nenkin-oshirase20220218.html",
     },
 ]
 

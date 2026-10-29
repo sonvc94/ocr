@@ -52,6 +52,11 @@ OCR mặt trước giấy tờ Nhật: gửi 1 ảnh, nhận các trường đã
 | `jp_driver_license` | 運転免許証 bằng lái | `license_number`, `issue_date` |
 | `jp_passport` | 旅券 hộ chiếu Nhật | `passport_number` |
 | `jp_health_insurance` | 健康保険証 / 資格確認書 | `card_type`, `insurer_name`, `issue_date` |
+| `jp_special_permanent` | 特別永住者証明書 | `certificate_number`, `expiry_date` |
+| `jp_driving_history` | 運転経歴証明書 | `license_number`, `issue_date` |
+| `jp_juki_card` | 住民基本台帳カード (đã ngừng cấp, mọi thẻ đã hết hạn) | `issuer`, `expiry_date` |
+| `jp_resident_record` | 住民票の写し (cả trang, số My Number bị che) | `issuer`, `certified_date`, `address` |
+| `jp_pension_book` | 年金手帳 / 基礎年金番号通知書 | `basic_pension_number`, `issue_date` |
 | `auto` | tự nhận diện | theo loại nhận ra; không nhận ra → `fields: {}` + chữ OCR (không lỗi) |
 
 Hướng dẫn tích hợp đầy đủ (ví dụ curl / Python / JavaScript, cách đọc kết quả, mã lỗi): tab **API** trên trang chủ.

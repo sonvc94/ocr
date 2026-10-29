@@ -9,11 +9,16 @@ import numpy as np
 
 from .card_core.layout import Document, drop_non_text
 from .card_core.pattern_card import build_result, jp_normalize
+from .card_core.redact import LABEL_RE as MY_NUMBER_LABEL_RE, redact_my_number, redact_text
 from .detect import detect_document
-from .driver_license import parse_driver_license
+from .driver_license import parse_driver_license, parse_driving_history
 from .health_insurance import parse_health_insurance
+from .juki_card import parse_juki_card
 from .my_number_card import parse_my_number_card
 from .passport import parse_passport
+from .pension import parse_pension
+from .resident_record import parse_resident_record
+from .special_permanent import parse_special_permanent
 from .ocr import vl_client
 from .ocr.ppocr import run_ocr
 from .ocr.ppocr_model import model_name
@@ -22,7 +27,8 @@ from .residence_card import MODES, parse_residence_card
 
 ENGINES = ("ppocr", "vl")
 # document type -> (parser, OCR language, crop the ID-1 card). Cards share the crop/flatten step; the passport
-# photo page is not ID-1 and is usually photographed open (2 pages ≈ same aspect as 1 page), so it is not cropped.
+# photo page is not ID-1 and is usually photographed open (2 pages ≈ same aspect as 1 page), so it is not cropped,
+# nor are the full-page / booklet documents (住民票, 年金手帳).
 DOCUMENTS = {
     # the user needs only the card number of the residence card (other fields still parsed internally)
     "jp_residence": (partial(parse_residence_card, keys=("card_number",)), "ja", True),
@@ -30,7 +36,14 @@ DOCUMENTS = {
     "jp_driver_license": (parse_driver_license, "ja", True),
     "jp_passport": (parse_passport, "ja", False),
     "jp_health_insurance": (parse_health_insurance, "ja", True),
+    "jp_special_permanent": (parse_special_permanent, "ja", True),
+    "jp_driving_history": (parse_driving_history, "ja", True),
+    "jp_juki_card": (parse_juki_card, "ja", True),
+    "jp_resident_record": (parse_resident_record, "ja", False),
+    "jp_pension_book": (parse_pension, "ja", False),
 }
+# Documents on which every 12-digit number is a My Number (masked, card_core.redact); elsewhere only next to 個人番号.
+MASK_ALL_12_DIGITS = {"jp_resident_record"}
 
 # document=auto: crop as an ID-1 card, OCR, then detect.py picks the document (all use the "ja" OCR).
 AUTO = "auto"
@@ -82,9 +95,10 @@ def extract(
     if document == AUTO:
         detection = detect_document(boxes)
         document = detection.document
-        if document is not None and cropped and not DOCUMENTS[document][2]:  # passport: read the uncropped image like document=jp_passport
+        if document is not None and cropped and not DOCUMENTS[document][2]:  # passport, pages: read the uncropped image
             img, cropped = original, False
             boxes, img, deskew, model, vl_resp = _ocr(img, engine, lang)
+    boxes, img, vl_resp, redacted = _redact(boxes, img, vl_resp, document in MASK_ALL_12_DIGITS)
     parse = DOCUMENTS[document][0] if document is not None else _ocr_text_only
     t2 = time.perf_counter()
     h, w = img.shape[:2]
@@ -94,6 +108,10 @@ def extract(
         result["warnings"].append(VL_WARNING)
         result["vl_blocks"] = vl_resp["blocks"]
     result["document"] = document
+    if redacted:
+        result["warnings"].append(
+            f"Đã che số My Number (個人番号) trên {redacted} dòng chữ và trên ảnh: không trích xuất / lưu số này (番号法)."
+        )
     if detection is not None:
         result["document_detection"] = detection.to_dict()
         if detection.guessed:
@@ -121,6 +139,22 @@ def extract(
         "parse": round((t3 - t2) * 1000),
     }
     return result, img
+
+
+def _redact(boxes, img: np.ndarray, vl_resp: dict | None, every_number: bool):
+    """Mask My Number in the OCR lines, black out those lines on the returned image, mask the VL blocks."""
+    boxes, changed = redact_my_number(boxes, every_number)
+    if changed:
+        img = img.copy()
+        h, w = img.shape[:2]
+        for b in changed:
+            x1, y1, x2, y2 = (int(round(v)) for v in b.box)
+            img[max(y1, 0):min(y2, h), max(x1, 0):min(x2, w)] = 0
+    if vl_resp is not None:
+        for block in vl_resp["blocks"]:
+            if every_number or MY_NUMBER_LABEL_RE.search(block["content"]):
+                block["content"] = redact_text(block["content"])
+    return boxes, img, vl_resp, len(changed)
 
 
 def _ocr_text_only(boxes, page_size=None, cropped=False, mode="label") -> dict:

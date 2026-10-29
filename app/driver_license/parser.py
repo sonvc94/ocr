@@ -1,4 +1,5 @@
 """Driver's license (運転免許証) front: only the 12-digit license number and the date of issue (交付).
+The driving history certificate (運転経歴証明書) has the same layout and is read by the same code (parse_driving_history).
 
 Read by pattern on the flattened card text (card_core.layout), no template: mode=zone/hybrid fall back to it
 with a warning.
@@ -16,6 +17,7 @@ from .patterns import (
     BARE_NUMBER_RE,
     BIRTH_SUFFIX_RE,
     COMMISSION_CODES,
+    HISTORY_TITLE_RE,
     ISSUE_LABEL_RE,
     LABELS,
     NUMBER_RE,
@@ -97,6 +99,23 @@ def parse_driver_license(
     # 運転免許証 is printed vertically next to the photo and often not read; 公安委員会 is printed on every license.
     if not TITLE_RE.search(doc.text) and not LABELS["commission"].search(doc.text):
         warnings.append("Không tìm thấy chữ 運転免許証 / 公安委員会 — ảnh có thể không phải bằng lái xe Nhật.")
+    if HISTORY_TITLE_RE.search(doc.text):
+        warnings.append("Ảnh có chữ 運転経歴 — có thể là 運転経歴証明書, không phải bằng lái (chọn loại giấy tờ đó).")
     fields = {"license_number": _license_number(doc), "issue_date": _issue_date(doc)}
     warnings += cross_check(fields)
     return build_result("driver_license", fields, doc, LABELS, mode, warnings)
+
+
+def parse_driving_history(
+    boxes: list[OcrBox], page_size: tuple[int, int] | None = None, cropped: bool = False, mode: str = "label"
+) -> dict:
+    """運転経歴証明書: the license number it carries (第…号) and its own date of issue (交付)."""
+    boxes = drop_non_text(boxes)
+    doc = Document(boxes, normalize)
+    warnings: list[str] = []
+    if not HISTORY_TITLE_RE.search(doc.text):
+        warnings.append("Không tìm thấy chữ 運転経歴証明書 — ảnh có thể không phải giấy chứng nhận lịch sử lái xe.")
+    fields = {"license_number": _license_number(doc), "issue_date": _issue_date(doc)}
+    warnings += cross_check(fields)
+    labels = {**LABELS, "title": HISTORY_TITLE_RE}
+    return build_result("driving_history_certificate", fields, doc, labels, mode, warnings)

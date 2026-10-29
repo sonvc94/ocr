@@ -7,6 +7,8 @@ import re
 from ..card_core.pattern_card import jp_normalize
 
 TITLE_RE = re.compile(r"運\s*転\s*免\s*許\s*証")
+# 運転経歴証明書 (issued after giving up the license): same card, same number (the former license number) and 交付 line.
+HISTORY_TITLE_RE = re.compile(r"運\s*転\s*経\s*歴\s*証\s*明\s*書|運\s*転\s*経\s*歴")
 # Printed words, only used to judge OCR quality.
 LABELS = {
     "title": TITLE_RE,

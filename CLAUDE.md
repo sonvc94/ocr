@@ -18,7 +18,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Demo OCR mặt trước giấy tờ. Nhật (người dùng chỉ cần vài trường mỗi loại, 28/10/2026): thẻ cư trú (在留カード, `document=jp_residence`,
 chỉ số thẻ), My Number (個人番号カード, `jp_mynumber`, nơi cấp + hạn thẻ), bằng lái (運転免許証, `jp_driver_license`, số 12 chữ số + ngày cấp),
 hộ chiếu Nhật (旅券, `jp_passport`, số hộ chiếu), thẻ bảo hiểm y tế (健康保険証/資格確認書, `jp_health_insurance`, loại thẻ + đơn vị bảo hiểm
-+ ngày cấp). Hỗ trợ thẻ căn cước Việt Nam đã bị gỡ (28/10/2026, theo yêu cầu; code cũ trong git history trước commit gỡ). Upload hoặc chụp camera → JSON các trường. Chạy hoàn toàn local.
++ ngày cấp); thêm 29/10/2026: 特別永住者証明書 (`jp_special_permanent`, số + hạn), 運転経歴証明書 (`jp_driving_history`, như bằng lái),
+住基カード (`jp_juki_card`, nơi cấp + hạn), 住民票の写し (`jp_resident_record`, nơi cấp + ngày chứng nhận + địa chỉ, **che số My Number**),
+年金手帳 / 基礎年金番号通知書 (`jp_pension_book`, 基礎年金番号 + ngày cấp). Hỗ trợ thẻ căn cước Việt Nam đã bị gỡ (28/10/2026, theo yêu cầu; code cũ trong git history trước commit gỡ). Upload hoặc chụp camera → JSON các trường. Chạy hoàn toàn local.
 
 ```
 Upload → preprocess (EXIF rotate, tìm viền thẻ ID-1, cắt + nắn phẳng: dùng chung, trừ hộ chiếu)
@@ -56,7 +58,7 @@ Biến môi trường: `OCR_MODEL_SIZE`, `OCR_ENABLE_MKLDNN` (mặc định 1, c
 
 ### app/ (FastAPI, Docker linux/amd64, cổng 8000)
 Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `ocr/*`, package từng giấy tờ: `residence_card`, `my_number_card`,
-`driver_license`, `passport`, `health_insurance`) → `card_core/*`;
+`driver_license`, `passport`, `health_insurance`, `special_permanent`, `juki_card`, `resident_record`, `pension`) → `card_core/*`;
 `ocr/types.OcrBox` là định dạng dòng OCR dùng chung (parser không import engine, engine không import parser; 2 package thẻ
 không import nhau).
 - `main.py`: chỉ lo HTTP: `/`, `/api/health` (model theo ngôn ngữ, `device` thật đang chạy), `/api/zones?document=` (template toạ độ),
@@ -69,7 +71,10 @@ không import nhau).
   → sửa `api_schema.py` + tab "API". `tests/test_api_docs.py` kiểm schema. Không có CORS → bên khác gọi từ backend.
 - `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại giấy tờ → (hàm parse, ngôn ngữ OCR, có cắt thẻ ID-1 không).
   `jp_residence` = `partial(parse_residence_card, keys=("card_number",))`. `jp_passport` không cắt: trang hộ chiếu là ID-3, chụp mở
-  2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. Mọi loại đều cho phép engine=vl. Mọi kết quả có `document` (loại đã parse).
+  2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. `jp_resident_record`, `jp_pension_book` cũng không cắt (trang giấy / sổ).
+  Sau OCR (và sau nhận diện) luôn `_redact` (`card_core/redact.py`): che My Number (12 chữ số → `*`) trong box, tô đen box đó trên **bản sao** ảnh trả về,
+  che trong `vl_blocks`; `MASK_ALL_12_DIGITS` = {`jp_resident_record`}: mọi dãy 12 số (住民票 không in dãy 12 số nào khác); loại khác chỉ dãy cạnh /
+  ngay dưới box có `個人番号` (số bằng lái `第…号` không bị đụng). Có che → warning. Lý do: 番号法 hạn chế thu thập số My Number (yêu cầu 29/10/2026). Mọi loại đều cho phép engine=vl. Mọi kết quả có `document` (loại đã parse).
   `document=auto` (`DOCUMENT_CHOICES`): cắt thẻ ID-1 → OCR `ja` (`_ocr`) → `detect.detect_document` → nếu ra hộ chiếu mà ảnh đã bị cắt thì OCR lại
   ảnh gốc (như `jp_passport`; 2 lần OCR) → parse; thêm `document_detection` (`detected`, `confident`, `guessed`, `scores`, `guess_scores`),
   không chắc / đoán → warning. Không nhận ra cũng không đoán được → **không lỗi** (yêu cầu 29/10/2026): `_ocr_text_only` trả cùng dạng kết quả
@@ -78,7 +83,8 @@ không import nhau).
 - `detect.py`: `MARKERS` = loại giấy tờ → [(regex chữ in, điểm)]: tiêu đề 3 (在留カード, 個人番号カード, 運転免許証, 公安委員会, MRZ `P<JPN` / dòng 2,
   …被保険者証/資格確認書), nhãn riêng 1–2 (在留資格, 電子証明書, 第…号, 旅券番号, 保険者番号…). Bỏ chữ in trên nhiều loại (氏名, 住所, まで有効, 日本国).
   So trên text đã gom dòng (`Document` + `jp_normalize`: OCR hay tách `個人番号`|`カード` thành 2 khung). Chọn điểm cao nhất nếu ≥ `MIN_SCORE` 3;
-  `confident` khi điểm nhì < 75% điểm nhất. 特定在留カード có thêm `特定在留` để thắng My Number.
+  `confident` khi điểm nhì < 75% điểm nhất. 特定在留カード có thêm `特定在留` để thắng My Number. **Điểm âm** cho cặp in chung chữ:
+  bằng lái `運転経歴` −8 (運転経歴証明書 có đủ 公安委員会 / 第…号 / 免許の条件), thẻ cư trú `特別永住者` −3 (chung 住居地 / 国籍・地域).
   Không loại nào ≥ 3 → `_guess`: điểm + `GUESS_HINTS` (dạng số: số thẻ cư trú `AB12345678CD` 2, 12 chữ số, `XX1234567`, `<<<`, 個人番号, 記号/保険… 1);
   cao nhất > 0 và không hoà → `guessed=True` (không bao giờ `confident`); không thì `None`. Thử: ảnh cắt chỉ còn dòng số thẻ cư trú → đoán đúng. Kiểm trên OCR thật của 9 ảnh mẫu (`tests/test_detect.py`)
   + API trên 8 ảnh mẫu (`samples/results/*.ppocr.auto.json`): đúng hết, đều `confident`.
@@ -169,6 +175,20 @@ không import nhau).
   Hokkaido 10–14). Warning "không phải bằng lái" chỉ khi không thấy cả `運転免許証` lẫn `公安委員会` (`運転免許証` in dọc cạnh ảnh, OCR hay bỏ sót).
   Không kiểm check digit (số thứ 11) vì chưa xác minh được thuật toán. `issue_date` = ngày ngay sau `交付` (≤ 4 ký tự);
   không đọc được `交付` → nếu chỉ còn đúng 1 ngày không phải ngày sinh (`…生`) / hạn (`…まで有効`, `で` có thể mất) thì lấy + note. Ngày cấp tương lai → `needs_review`.
+- `driver_license/` cũng có `parse_driving_history` (運転経歴証明書, `document_type=driving_history_certificate`): cùng mẫu thẻ, cùng `_license_number`
+  / `_issue_date` / `cross_check`, chỉ khác tiêu đề `HISTORY_TITLE_RE`. Bằng lái có chữ `運転経歴` → warning gợi ý chọn loại kia.
+- `special_permanent/` (特別永住者証明書, `document_type=special_permanent_resident_certificate`): `certificate_number` = `NUMBER_RE`
+  2 chữ + 8 số + 2 chữ (như thẻ cư trú; không import `residence_card`), sửa chữ ↔ số theo vị trí (có sửa → note); `expiry_date` = ngày ≤ 6 ký tự
+  sau `有効期間の満了日`/`有効期限`, hoặc ngay trước `まで有効`; không có → ngày muộn nhất (không phải ngày sinh) + note. Hết hạn → warning.
+- `juki_card/` (住民基本台帳カード, `document_type=juki_card`): `issuer` = `MUNICIPAL_HEAD_RE` match cuối (chung với My Number, chuyển vào
+  `card_core/pattern_card.py`), `expiry_date` như trên (`有効期限`). Thẻ cấp 2003-08 → 2015-12, hạn ≤ 10 năm → `cross_check` luôn warning
+  (hết hạn, hoặc không đọc được hạn); hạn > 2025-12-31 → `needs_review` (không thể có).
+- `resident_record/` (住民票の写し, `document_type=resident_record`): `issuer` = `MUNICIPAL_HEAD_RE` match cuối (người chứng nhận cuối trang),
+  `certified_date` = ngày đầu tiên ≤ 60 ký tự sau `証明する/証明します` (không có → ngày ngay trước nơi cấp + note), `address` = sau nhãn `住所`
+  (không phải `前住所`, `住所を定めた日`) đến `NEXT_LABEL_RE` trên cùng dòng; dòng trống → dòng dưới. Bản trích cả hộ: lấy `住所` đầu tiên.
+- `pension/` (年金手帳 / 基礎年金番号通知書, `document_type=pension_book`): `basic_pension_number` = `\d{4}-\d{6}` trong 40 ký tự sau
+  `基礎年金番号` (không có nhãn → số dạng đó đầu tiên + note; không có gạch → 10 số liền + note), sửa O/I/S… → số, trả `1234-567890`.
+  `issue_date` chỉ khi có nhãn `交付`/`発行` (sổ còn ngày sinh, ngày tham gia: không đoán).
 - `passport/` (hộ chiếu Nhật, chỉ hộ chiếu Nhật theo yêu cầu, `document_type=passport`): `passport_number` từ 2 nguồn: MRZ dòng 2
   (`MRZ2_RE` = 9 ký tự + check digit + `JPN`, bỏ khoảng trắng, `«`/`く`… → `<`) và số in sau nhãn `旅券番号/Passport No.` (≤ 40 ký tự, thường ở
   dòng dưới; bỏ dòng MRZ). Sửa ký tự theo vị trí (2 chữ + 7 số). MRZ đúng check digit (ICAO 7-3-1) → lấy MRZ; số in khác → note. MRZ sai check
@@ -180,9 +200,16 @@ không import nhau).
   `被保険者`, `保険者番号`…), cắt ở nhãn kế tiếp, bỏ dấu `印`; dòng trống → dòng dưới. `issue_date` = ngày sau `交付年月日`/`発行年月日` (≤ 6 ký tự),
   không có → ngày ngay trước `交付` (協会けんぽ in `令和 5年 4月 1日交付`). Ngày cấp tương lai → `needs_review`.
 - Ảnh mẫu chính thức (見本, dữ liệu giả) trong `samples/official/` (nguồn + cách cắt: `SOURCES.md`; tải 28/10/2026, tái mã hoá JPEG):
-  My Number (TP Kobe), bằng lái (cảnh sát Kanagawa, đã cắt bỏ chú thích), hộ chiếu 2025 + trước 2025 (tỉnh Kanagawa), 国保 資格確認書 (TP Nagoya).
+  My Number (TP Kobe), bằng lái (cảnh sát Kanagawa, đã cắt bỏ chú thích), hộ chiếu 2025 + trước 2025 (tỉnh Kanagawa), 国保 資格確認書 (TP Nagoya),
+  và 10 ảnh của 5 loại thêm 29/10/2026 (`build_demo` dùng 6: 特別永住者 cũ + mới, 運転経歴 Okayama, 住基 sơ đồ, 住民票, 基礎年金番号通知書).
   Kết quả: hộ chiếu 2/2 đúng (MRZ khớp), 資格確認書 3/3 đúng, My Number chỉ hạn thẻ (nơi cấp `□□市長` bị dấu みほん che, OCR không ra chữ),
   bằng lái chỉ số (ảnh 338px: `交付` đọc thành `节`, ngày mất niên hiệu). OCR lưu thành `tests/fixtures/official_*_ocr.json` để test hồi quy.
+  Thêm 29/10/2026 (agent tìm, nguồn ở `SOURCES.md`): 特別永住者証明書 cũ/mới 2026/特定 (ISA) 3/3 đúng; 運転経歴証明書 Okayama (PDF) + Aichi (298px,
+  OCR ra `運転経歷` phồn thể → thêm vào `SIMPLIFIED_TO_JP`) đúng cả 2; 住基カード sơ đồ 総務省 (`△△市`) + Yokohama 322px (`住民基本台帐力一ド` →
+  thêm `帐` và `KATAKANA_FIXES` 力一ド→カード; thẻ in nơi cấp là `横浜市` một dòng, không có 長 → `MUNICIPALITY_LINE_RE`) đúng; 住民票 Kobe:
+  nơi cấp + địa chỉ đúng (địa chỉ nằm dòng trên nhãn; OCR bỏ を trong `住所を定めた`), ngày chứng nhận là chữ giữ chỗ → `None` (trước đó lấy nhầm
+  届出日 → fallback chỉ khi không có `証明する` và ngày ≤ 30 ký tự trước nơi cấp); 基礎年金番号通知書 / trang 年金手帳 chỉ có chữ giữ chỗ / để trống
+  → `None` (không bịa). Tự nhận diện đúng cả 10 (trang 年金手帳 trống chỉ đoán). Chưa có ảnh 年金手帳 / 住民票 có số thật.
   Chưa thử ảnh chụp giấy tờ thật.
 - `static/`: UI HTML/JS thuần. Chọn ảnh (chọn file, kéo thả, dán, camera) chỉ xem trước (`selectFile`), **không tự gửi**: người dùng chọn
   giấy tờ (mặc định "Tự nhận diện" = `auto`, trạng thái ghi loại đã nhận) /tuỳ chọn rồi bấm "Nhận dạng" (`#submit` → `upload(selectedFile)`); ảnh giữ lại để đổi tuỳ chọn và chạy lại (yêu cầu 28/10/2026).
@@ -233,6 +260,8 @@ không import nhau).
   `_ocr`/`normalize_card` giả (hộ chiếu OCR lại ảnh gốc, đoán rồi đọc, không nhận ra → chỉ chữ OCR).
 - `test_jp_documents.py`: bằng lái, hộ chiếu (MRZ đúng/sai check digit, `«` thay `<`), bảo hiểm (協会けんぽ, 国保 với `R5. 4. 1`, 資格確認書),
   `jp_residence` chỉ trả `card_number`, hộ chiếu không cắt thẻ; OCR thật của ảnh mẫu chính thức (`official_*_ocr.json`).
+- `test_new_jp_documents.py`: 5 loại thêm 29/10/2026 trên box viết tay (đọc trường, sửa ký tự, nhận diện không nhầm với bằng lái /
+  thẻ cư trú, 住基 hết hạn), che My Number (chỉ cạnh nhãn; qua `pipeline.extract` với 住民票: mất khỏi lines/full_text, ảnh trả về bị tô đen, ảnh gốc không đổi).
 - `test_my_number_card.py`: thẻ My Number trên box viết tay (nơi cấp kana, địa chỉ chứa `区長`, thiếu `まで有効`, kiểm tra chéo hạn thẻ).
 - `test_zones.py`: mode zone/hybrid trên fixture (trùng mode nhãn, thẻ nhỏ + nghiêng, mất nhãn, < 3 mốc, crop).
 - `test_preprocess.py`: ảnh tổng hợp bằng OpenCV (thẻ nhạt màu nghiêng, bị che góc; ảnh đã cắt sát) + `estimate_skew`/`rotate`.
