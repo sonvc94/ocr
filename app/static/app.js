@@ -317,9 +317,6 @@ try {
   if (["samples", "docs", "guide", "api"].includes(savedView)) showView(savedView);
 } catch {}
 
-// "API" view: show the address this page was served from in the examples
-document.querySelectorAll(".api-base").forEach((el) => (el.textContent = location.origin));
-
 function cleanJson() {
   return $("json").textContent;
 }

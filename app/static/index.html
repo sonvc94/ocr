@@ -348,7 +348,7 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       <p class="lead">Tài liệu cho hệ thống khác gọi dịch vụ OCR: gửi <strong>1 ảnh</strong> mặt trước giấy tờ Nhật qua HTTP, nhận các trường
         đã trích xuất dạng <strong>JSON</strong>. Một endpoint chính, xử lý đồng bộ (gửi ảnh → chờ → nhận kết quả).</p>
       <p class="api-links">
-        <span>Địa chỉ gốc: <code class="api-base">http://&lt;máy chủ&gt;:8000</code></span>
+        <span>Địa chỉ gốc: <code>https://host.com</code></span>
         <a href="/docs" target="_blank" rel="noopener">Swagger UI (gọi thử) ↗</a>
         <a href="/redoc" target="_blank" rel="noopener">ReDoc ↗</a>
         <a href="/openapi.json" target="_blank" rel="noopener">openapi.json ↗</a>
@@ -362,7 +362,7 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
 
       <h2 id="a-quick">Bắt đầu nhanh</h2>
 <pre>curl -F "file=@the_cu_tru.jpg" \
-  "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>/api/extract?document=auto&amp;include_image=false"</pre>
+  "https://host.com/api/extract?document=auto&amp;include_image=false"</pre>
 <pre>{
   "request_id": "0124fba96e64",
   "document": "jp_residence",
@@ -478,11 +478,11 @@ else:
       <h2 id="a-code">Code mẫu</h2>
       <h3>curl</h3>
 <pre>curl -sS -F "file=@bang_lai.jpg" \
-  "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>/api/extract?document=jp_driver_license&amp;include_image=false"</pre>
+  "https://host.com/api/extract?document=jp_driver_license&amp;include_image=false"</pre>
       <h3>Python (requests)</h3>
 <pre>import requests
 
-BASE = "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>"
+BASE = "https://host.com"
 with open("ho_chieu.jpg", "rb") as f:
     resp = requests.post(
         f"{BASE}/api/extract",
@@ -494,7 +494,7 @@ resp.raise_for_status()
 r = resp.json()
 print(r["document"], {k: v["value"] for k, v in r["fields"].items()})</pre>
       <h3>JavaScript (Node 18+ hoặc trình duyệt)</h3>
-<pre>const BASE = "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>";
+<pre>const BASE = "https://host.com";
 const form = new FormData();
 form.append("file", fileBlob, "the.jpg");   // File từ &lt;input type="file"&gt;, hoặc new Blob([buffer], { type: "image/jpeg" })
 const res = await fetch(`${BASE}/api/extract?document=auto&amp;include_image=false`, { method: "POST", body: form });

@@ -201,7 +201,7 @@ không import nhau).
   theo nhãn, theo vị trí/kết hợp, kiểm tra, JSON, giới hạn; ảnh minh hoạ thật trong `static/howto/` (`scripts/build_howto.py`).
   **Đổi luồng xử lý, ngưỡng, dấu hiệu nhận diện hay cách đọc của loại giấy tờ nào thì cập nhật tab này** (các con số trong đó lấy từ code).
   Tab "API" (`#view-api`, HTML tĩnh): tài liệu tích hợp cho bên khác (request, loại giấy tờ/trường, response, cách đọc `needs_review`, mã lỗi,
-  code mẫu curl/Python/JS, vận hành: tốc độ, xếp hàng, không auth, CORS); `.api-base` được JS điền `location.origin`. **Đổi API (tham số,
+  code mẫu curl/Python/JS, vận hành: tốc độ, xếp hàng, không auth, CORS); Địa chỉ gốc trong ví dụ cố định `https://host.com` (theo yêu cầu). **Đổi API (tham số,
   khoá kết quả, mã lỗi, trường của giấy tờ) thì cập nhật tab này + `api_schema.py`.** Bảng `.guide-table` cuộn ngang trên màn ≤ 700px.
 
 ### vl_service/ (PaddleOCR-VL, cổng 8011)
