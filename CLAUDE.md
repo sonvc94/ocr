@@ -63,6 +63,10 @@ không import nhau).
   `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=auto|<khoá của pipeline.DOCUMENTS>`
   (`vl` + `zone`/`hybrid` → 422; `auto` không bao giờ trả lỗi vì không nhận ra, xem `pipeline`). API mặc định vẫn `jp_residence` (không đổi hành vi client cũ), UI mặc định `auto`. `/api/zones` chỉ có template cho `jp_residence`; loại khác trả `{}`. Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
   Lúc khởi động nạp sẵn mọi model trong `ppocr_model.MODELS` (hiện chỉ `ja`).
+  Tài liệu API cho bên tích hợp (yêu cầu 29/10/2026): OpenAPI có mô tả/ví dụ (`API_DESCRIPTION`, `description` từng tham số, `responses=` mã lỗi)
+  → `/docs` (Swagger, gọi thử), `/redoc`, `/openapi.json`; `/` ẩn khỏi schema. Schema response ở `api_schema.py` chỉ để tài liệu
+  (truyền `responses=`, không phải `response_model=` nên không lọc kết quả; riêng `/api/health` dùng `response_model`). Đổi khoá kết quả
+  → sửa `api_schema.py` + tab "API". `tests/test_api_docs.py` kiểm schema. Không có CORS → bên khác gọi từ backend.
 - `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại giấy tờ → (hàm parse, ngôn ngữ OCR, có cắt thẻ ID-1 không).
   `jp_residence` = `partial(parse_residence_card, keys=("card_number",))`. `jp_passport` không cắt: trang hộ chiếu là ID-3, chụp mở
   2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. Mọi loại đều cho phép engine=vl. Mọi kết quả có `document` (loại đã parse).
@@ -196,6 +200,9 @@ không import nhau).
   viết 28/10/2026 thay `how-it-works.html` + `design.html` đã xoá): đầu vào, xử lý ảnh lớn/nhỏ, xoay, cắt viền, OCR + gom dòng, nhận diện loại,
   theo nhãn, theo vị trí/kết hợp, kiểm tra, JSON, giới hạn; ảnh minh hoạ thật trong `static/howto/` (`scripts/build_howto.py`).
   **Đổi luồng xử lý, ngưỡng, dấu hiệu nhận diện hay cách đọc của loại giấy tờ nào thì cập nhật tab này** (các con số trong đó lấy từ code).
+  Tab "API" (`#view-api`, HTML tĩnh): tài liệu tích hợp cho bên khác (request, loại giấy tờ/trường, response, cách đọc `needs_review`, mã lỗi,
+  code mẫu curl/Python/JS, vận hành: tốc độ, xếp hàng, không auth, CORS); `.api-base` được JS điền `location.origin`. **Đổi API (tham số,
+  khoá kết quả, mã lỗi, trường của giấy tờ) thì cập nhật tab này + `api_schema.py`.** Bảng `.guide-table` cuộn ngang trên màn ≤ 700px.
 
 ### vl_service/ (PaddleOCR-VL, cổng 8011)
 - Tách riêng vì VL cần paddlepaddle 3.3.x, bản này crash PP-OCRv5 trên CPU (oneDNN). App chính pin 3.2.2.
@@ -217,13 +224,6 @@ không import nhau).
   `logs/vl_service.log`; `DOMAIN` → Caddy HTTPS (Let's Encrypt, camera trong trang cần secure context), `BASIC_AUTH_*` → mật khẩu
   (API không có auth). Cuối script gọi health, cảnh báo nếu `device` không phải GPU. Chạy lại được (cập nhật sau `git pull`).
   Chưa chạy thử trên EC2 thật (viết 28/10/2026). Hướng dẫn: `deploy/aws-ec2-gpu/README.md`. Đổi requirements/env/service → sửa cả 2 file.
-- Đã deploy tay (28/10/2026) lên container GPU thuê `n2.ckey.vn` (SSH cổng 2185 → 22; container 7681 → ngoài **2186**; RTX 5060 Ti 8GB,
-  RAM 7.6GB, Ubuntu 24.04, s6-overlay, không systemd/Docker → không dùng được `install.sh`). Làm theo các bước của `install.sh`:
-  code ở `/root/ocr` (clone từ `git bundle` gửi qua scp, vì server không có quyền đọc repo private), `.venv` python3.12 +
-  `paddlepaddle-gpu==3.2.2` từ index **cu129** (Blackwell sm_120 cần CUDA ≥ 12.8; venv ~7.6GB), không cài VL (RAM ít).
-  Service s6 `/etc/services.d/ocr-app/run` (uvicorn `0.0.0.0:7681`, env `/etc/ocr/ocr.env`, log `/root/ocr/logs/app.log`);
-  ttyd (terminal web, vốn ở 7681) tắt bằng `/etc/services.d/ttyd/down`. Không có auth/HTTPS (camera trong trang không chạy).
-  Cập nhật: gửi bundle mới, `git pull` từ bundle, `s6-svc -r /run/service/ocr-app`. OCR ~0.7s/ảnh trên GPU.
 
 ### scripts/, tests/
 - `make_sample.py` sinh thẻ giả; `build_demo.py` chạy pipeline trên mọi ảnh mẫu chính thức (`SAMPLES`: `src`, `document`, nguồn từng ảnh)

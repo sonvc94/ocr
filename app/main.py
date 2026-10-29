@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import UnidentifiedImageError
 
 from . import config, pipeline, request_log
+from .api_schema import ErrorResponse, ExtractResponse, HealthResponse
 from .ocr import ppocr_model, vl_client
 from .preprocess import encode_jpeg, load_image
 from .residence_card.templates import TEMPLATES as JP_TEMPLATES
@@ -41,11 +42,33 @@ class RevalidatedStaticFiles(StaticFiles):
         return response
 
 
-app = FastAPI(title="Card OCR Demo", lifespan=lifespan)
+API_DESCRIPTION = """
+OCR mặt trước giấy tờ Nhật: gửi 1 ảnh, nhận các trường đã trích xuất dạng JSON.
+
+| `document` | Giấy tờ | Trường trả về (`fields`) |
+|---|---|---|
+| `jp_residence` | 在留カード thẻ cư trú | `card_number` |
+| `jp_mynumber` | マイナンバーカード | `issuer`, `expiry_date` |
+| `jp_driver_license` | 運転免許証 bằng lái | `license_number`, `issue_date` |
+| `jp_passport` | 旅券 hộ chiếu Nhật | `passport_number` |
+| `jp_health_insurance` | 健康保険証 / 資格確認書 | `card_type`, `insurer_name`, `issue_date` |
+| `auto` | tự nhận diện | theo loại nhận ra; không nhận ra → `fields: {}` + chữ OCR (không lỗi) |
+
+Hướng dẫn tích hợp đầy đủ (ví dụ curl / Python / JavaScript, cách đọc kết quả, mã lỗi): tab **API** trên trang chủ.
+"""
+
+app = FastAPI(
+    title="OCR giấy tờ Nhật",
+    version="1.0",
+    description=API_DESCRIPTION,
+    lifespan=lifespan,
+    openapi_tags=[{"name": "OCR", "description": "Trích xuất trường từ ảnh giấy tờ."},
+                  {"name": "Hệ thống", "description": "Trạng thái service, template toạ độ."}],
+)
 app.mount("/static", RevalidatedStaticFiles(directory=STATIC_DIR), name="static")
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def index():
     # Version asset URLs by mtime so copies cached before an update (browser or proxy) are bypassed.
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
@@ -55,14 +78,15 @@ def index():
     return HTMLResponse(html, headers={"Cache-Control": "no-cache"})
 
 
-@app.get("/api/zones")
+@app.get("/api/zones", tags=["Hệ thống"], summary="Template toạ độ của mẫu thẻ")
 def zones(document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENTS)})$")):
     """Card templates (label/value positions) used by mode=zone/hybrid; drawn in the "Giấy tờ hỗ trợ" tab."""
     return JP_TEMPLATES if document == "jp_residence" else {}  # pattern-only documents: no template
 
 
-@app.get("/api/health")
+@app.get("/api/health", tags=["Hệ thống"], summary="Trạng thái service", response_model=HealthResponse)
 def health():
+    """`status: ok` khi model đã nạp xong và sẵn sàng nhận request; `device` là `cpu` hoặc `gpu:0`."""
     return {
         "status": "ok",
         "models": {lang: ppocr_model.model_name(lang) for lang in ppocr_model.MODELS},
@@ -71,15 +95,35 @@ def health():
     }
 
 
-@app.post("/api/extract")
+@app.post(
+    "/api/extract",
+    tags=["OCR"],
+    summary="Trích xuất trường từ ảnh giấy tờ",
+    responses={
+        200: {"model": ExtractResponse, "description": "Kết quả (kể cả khi `document=auto` không nhận ra giấy tờ: `fields: {}`)."},
+        413: {"model": ErrorResponse, "description": "Ảnh lớn hơn 10MB."},
+        415: {"model": ErrorResponse, "description": "File không phải ảnh JPEG / PNG / WEBP đọc được."},
+        422: {"model": ErrorResponse, "description": "Tham số sai (giá trị không hợp lệ, thiếu `file`, `engine=vl` với `mode≠label`)."},
+        503: {"model": ErrorResponse, "description": "`engine=vl` mà dịch vụ PaddleOCR-VL không chạy."},
+    },
+)
 def extract(
-    file: UploadFile = File(...),
-    crop: bool = True,
-    include_image: bool = True,
-    engine: str = Query("ppocr", pattern=f"^({'|'.join(pipeline.ENGINES)})$"),
-    mode: str = Query("label", pattern=f"^({'|'.join(pipeline.MODES)})$"),
-    document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENT_CHOICES)})$"),
+    file: UploadFile = File(..., description="Ảnh giấy tờ (JPEG / PNG / WEBP, tối đa 10MB), gửi dạng `multipart/form-data`."),
+    crop: bool = Query(True, description="Tự tìm viền thẻ, cắt và nắn phẳng (hộ chiếu không cắt)."),
+    include_image: bool = Query(True, description="Trả kèm ảnh đã xử lý (base64, vài trăm KB). Tích hợp hệ thống nên đặt `false`."),
+    engine: str = Query("ppocr", pattern=f"^({'|'.join(pipeline.ENGINES)})$",
+                        description="`ppocr` (PP-OCRv5, mặc định) hoặc `vl` (PaddleOCR-VL, cần dịch vụ VL chạy riêng, chậm hơn nhiều)."),
+    mode: str = Query("label", pattern=f"^({'|'.join(pipeline.MODES)})$",
+                      description="`label` (theo nhãn in sẵn, mặc định), `zone` (theo vị trí trên mẫu thẻ), `hybrid` (cả hai). "
+                                  "`zone`/`hybrid` chỉ có tác dụng với thẻ cư trú."),
+    document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENT_CHOICES)})$",
+                          description="Loại giấy tờ, hoặc `auto` để tự nhận diện. Mặc định `jp_residence` (giữ tương thích client cũ)."),
 ):
+    """Gửi 1 ảnh mặt trước giấy tờ, nhận `fields` (mỗi trường có `value`, `confidence`, `needs_review`…).
+
+    Nên kiểm tra `needs_review` của từng trường và `warnings`: `true` nghĩa là giá trị có thể sai, cần người xem lại.
+    Xử lý đồng bộ, khoảng 0.5–1 giây/ảnh trên GPU (vài giây trên CPU); các request được OCR lần lượt.
+    """
     if engine == "vl" and mode != "label":
         raise HTTPException(422, "mode=zone/hybrid chỉ hỗ trợ engine=ppocr (VL không trả khung theo từng dòng).")
     data = file.file.read(config.MAX_UPLOAD_BYTES + 1)

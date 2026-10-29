@@ -301,6 +301,7 @@ function showView(view) {
   $("view-samples").hidden = view !== "samples";
   $("view-docs").hidden = view !== "docs";
   $("view-guide").hidden = view !== "guide";
+  $("view-api").hidden = view !== "api";
   if (view === "samples") loadSamples();
   if (view === "docs") loadDocs();
   try {
@@ -313,8 +314,11 @@ $("views").addEventListener("click", (e) => {
 });
 try {
   const savedView = localStorage.getItem("view");
-  if (["samples", "docs", "guide"].includes(savedView)) showView(savedView);
+  if (["samples", "docs", "guide", "api"].includes(savedView)) showView(savedView);
 } catch {}
+
+// "API" view: show the address this page was served from in the examples
+document.querySelectorAll(".api-base").forEach((el) => (el.textContent = location.origin));
 
 function cleanJson() {
   return $("json").textContent;

@@ -34,6 +34,9 @@ systemd cho app + PaddleOCR-VL, tuỳ chọn HTTPS (Caddy) + mật khẩu. Chọ
 
 ## API
 
+Tài liệu cho hệ thống khác tích hợp: tab **API** trên web (request/response, mã lỗi, code mẫu curl/Python/JavaScript),
+Swagger UI gọi thử ở `/docs`, ReDoc ở `/redoc`, OpenAPI ở `/openapi.json` (sinh client tự động).
+
 ```bash
 curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_image=false"
 ```

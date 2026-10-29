@@ -15,6 +15,7 @@
       <button data-view="samples">Mẫu chính thức</button>
       <button data-view="docs">Giấy tờ hỗ trợ</button>
       <button data-view="guide">Luồng xử lý</button>
+      <button data-view="api">API</button>
     </nav>
   </header>
 
@@ -338,6 +339,183 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
         <li>特定在留カード (thẻ cư trú gộp My Number) chưa hỗ trợ: nhận ra được nhưng mọi trường đều bị gắn cờ.</li>
         <li>Đoán loại giấy tờ (mục 6) chỉ dựa vào vài dấu hiệu yếu: có thể đoán sai, nên kết quả đoán luôn kèm cảnh báo; mới thử trên ảnh mẫu bị cắt, chưa thử ảnh thật.</li>
         <li>Ảnh quá nhỏ hoặc mờ: phóng to không khôi phục được chữ nhỏ; thẻ nhỏ trong ảnh điện thoại lớn mất chi tiết vì ảnh bị thu nhỏ trước khi cắt (xem mục 2).</li>
+      </ul>
+    </article>
+  </div>
+
+  <div id="view-api" class="samples-view" hidden>
+    <article class="guide api-doc">
+      <p class="lead">Tài liệu cho hệ thống khác gọi dịch vụ OCR: gửi <strong>1 ảnh</strong> mặt trước giấy tờ Nhật qua HTTP, nhận các trường
+        đã trích xuất dạng <strong>JSON</strong>. Một endpoint chính, xử lý đồng bộ (gửi ảnh → chờ → nhận kết quả).</p>
+      <p class="api-links">
+        <span>Địa chỉ gốc: <code class="api-base">http://&lt;máy chủ&gt;:8000</code></span>
+        <a href="/docs" target="_blank" rel="noopener">Swagger UI (gọi thử) ↗</a>
+        <a href="/redoc" target="_blank" rel="noopener">ReDoc ↗</a>
+        <a href="/openapi.json" target="_blank" rel="noopener">openapi.json ↗</a>
+      </p>
+
+      <nav class="guide-toc">
+        <a href="#a-quick">Bắt đầu nhanh</a><a href="#a-request">Request</a><a href="#a-docs">Loại giấy tờ</a>
+        <a href="#a-response">Response</a><a href="#a-read">Đọc kết quả</a><a href="#a-errors">Mã lỗi</a>
+        <a href="#a-code">Code mẫu</a><a href="#a-ops">Vận hành</a>
+      </nav>
+
+      <h2 id="a-quick">Bắt đầu nhanh</h2>
+<pre>curl -F "file=@the_cu_tru.jpg" \
+  "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>/api/extract?document=auto&amp;include_image=false"</pre>
+<pre>{
+  "request_id": "0124fba96e64",
+  "document": "jp_residence",
+  "fields": {
+    "card_number": { "value": "AB12345678CD", "raw": "AB12345678CD", "confidence": 0.998,
+                     "needs_review": false, "notes": [], "source": "label" }
+  },
+  "warnings": [],
+  …
+}</pre>
+      <p>Không cần đăng nhập hay API key (xem <a href="#a-ops">Vận hành</a>). Swagger UI ở <a href="/docs" target="_blank" rel="noopener">/docs</a>
+        cho phép chọn ảnh và gọi thử ngay trên trình duyệt; <a href="/openapi.json" target="_blank" rel="noopener">/openapi.json</a> dùng để sinh client tự động
+        (OpenAPI 3.1).</p>
+
+      <h2 id="a-request">Request: <code>POST /api/extract</code></h2>
+      <p>Body <code>multipart/form-data</code> với một trường <code>file</code> là ảnh (JPEG, PNG hoặc WEBP, tối đa <strong>10MB</strong>).
+        Tuỳ chọn truyền qua query string:</p>
+      <table class="guide-table">
+        <tr><th>Tham số</th><th>Mặc định</th><th>Ý nghĩa</th></tr>
+        <tr><td><code>document</code></td><td><code>jp_residence</code></td><td>Loại giấy tờ (bảng dưới), hoặc <code>auto</code> để tự nhận diện.
+          <strong>Nên truyền rõ</strong>: biết trước loại thì truyền loại đó (nhanh, chắc hơn); không biết thì <code>auto</code>.</td></tr>
+        <tr><td><code>include_image</code></td><td><code>true</code></td><td>Trả kèm ảnh đã cắt/nắn dạng base64 (vài trăm KB).
+          <strong>Hệ thống tích hợp nên đặt <code>false</code></strong>.</td></tr>
+        <tr><td><code>crop</code></td><td><code>true</code></td><td>Tự tìm viền thẻ, cắt và nắn phẳng. Đặt <code>false</code> nếu ảnh đã được cắt sát thẻ sẵn.</td></tr>
+        <tr><td><code>mode</code></td><td><code>label</code></td><td><code>label</code> (theo nhãn in sẵn), <code>zone</code> (theo vị trí trên mẫu thẻ),
+          <code>hybrid</code> (cả hai). <code>zone</code>/<code>hybrid</code> chỉ có tác dụng với thẻ cư trú; để mặc định là đủ.</td></tr>
+        <tr><td><code>engine</code></td><td><code>ppocr</code></td><td><code>ppocr</code> (PP-OCRv5). <code>vl</code> (PaddleOCR-VL) chỉ dùng khi máy chủ có chạy
+          dịch vụ VL, chậm hơn nhiều; không thì trả 503.</td></tr>
+      </table>
+      <p>Mẹo ảnh: chụp thẳng, đủ sáng, không lóa, thẻ chiếm phần lớn khung hình (chiều ngang thẻ ≥ 1000px là tốt). Ảnh nghiêng, xoay 90°/180°
+        hoặc có nền vẫn xử lý được.</p>
+
+      <h2 id="a-docs">Loại giấy tờ và trường trả về</h2>
+      <table class="guide-table">
+        <tr><th><code>document</code></th><th>Giấy tờ</th><th><code>document_type</code></th><th>Trường (<code>fields</code>)</th></tr>
+        <tr><td><code>jp_residence</code></td><td>Thẻ cư trú 在留カード (mẫu 2012 và 2026)</td><td><code>residence_card</code></td>
+          <td><code>card_number</code>: số thẻ 12 ký tự, vd <code>AB12345678CD</code></td></tr>
+        <tr><td><code>jp_mynumber</code></td><td>Thẻ My Number マイナンバーカード, mặt trước</td><td><code>my_number_card</code></td>
+          <td><code>issuer</code>: nơi cấp, vd <code>千代田区長</code><br><code>expiry_date</code>: hạn thẻ</td></tr>
+        <tr><td><code>jp_driver_license</code></td><td>Bằng lái 運転免許証</td><td><code>driver_license</code></td>
+          <td><code>license_number</code>: 12 chữ số<br><code>issue_date</code>: ngày cấp (交付)</td></tr>
+        <tr><td><code>jp_passport</code></td><td>Hộ chiếu Nhật 旅券, trang thông tin (không cắt ảnh)</td><td><code>passport</code></td>
+          <td><code>passport_number</code>: 2 chữ + 7 số, vd <code>TR1234567</code> (kiểm bằng dòng MRZ)</td></tr>
+        <tr><td><code>jp_health_insurance</code></td><td>Thẻ bảo hiểm y tế 健康保険証 / 資格確認書</td><td><code>health_insurance_card</code></td>
+          <td><code>card_type</code>: tên thẻ, vd <code>国民健康保険被保険者証</code><br><code>insurer_name</code>: đơn vị bảo hiểm<br><code>issue_date</code>: ngày cấp</td></tr>
+        <tr><td><code>auto</code></td><td>Tự nhận diện 1 trong các loại trên</td><td>theo loại nhận ra</td>
+          <td>Không nhận ra → <code>fields: {}</code> và chỉ có chữ OCR (vẫn 200, không lỗi)</td></tr>
+      </table>
+      <p>Mọi ngày tháng trả về dạng ISO <code>YYYY-MM-DD</code> (đã đổi từ niên hiệu 令和/平成/昭和). Chỉ đọc <strong>mặt trước</strong>.</p>
+
+      <h2 id="a-response">Response</h2>
+      <p>HTTP 200, <code>application/json</code>. Các khoá chính:</p>
+      <table class="guide-table">
+        <tr><th>Khoá</th><th>Kiểu</th><th>Ý nghĩa</th></tr>
+        <tr><td><code>request_id</code></td><td>string</td><td>Mã request, có trong log máy chủ; gửi kèm khi báo lỗi.</td></tr>
+        <tr><td><code>document</code></td><td>string | null</td><td>Loại giấy tờ đã đọc (khoá như tham số <code>document</code>); <code>null</code> khi <code>auto</code> không nhận ra.</td></tr>
+        <tr><td><code>document_type</code></td><td>string | null</td><td>Kiểu kết quả (cột <code>document_type</code> ở bảng trên).</td></tr>
+        <tr><td><code>fields</code></td><td>object</td><td>Tên trường → đối tượng trường (bảng dưới).</td></tr>
+        <tr><td><code>warnings</code></td><td>string[]</td><td>Cảnh báo cho cả kết quả: nhận diện không chắc, thẻ hết hạn, không thấy tiêu đề giấy tờ…</td></tr>
+        <tr><td><code>quality</code></td><td>object</td><td><code>level</code>: <code>ok</code> | <code>low</code> (ảnh mờ/nhỏ/lóa), <code>reasons</code>, <code>advice</code>.</td></tr>
+        <tr><td><code>document_detection</code></td><td>object</td><td>Chỉ khi <code>document=auto</code>: <code>detected</code>, <code>confident</code>,
+          <code>guessed</code> (đoán theo dấu hiệu yếu), <code>scores</code>, <code>guess_scores</code>.</td></tr>
+        <tr><td><code>full_text</code></td><td>string</td><td>Toàn bộ chữ OCR, gom theo dòng (<code>\n</code>).</td></tr>
+        <tr><td><code>ocr</code></td><td>object</td><td><code>lines</code> (từng dòng: <code>text</code>, <code>score</code>, <code>box</code> [x1,y1,x2,y2]),
+          <code>card_cropped</code>, <code>image_size</code>, <code>original_size</code>, <code>model</code>…</td></tr>
+        <tr><td><code>timing_ms</code></td><td>object</td><td>Thời gian xử lý từng bước (ms).</td></tr>
+        <tr><td><code>processed_image</code></td><td>string</td><td>Chỉ khi <code>include_image=true</code>: <code>data:image/jpeg;base64,…</code></td></tr>
+      </table>
+      <p>Mỗi trường trong <code>fields</code>:</p>
+      <table class="guide-table">
+        <tr><th>Khoá</th><th>Kiểu</th><th>Ý nghĩa</th></tr>
+        <tr><td><code>value</code></td><td>string | null</td><td>Giá trị đã làm sạch, chuẩn hoá. <code>null</code> = không đọc được.</td></tr>
+        <tr><td><code>raw</code></td><td>string | null</td><td>Chữ OCR gốc chứa giá trị.</td></tr>
+        <tr><td><code>confidence</code></td><td>number | null</td><td>Độ tin cậy OCR 0–1.</td></tr>
+        <tr><td><code>needs_review</code></td><td>boolean</td><td><code>true</code> = có thể sai, nên cho người kiểm tra.</td></tr>
+        <tr><td><code>notes</code></td><td>string[]</td><td>Lý do gắn cờ / đã tự sửa gì (tiếng Việt).</td></tr>
+        <tr><td><code>source</code></td><td>string</td><td><code>label</code>, <code>zone</code> hoặc <code>label+zone</code>.</td></tr>
+      </table>
+      <p>Có thể có thêm khoá khác (<code>side</code>, <code>card_design</code>, <code>layout</code>, <code>labels_found</code>…) dùng cho giao diện demo;
+        hãy bỏ qua khoá không biết, phiên bản sau có thể thêm khoá mới.</p>
+
+      <h2 id="a-read">Đọc kết quả thế nào cho đúng</h2>
+      <ol>
+        <li><code>document</code> là <code>null</code> → không nhận ra giấy tờ: yêu cầu chụp lại, hoặc gọi lại với <code>document</code> cụ thể.
+          Chữ OCR vẫn có ở <code>full_text</code>.</li>
+        <li>Truyền <code>auto</code> thì kiểm tra <code>document</code> có đúng loại mình chờ không; <code>document_detection.confident = false</code>
+          hoặc <code>guessed = true</code> nghĩa là loại giấy tờ chưa chắc.</li>
+        <li>Với từng trường cần dùng: <code>value</code> khác <code>null</code> và <code>needs_review = false</code> → dùng được tự động;
+          còn lại → cho người kiểm tra / nhập tay (hiển thị kèm <code>notes</code>).</li>
+        <li><code>quality.level = "low"</code> → ảnh kém, nên yêu cầu chụp lại.</li>
+      </ol>
+<pre>if r["document"] is None or r["quality"]["level"] == "low":
+    ask_user_to_retake()
+f = r["fields"]["card_number"]
+if f["value"] and not f["needs_review"]:
+    accept(f["value"])
+else:
+    send_to_manual_review(f["value"], f["notes"])</pre>
+
+      <h2 id="a-errors">Mã lỗi</h2>
+      <p>Lỗi trả JSON <code>{"detail": "…"}</code> (thông báo tiếng Việt).</p>
+      <table class="guide-table">
+        <tr><th>HTTP</th><th>Khi nào</th><th>Xử lý</th></tr>
+        <tr><td>200</td><td>Thành công, kể cả khi không nhận ra giấy tờ hay không đọc được trường nào</td><td>Đọc <code>fields</code> / <code>needs_review</code></td></tr>
+        <tr><td>413</td><td>Ảnh lớn hơn 10MB</td><td>Nén / thu nhỏ ảnh (cạnh dài ~2000px là đủ)</td></tr>
+        <tr><td>415</td><td>File không phải ảnh JPEG/PNG/WEBP đọc được (vd HEIC, PDF)</td><td>Đổi sang JPEG</td></tr>
+        <tr><td>422</td><td>Tham số sai: thiếu <code>file</code>, giá trị <code>document</code>/<code>mode</code>/<code>engine</code> không hợp lệ,
+          <code>engine=vl</code> với <code>mode</code> khác <code>label</code></td><td>Sửa request (không thử lại)</td></tr>
+        <tr><td>503</td><td><code>engine=vl</code> mà dịch vụ PaddleOCR-VL không chạy</td><td>Dùng <code>engine=ppocr</code></td></tr>
+        <tr><td>5xx khác</td><td>Lỗi máy chủ</td><td>Thử lại sau, báo kèm thời điểm</td></tr>
+      </table>
+
+      <h2 id="a-code">Code mẫu</h2>
+      <h3>curl</h3>
+<pre>curl -sS -F "file=@bang_lai.jpg" \
+  "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>/api/extract?document=jp_driver_license&amp;include_image=false"</pre>
+      <h3>Python (requests)</h3>
+<pre>import requests
+
+BASE = "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>"
+with open("ho_chieu.jpg", "rb") as f:
+    resp = requests.post(
+        f"{BASE}/api/extract",
+        params={"document": "auto", "include_image": "false"},
+        files={"file": ("ho_chieu.jpg", f, "image/jpeg")},
+        timeout=60,
+    )
+resp.raise_for_status()
+r = resp.json()
+print(r["document"], {k: v["value"] for k, v in r["fields"].items()})</pre>
+      <h3>JavaScript (Node 18+ hoặc trình duyệt)</h3>
+<pre>const BASE = "<span class="api-base">http://&lt;máy chủ&gt;:8000</span>";
+const form = new FormData();
+form.append("file", fileBlob, "the.jpg");   // File từ &lt;input type="file"&gt;, hoặc new Blob([buffer], { type: "image/jpeg" })
+const res = await fetch(`${BASE}/api/extract?document=auto&amp;include_image=false`, { method: "POST", body: form });
+if (!res.ok) throw new Error((await res.json()).detail);
+const r = await res.json();
+console.log(r.document, r.fields);</pre>
+      <p class="note">Gọi thẳng từ trình duyệt ở <strong>domain khác</strong> sẽ bị chặn (CORS chưa bật). Nên gọi từ backend của hệ thống tích hợp;
+        cần gọi từ trình duyệt thì báo để bật CORS cho domain đó.</p>
+
+      <h2 id="a-ops">Vận hành</h2>
+      <ul>
+        <li><strong>Trạng thái</strong>: <code>GET /api/health</code> → <code>{"status": "ok", "device": "gpu:0", …}</code> khi sẵn sàng.
+          Lúc khởi động, service cần nạp model (có thể mất vài chục giây) trước khi trả <code>ok</code>.</li>
+        <li><strong>Tốc độ</strong>: khoảng 0.5–1 giây/ảnh trên GPU, vài giây trên CPU (chưa tính thời gian upload). Mỗi máy chủ OCR
+          <strong>lần lượt từng ảnh</strong>: gửi nhiều request cùng lúc thì request sau phải chờ (GPU khoảng 2 ảnh/giây). Đặt timeout phía client ≥ 60 giây.</li>
+        <li><strong>Hộ chiếu với <code>auto</code></strong> thường phải đọc 2 lần (lần 2 trên ảnh nguyên), chậm gấp đôi; biết là hộ chiếu thì truyền <code>jp_passport</code>.</li>
+        <li><strong>Bảo mật</strong>: API <strong>không có xác thực</strong>. Đặt sau reverse proxy có HTTPS + mật khẩu / IP whitelist trước khi mở ra internet.</li>
+        <li><strong>Dữ liệu cá nhân</strong>: ảnh xử lý trong bộ nhớ. Máy chủ chỉ lưu ảnh / kết quả đầy đủ nếu bật <code>DEBUG_SAVE_IMAGES</code> /
+          <code>LOG_RESPONSES</code> (log 1 dòng mỗi request không chứa dữ liệu cá nhân).</li>
+        <li><strong>Tương thích</strong>: mặc định <code>document=jp_residence</code> được giữ để không ảnh hưởng client cũ. Khoá mới có thể được thêm vào response;
+          khoá hiện có không đổi ý nghĩa.</li>
       </ul>
     </article>
   </div>

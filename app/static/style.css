@@ -188,10 +188,14 @@ a { color: var(--accent); }
 .guide li { margin: 4px 0; }
 .guide code { font-size: 13px; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
 .guide pre { font-size: 12px; }
+.api-doc pre { margin: 8px 0; }
+.api-links { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 14px; }
+.guide-table td { vertical-align: top; }
 .guide .note { background: var(--warn-bg); color: var(--text); border-radius: 8px; padding: 10px 14px; font-size: 14px; }
 .guide-toc { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; padding: 10px 14px; background: var(--bg); border-radius: 8px; }
 .guide-toc a { text-decoration: none; }
 .guide-table { margin: 10px 0; }
+@media (max-width: 700px) { .guide-table { display: block; overflow-x: auto; } }
 .guide-table th { width: auto; color: var(--text); font-weight: 600; }
 .guide-table td:first-child { white-space: nowrap; font-weight: 500; }
 @media (max-width: 700px) { .guide-table td:first-child { white-space: normal; } }
