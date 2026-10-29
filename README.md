@@ -1,6 +1,7 @@
 # OCR giấy tờ Nhật demo
 
-Website demo: upload hoặc chụp bằng camera ảnh **giấy tờ Nhật** (thẻ cư trú 在留カード, My Number, bằng lái, hộ chiếu, thẻ bảo hiểm y tế;
+Website demo: upload hoặc chụp bằng camera ảnh **giấy tờ Nhật** (Residence Card 在留カード, My Number Card, Driver's License, Japanese Passport, Health Insurance Card,
+Special Permanent Resident Certificate, Driving History Certificate, Basic Resident Register Card, Resident Record, National Pension Handbook;
 mỗi loại chỉ lấy vài trường, xem tab "Giấy tờ hỗ trợ") → trích xuất thông tin ra JSON. OCR bằng PaddleOCR (PP-OCRv5), trích xuất trường bằng rule. Chạy hoàn toàn local, ảnh chỉ xử lý trong bộ nhớ.
 
 Chọn/kéo thả/dán ảnh hoặc chụp xong chỉ hiện ảnh xem trước; chọn loại giấy tờ + tuỳ chọn rồi bấm **Nhận dạng** để chạy
@@ -43,7 +44,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không chắc thì đoán; không đoán được vẫn trả 200 với chữ OCR, xem dưới; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書), `jp_special_permanent` (特別永住者証明書), `jp_driving_history` (運転経歴証明書), `jp_juki_card` (住基カード), `jp_resident_record` (住民票の写し, không tự cắt ảnh), `jp_pension_book` (年金手帳 / 基礎年金番号通知書, không tự cắt ảnh) |
+| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không chắc thì đoán; không đoán được vẫn trả 200 với chữ OCR, xem dưới; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (Residence Card, chỉ số thẻ), `jp_mynumber` (My Number Card), `jp_driver_license` (Driver's License), `jp_passport` (Japanese Passport, không tự cắt ảnh), `jp_health_insurance` (Health Insurance Card / 資格確認書), `jp_special_permanent` (Special Permanent Resident Certificate, 特別永住者証明書), `jp_driving_history` (Driving History Certificate, 運転経歴証明書), `jp_juki_card` (Basic Resident Register Card, 住基カード), `jp_resident_record` (Resident Record, 住民票の写し, không tự cắt ảnh), `jp_pension_book` (National Pension Handbook, 年金手帳 / 基礎年金番号通知書, không tự cắt ảnh) |
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc, thẻ nhỏ trên nền vân gỗ) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 | `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
@@ -55,19 +56,20 @@ Mỗi trường trả về dạng:
 "date_of_birth": { "value": "1995-04-12", "raw": "1995年04月12日", "confidence": 0.9997, "needs_review": false, "notes": [], "source": "label" }
 ```
 
-Các trường (`document_type` cho biết loại thẻ):
+Các trường (`document_type` cho biết loại thẻ). Giao diện hiển thị tên loại giấy tờ và tên trường bằng tiếng Anh
+(vd `card_number` → "Card number", `jp_residence` → "Residence Card"); chữ giải thích, cảnh báo vẫn tiếng Việt:
 - `residence_card`: chỉ `card_number` (các mục khác vẫn đọc nội bộ để nhận mẫu thẻ, không trả về).
-- `my_number_card` (mặt trước thẻ My Number): chỉ `issuer` (nơi cấp, in dạng `○○市長`/`○○区長`/`○○町長`/`○○村長`) và
+- `my_number_card` (My Number Card, mặt trước): chỉ `issuer` (nơi cấp, in dạng `○○市長`/`○○区長`/`○○町長`/`○○村長`) và
   `expiry_date` (ngày ISO, từ dòng `YYYY年 M月 D日まで有効`). Không có template → `zone`/`hybrid` chạy như `label` kèm warning.
 - `driver_license`: `license_number` (12 chữ số trong `第…号`), `issue_date` (ngày sau `交付`, ISO).
-- `passport` (hộ chiếu Nhật): `passport_number` (2 chữ + 7 số; kiểm bằng check digit của dòng MRZ khi đọc được).
-- `special_permanent_resident_certificate`: `certificate_number` (2 chữ + 8 số + 2 chữ như thẻ cư trú), `expiry_date` (sau `有効期間の満了日` / trước `まで有効`).
-- `driving_history_certificate` (運転経歴証明書, cùng mẫu bằng lái): `license_number`, `issue_date` như `driver_license`.
-- `juki_card` (住基カード): `issuer` (`○○市長`), `expiry_date` (sau `有効期限`). Ngừng cấp 12/2015, hạn 10 năm → mọi thẻ đã hết hạn, luôn có warning.
-- `resident_record` (住民票の写し): `issuer` (`○○市長` cuối trang), `certified_date` (ngày sau `…証明する`), `address` (sau `住所`).
+- `passport` (Japanese Passport): `passport_number` (2 chữ + 7 số; kiểm bằng check digit của dòng MRZ khi đọc được).
+- `special_permanent_resident_certificate` (Special Permanent Resident Certificate): `certificate_number` (2 chữ + 8 số + 2 chữ như Residence Card), `expiry_date` (sau `有効期間の満了日` / trước `まで有効`).
+- `driving_history_certificate` (Driving History Certificate, 運転経歴証明書, cùng mẫu Driver's License): `license_number`, `issue_date` như `driver_license`.
+- `juki_card` (Basic Resident Register Card, 住基カード): `issuer` (`横浜市` / `○○市長`), `expiry_date` (sau `有効期限`). Ngừng cấp 12/2015, hạn 10 năm → mọi thẻ đã hết hạn, luôn có warning.
+- `resident_record` (Resident Record, 住民票の写し): `issuer` (`○○市長` cuối trang), `certified_date` (ngày sau `…証明する`), `address` (sau `住所`).
   **Số My Number (個人番号) bị che** (`****`) trong `full_text`/`ocr.lines`/`vl_blocks` và tô đen trên ảnh trả về, không bao giờ được trích xuất
   (番号法). Trên loại khác, dãy 12 chữ số chỉ bị che khi nằm cạnh/ngay dưới chữ `個人番号`. Có che → warning.
-- `pension_book` (年金手帳 / 基礎年金番号通知書): `basic_pension_number` (`1234-567890`), `issue_date` (chỉ khi có nhãn `交付`/`発行`).
+- `pension_book` (National Pension Handbook, 年金手帳 / 基礎年金番号通知書): `basic_pension_number` (`1234-567890`), `issue_date` (chỉ khi có nhãn `交付`/`発行`).
 - `health_insurance_card`: `card_type` (tên thẻ như in, vd `国民健康保険被保険者証`), `insurer_name` (`保険者名称` / `交付者名`), `issue_date` (ISO).
 - Các loại `my_number_card`, `driver_license`, `passport`, `health_insurance_card` đọc theo nhãn/mẫu chữ, chưa có template: `zone`/`hybrid` chạy như `label` kèm warning.
 
@@ -85,7 +87,7 @@ template toạ độ của các mẫu thẻ. `GET /api/health` liệt kê model 
 thẳng dựa trên hướng các dòng chữ khi ảnh còn nghiêng (thường là ảnh không tìm được viền thẻ; chỉ engine `ppocr`), 0 nếu không nắn.
 
 `needs_review = true` khi: không đọc được, độ tin cậy OCR < 0.85, đã tự sửa ký tự, hoặc không qua kiểm tra chéo
-(thẻ cư trú: ngày sinh < ngày cấp, hết hạn ≥ ngày cấp…; bằng lái: mã công an tỉnh; hộ chiếu: check digit MRZ).
+(Residence Card: ngày sinh < ngày cấp, hết hạn ≥ ngày cấp…; Driver's License: mã công an tỉnh; Japanese Passport: check digit MRZ).
 
 ## Cấu trúc
 
@@ -102,15 +104,20 @@ app/
     ppocr.py           Engine PP-OCR (+ phân loại hướng 0/90/180/270, nắn ảnh nghiêng ≤ 30°)
     vl_client.py       Engine PaddleOCR-VL (gọi vl_service qua HTTP)
   card_core/           Phần chung mọi loại thẻ: gom dòng (layout), Field, chất lượng OCR, khớp template (registration), đọc theo ô (zones)
-  residence_card/      Thẻ cư trú Nhật: 氏名, 生年月日, 住居地, 在留資格...
+  residence_card/      Residence Card: 氏名, 生年月日, 住居地, 在留資格...
     patterns.py        Nhãn, regex, danh sách giá trị chính thức, ký tự OCR hay nhầm
     fields.py          Trích từng trường
     checks.py          Nhận mẫu thẻ, đánh giá chất lượng ảnh, kiểm tra chéo ngày tháng
     parser.py          parse_residence_card: ghép các bước trên
-  my_number_card/      Thẻ My Number: chỉ nơi cấp + hạn thẻ, đọc theo mẫu chữ (patterns, parser)
-  driver_license/      Bằng lái Nhật: số + ngày cấp
-  passport/            Hộ chiếu Nhật: số hộ chiếu (MRZ + số in)
-  health_insurance/    Thẻ bảo hiểm y tế Nhật: loại thẻ, đơn vị bảo hiểm, ngày cấp
+  my_number_card/      My Number Card: chỉ nơi cấp + hạn thẻ, đọc theo mẫu chữ (patterns, parser)
+  driver_license/      Driver's License + Driving History Certificate: số + ngày cấp
+  passport/            Japanese Passport: số hộ chiếu (MRZ + số in)
+  health_insurance/    Health Insurance Card: loại thẻ, đơn vị bảo hiểm, ngày cấp
+  special_permanent/   Special Permanent Resident Certificate: số + hạn
+  juki_card/           Basic Resident Register Card: nơi cấp + hạn
+  resident_record/     Resident Record (住民票): nơi cấp + ngày chứng nhận + địa chỉ
+  pension/             National Pension Handbook / Basic Pension Number Notice: 基礎年金番号 + ngày cấp
+  card_core/redact.py  Che số My Number trong chữ OCR / ảnh trả về
   static/              Giao diện (HTML/JS thuần); tab "Luồng xử lý" giải thích từng bước xử lý ảnh; tab "Giấy tờ hỗ trợ" (docs.js) liệt kê giấy tờ Nhật + trường lấy được kèm hình minh hoạ
 scripts/               make_sample (sinh thẻ giả), build_demo (chạy ảnh mẫu chính thức → tab "Mẫu chính thức"), build_howto (ảnh minh hoạ cho tab "Luồng xử lý"), download_models
 vl_service/            Service PaddleOCR-VL (chạy native trên host, cổng 8011) + vl_probe.py
@@ -142,5 +149,5 @@ Test: `docker compose run --rm app python -m pytest -q`
 
 - `paddlepaddle` pin ở 3.2.2: bản 3.3.x crash trên CPU khi bật oneDNN (`ConvertPirAttribute2RuntimeAttribute not support`).
 - `samples/synthetic_*.jpg` là thẻ **giả lập** với dữ liệu giả, layout chỉ gần giống thẻ thật. Độ chính xác trên ảnh thật cần đo lại.
-- Ảnh mẫu chính thức (見本, dữ liệu giả do cơ quan Nhật công bố): `samples/isa/` (thẻ cư trú, Cục Xuất nhập cảnh) và `samples/official/`
-  (My Number, bằng lái, hộ chiếu, 資格確認書 — nguồn trong `samples/official/SOURCES.md`). Xem kết quả ở tab "Mẫu chính thức".
+- Ảnh mẫu chính thức (見本, dữ liệu giả do cơ quan Nhật công bố): `samples/isa/` (Residence Card, Cục Xuất nhập cảnh) và `samples/official/`
+  (các loại còn lại — nguồn trong `samples/official/SOURCES.md`). Xem kết quả ở tab "Mẫu chính thức".

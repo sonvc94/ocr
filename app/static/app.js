@@ -1,55 +1,55 @@
-// Field names per result.document_type: [Vietnamese, as printed on the card]
+// Field names per result.document_type: [English name, as printed on the document]
 const RESIDENCE_FIELDS = {
-  card_number: ["Số thẻ", "番号"],
-  name: ["Họ tên", "氏名"],
-  date_of_birth: ["Ngày sinh", "生年月日"],
-  sex: ["Giới tính", "性別"],
-  nationality: ["Quốc tịch", "国籍・地域"],
-  address: ["Địa chỉ", "住居地"],
-  status_of_residence: ["Tư cách lưu trú", "在留資格"],
-  work_restriction: ["Hạn chế làm việc", "就労制限の有無"],
-  period_of_stay: ["Thời hạn lưu trú", "在留期間"],
-  expiration_date: ["Ngày hết hạn lưu trú", "満了日"],
-  permission_type: ["Loại giấy phép", "許可の種類"],
-  issuing_authority: ["Cơ quan cấp", "許可機関"],
-  permission_date: ["Ngày cấp phép", "許可年月日"],
-  issue_date: ["Ngày cấp thẻ", "交付年月日"],
-  valid_until: ["Thẻ có hiệu lực đến", "有効期限"],
+  card_number: ["Card number", "番号"],
+  name: ["Name", "氏名"],
+  date_of_birth: ["Date of birth", "生年月日"],
+  sex: ["Sex", "性別"],
+  nationality: ["Nationality / region", "国籍・地域"],
+  address: ["Address", "住居地"],
+  status_of_residence: ["Status of residence", "在留資格"],
+  work_restriction: ["Work restriction", "就労制限の有無"],
+  period_of_stay: ["Period of stay", "在留期間"],
+  expiration_date: ["Expiration date of stay", "満了日"],
+  permission_type: ["Type of permission", "許可の種類"],
+  issuing_authority: ["Issuing authority", "許可機関"],
+  permission_date: ["Date of permission", "許可年月日"],
+  issue_date: ["Date of issue", "交付年月日"],
+  valid_until: ["Card valid until", "有効期限"],
 };
 const MY_NUMBER_FIELDS = {
-  issuer: ["Nơi cấp", "○○市長"],
-  expiry_date: ["Có hiệu lực đến", "まで有効"],
+  issuer: ["Issuer", "○○市長"],
+  expiry_date: ["Expiry date", "まで有効"],
 };
 const DRIVER_LICENSE_FIELDS = {
-  license_number: ["Số bằng lái", "番号 第…号"],
-  issue_date: ["Ngày cấp", "交付"],
+  license_number: ["License number", "番号 第…号"],
+  issue_date: ["Date of issue", "交付"],
 };
-const PASSPORT_FIELDS = { passport_number: ["Số hộ chiếu", "旅券番号 / Passport No."] };
+const PASSPORT_FIELDS = { passport_number: ["Passport number", "旅券番号 / Passport No."] };
 const HEALTH_INSURANCE_FIELDS = {
-  card_type: ["Loại thẻ", "…被保険者証 / 資格確認書"],
-  insurer_name: ["Đơn vị bảo hiểm (nơi cấp)", "保険者名称 / 交付者名"],
-  issue_date: ["Ngày cấp", "交付年月日"],
+  card_type: ["Card type", "…被保険者証 / 資格確認書"],
+  insurer_name: ["Insurer name", "保険者名称 / 交付者名"],
+  issue_date: ["Date of issue", "交付年月日"],
 };
 const DRIVING_HISTORY_FIELDS = {
-  license_number: ["Số bằng lái (đã trả lại)", "番号 第…号"],
-  issue_date: ["Ngày cấp giấy chứng nhận", "交付"],
+  license_number: ["License number (surrendered)", "番号 第…号"],
+  issue_date: ["Date of issue", "交付"],
 };
 const SPECIAL_PERMANENT_FIELDS = {
-  certificate_number: ["Số giấy chứng nhận", "番号"],
-  expiry_date: ["Hạn", "有効期間の満了日"],
+  certificate_number: ["Certificate number", "番号"],
+  expiry_date: ["Expiry date", "有効期間の満了日"],
 };
 const JUKI_CARD_FIELDS = {
-  issuer: ["Nơi cấp", "○○市長"],
-  expiry_date: ["Hạn thẻ", "有効期限"],
+  issuer: ["Issuer", "○○市長"],
+  expiry_date: ["Expiry date", "有効期限"],
 };
 const RESIDENT_RECORD_FIELDS = {
-  issuer: ["Nơi cấp (chứng nhận)", "○○市長"],
-  certified_date: ["Ngày chứng nhận", "証明日"],
-  address: ["Địa chỉ", "住所"],
+  issuer: ["Issuer (certifying official)", "○○市長"],
+  certified_date: ["Date of certification", "証明日"],
+  address: ["Address", "住所"],
 };
 const PENSION_FIELDS = {
-  basic_pension_number: ["Số hưu trí cơ bản", "基礎年金番号"],
-  issue_date: ["Ngày cấp", "交付年月日"],
+  basic_pension_number: ["Basic pension number", "基礎年金番号"],
+  issue_date: ["Date of issue", "交付年月日"],
 };
 const FIELD_LABELS = {
   residence_card: RESIDENCE_FIELDS,
@@ -140,7 +140,7 @@ function render(r) {
   const det = r.document_detection;
   const detected = !det
     ? ""
-    : `Tự nhận diện: ${$("document").querySelector(`option[value="${det.detected}"]`)?.textContent || det.detected}` +
+    : `Auto-detect: ${$("document").querySelector(`option[value="${det.detected}"]`)?.textContent || det.detected}` +
       `${det.guessed ? " (đoán, không thấy tiêu đề)" : det.confident ? "" : " (không chắc chắn)"} · `;
   if (!r.document) {
     setStatus(
@@ -254,9 +254,9 @@ function summary(r) {
 }
 
 const DESIGN_LABELS = {
-  "2012": "Mẫu cũ (đến 13/06/2026)",
-  "2026": "Mẫu mới (từ 14/06/2026)",
-  specified_2026: "特定在留カード — chưa hỗ trợ",
+  "2012": "2012 design (issued until 2026-06-13)",
+  "2026": "2026 design (issued from 2026-06-14)",
+  specified_2026: "Specified Residence Card (特定在留カード) — not supported",
 };
 
 // "Mẫu chính thức" view: precomputed results on the ISA specimen cards (scripts/build_demo.py)

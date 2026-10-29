@@ -77,7 +77,7 @@ def parse_my_number_card(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not TITLE_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 個人番号カード — ảnh có thể không phải thẻ My Number.")
+        warnings.append("Không tìm thấy chữ 個人番号カード — ảnh có thể không phải My Number Card.")
     fields = {"issuer": _issuer(doc), "expiry_date": _expiry_date(doc)}
     warnings += cross_check(fields)
     return build_result("my_number_card", fields, doc, LABELS, mode, warnings)

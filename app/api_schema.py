@@ -62,14 +62,14 @@ class ExtractResponse(BaseModel):
                                                   "`driving_history_certificate`, `juki_card`, `resident_record`, `pension_book`; "
                                                   "`null` khi không nhận ra.")
     side: str = Field(description="Luôn là `front` (chỉ đọc mặt trước).")
-    card_design: str | None = Field(description="Thẻ cư trú: mẫu thẻ `2012` / `2026` / `specified_2026`; loại khác `null`.")
+    card_design: str | None = Field(description="Residence Card: mẫu thẻ `2012` / `2026` / `specified_2026`; loại khác `null`.")
     fields: dict[str, ExtractedField] = Field(description="Các trường theo loại giấy tờ (xem mô tả endpoint). `{}` khi không nhận ra giấy tờ.")
     quality: Quality
     warnings: list[str] = Field(description="Cảnh báo cho cả kết quả (tiếng Việt), vd nhận diện không chắc, thẻ hết hạn.")
     mean_ocr_confidence: float | None
     labels_found: list[str]
     labels_from_english_anchor: list[str]
-    layout: dict = Field(description="Chỉ có ý nghĩa với `mode=zone|hybrid` (thẻ cư trú): `mode`, `registration`, `zones_px`.")
+    layout: dict = Field(description="Chỉ có ý nghĩa với `mode=zone|hybrid` (Residence Card): `mode`, `registration`, `zones_px`.")
     full_text: str = Field(description="Toàn bộ chữ OCR đã gom theo dòng (`\\n` giữa các dòng).")
     document_detection: DocumentDetection | None = Field(None, description="Chỉ có khi `document=auto`.")
     ocr: OcrInfo

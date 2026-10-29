@@ -81,7 +81,7 @@ def parse_pension(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not TITLE_RE.search(doc.text) and not NUMBER_LABEL_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 年金手帳 / 基礎年金番号 — ảnh có thể không phải sổ / thông báo số hưu trí.")
+        warnings.append("Không tìm thấy chữ 年金手帳 / 基礎年金番号 — ảnh có thể không phải National Pension Handbook / Basic Pension Number Notice.")
     fields = {"basic_pension_number": _pension_number(doc), "issue_date": _issue_date(doc)}
     warnings += cross_check(fields)
     return build_result("pension_book", fields, doc, LABELS, mode, warnings)

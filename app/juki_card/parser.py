@@ -94,7 +94,7 @@ def parse_juki_card(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not TITLE_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 住民基本台帳カード — ảnh có thể không phải thẻ 住基カード.")
+        warnings.append("Không tìm thấy chữ 住民基本台帳カード — ảnh có thể không phải Basic Resident Register Card.")
     fields = {"issuer": _issuer(doc), "expiry_date": _expiry_date(doc)}
     warnings += cross_check(fields)
     return build_result("juki_card", fields, doc, LABELS, mode, warnings)

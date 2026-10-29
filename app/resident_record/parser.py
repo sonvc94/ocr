@@ -107,7 +107,7 @@ def parse_resident_record(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not TITLE_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 住民票 — ảnh có thể không phải giấy chứng nhận cư trú.")
+        warnings.append("Không tìm thấy chữ 住民票 — ảnh có thể không phải Resident Record.")
     issuers = list(ISSUER_RE.finditer(doc.text))
     fields = {
         "issuer": _issuer(doc),

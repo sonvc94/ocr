@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>OCR giấy tờ Nhật <span class="tag">demo</span></h1>
-    <p class="sub">Upload hoặc chụp ảnh giấy tờ Nhật (thẻ cư trú, My Number, bằng lái, hộ chiếu, bảo hiểm y tế, 特別永住者証明書, 運転経歴証明書, 住基カード, 住民票, 年金手帳) → trích xuất thông tin dạng JSON.</p>
+    <p class="sub">Upload hoặc chụp ảnh giấy tờ Nhật (Residence Card, My Number Card, Driver's License, Japanese Passport, Health Insurance Card, Special Permanent Resident Certificate, Driving History Certificate, Basic Resident Register Card, Resident Record, National Pension Handbook) → trích xuất thông tin dạng JSON.</p>
     <nav id="views" class="views">
       <button data-view="upload" class="active">Thử ảnh của bạn</button>
       <button data-view="samples">Mẫu chính thức</button>
@@ -55,7 +55,7 @@
       <ul>
         <li>Ảnh JPEG / PNG / WEBP tối đa 10MB: chọn file, kéo thả, dán (Ctrl+V) hoặc chụp bằng camera. Chọn ảnh chỉ hiện xem trước;
           hệ thống chạy khi bấm <strong>Nhận dạng</strong>, nên có thể đổi tuỳ chọn rồi bấm lại.</li>
-        <li><strong>Giấy tờ</strong>: "Tự nhận diện" (mặc định) hoặc chọn loại. <strong>Cách đọc</strong>: theo nhãn, theo vị trí,
+        <li><strong>Giấy tờ</strong>: "Auto-detect" (mặc định) hoặc chọn loại. <strong>Cách đọc</strong>: theo nhãn, theo vị trí,
           hoặc kết hợp (mục 7–8). <strong>Engine</strong>: PP-OCR (mặc định) hoặc PaddleOCR-VL (chậm, chỉ đọc theo nhãn).
           <strong>Tự cắt &amp; nắn thẻ</strong>: bỏ chọn khi ảnh đã là thẻ cắt sát.</li>
         <li>API: <code>POST /api/extract?document=auto&amp;mode=label|zone|hybrid&amp;engine=ppocr|vl&amp;crop=true</code>.</li>
@@ -114,9 +114,9 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       <h3>Ví dụ (số liệu từ các ảnh trong project)</h3>
       <table class="guide-table">
         <tr><th>Ảnh</th><th>Sau bước 1</th><th>Cắt viền</th><th>Sau bước 3</th><th>Chữ nhỏ trên thẻ cao khoảng</th></tr>
-        <tr><td>Thẻ cư trú mẫu ISA 509×320 (đã là thẻ)</td><td>1600×1006 (×3.1)</td><td>Không cần</td><td>giữ 1600×1006</td><td>22px nhưng nhoè (nguồn chỉ 7px)</td></tr>
-        <tr><td>Bằng lái mẫu 338×225</td><td>1600×1065 (×4.7)</td><td>Có</td><td>1600×1009</td><td>22px, rất nhoè (nguồn 5px) → <code>交付</code> đọc thành <code>节</code></td></tr>
-        <tr><td>Hộ chiếu mẫu 800×538</td><td>1600×1076 (×2)</td><td>Không (hộ chiếu)</td><td>giữ nguyên</td><td>đủ, đọc đúng cả MRZ</td></tr>
+        <tr><td>Residence Card mẫu ISA 509×320 (đã là thẻ)</td><td>1600×1006 (×3.1)</td><td>Không cần</td><td>giữ 1600×1006</td><td>22px nhưng nhoè (nguồn chỉ 7px)</td></tr>
+        <tr><td>Driver's License mẫu 338×225</td><td>1600×1065 (×4.7)</td><td>Có</td><td>1600×1009</td><td>22px, rất nhoè (nguồn 5px) → <code>交付</code> đọc thành <code>节</code></td></tr>
+        <tr><td>Passport mẫu 800×538</td><td>1600×1076 (×2)</td><td>Không (Passport)</td><td>giữ nguyên</td><td>đủ, đọc đúng cả MRZ</td></tr>
         <tr><td>Ảnh điện thoại 4032×3024, thẻ chiếm 2/3 chiều ngang (2688px)</td><td>2000×1500 (×0.5), thẻ ≈ 1333px</td><td>Có</td><td>1600×1009 (×1.2)</td><td>≈ 22px, khá nét</td></tr>
         <tr><td>Ảnh điện thoại 4032×3024, thẻ nhỏ (rộng 1814px)</td><td>thẻ ≈ 900px</td><td>Có (thường lần 3)</td><td>1600×1009 (×1.78)</td><td>≈ 22px nhưng chỉ có chi tiết của ≈ 12px</td></tr>
       </table>
@@ -189,8 +189,8 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
         <tr><td>3</td><td>Thẻ nhỏ trên nền có vân</td><td>Ảnh 600px, từng kênh màu Lab</td><td>Lệch &lt; 25%, gần hình chữ nhật, 8–95% ảnh</td></tr>
       </table>
       <p>Không tìm thấy viền thì dùng nguyên ảnh (<code>ocr.card_cropped=false</code>); vẫn đọc được, nhờ bước nắn nghiêng ở mục 3.
-        <strong>Hộ chiếu</strong> không bao giờ được cắt: trang hộ chiếu không phải cỡ thẻ ID-1, và cuốn hộ chiếu mở 2 trang có tỉ lệ gần bằng
-        1 trang nên dễ bị cắt nhầm cả cuốn. <strong>住民票</strong> (cả trang giấy) và <strong>年金手帳 / 基礎年金番号通知書</strong> (sổ, tờ giấy)
+        <strong>Passport</strong> không bao giờ được cắt: trang Passport không phải cỡ thẻ ID-1, và cuốn Passport mở 2 trang có tỉ lệ gần bằng
+        1 trang nên dễ bị cắt nhầm cả cuốn. <strong>Resident Record</strong> (住民票, cả trang giấy) và <strong>National Pension Handbook</strong> (年金手帳 / 基礎年金番号通知書, sổ, tờ giấy)
         cũng không cắt, vì không phải cỡ thẻ.</p>
       <div class="guide-cases">
         <figure><figcaption>Thẻ nhỏ, chụp xiên trên nền tối → cắt được viền, nắn phẳng</figcaption>
@@ -219,37 +219,37 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       </ul>
 
       <h2 id="g-detect">6. Nhận diện loại giấy tờ</h2>
-      <p>Khi chọn "Tự nhận diện", hệ thống cộng điểm các chữ in chỉ có trên từng loại:</p>
+      <p>Khi chọn "Auto-detect", hệ thống cộng điểm các chữ in chỉ có trên từng loại:</p>
       <table class="guide-table">
         <tr><th>Loại</th><th>Dấu hiệu (điểm)</th></tr>
-        <tr><td>Thẻ cư trú</td><td>在留カード / RESIDENCE CARD (3), 特定在留 (3), 在留資格, 就労制限, 住居地 (2), 在留期間, 国籍・地域 (1)</td></tr>
-        <tr><td>My Number</td><td>個人番号カード / マイナンバーカード (3), 電子証明書 (2), 臓器提供 (1)</td></tr>
-        <tr><td>Bằng lái</td><td>運転免許証, 公安委員会 (3), 第…号 12 chữ số, 免許の条件 (2), 二・小・原 (1)</td></tr>
-        <tr><td>Hộ chiếu</td><td>dòng MRZ 1 <code>P&lt;JPN</code>, dòng MRZ 2 (3), 旅券 / PASSPORT, Passport No (2), 発行国, Surname (1)</td></tr>
-        <tr><td>Bảo hiểm y tế</td><td>…被保険者証 / 資格確認書 / 組合員証 (3), 保険者番号, 保険者名称 / 交付者名 (2), 健康保険 (1)</td></tr>
-        <tr><td>特別永住者証明書</td><td>特別永住者 / SPECIAL PERMANENT (3), 住居地, 有効期間の満了日 (1)</td></tr>
-        <tr><td>運転経歴証明書</td><td>運転経歴 (3), 公安委員会 (1)</td></tr>
-        <tr><td>住基カード</td><td>住民基本台帳カード / 住基カード (3), 有効期限 (1)</td></tr>
-        <tr><td>住民票</td><td>住民票 (3), 世帯主, 住民となった日 (2), 住民票コード, 前住所 / 続柄 (1)</td></tr>
-        <tr><td>年金手帳</td><td>年金手帳 / 基礎年金番号通知書 (3), 基礎年金番号 (2), 国民年金 / 日本年金機構 (1)</td></tr>
+        <tr><td>Residence Card</td><td>在留カード / RESIDENCE CARD (3), 特定在留 (3), 在留資格, 就労制限, 住居地 (2), 在留期間, 国籍・地域 (1)</td></tr>
+        <tr><td>My Number Card</td><td>個人番号カード / マイナンバーカード (3), 電子証明書 (2), 臓器提供 (1)</td></tr>
+        <tr><td>Driver's License</td><td>運転免許証, 公安委員会 (3), 第…号 12 chữ số, 免許の条件 (2), 二・小・原 (1)</td></tr>
+        <tr><td>Japanese Passport</td><td>dòng MRZ 1 <code>P&lt;JPN</code>, dòng MRZ 2 (3), 旅券 / PASSPORT, Passport No (2), 発行国, Surname (1)</td></tr>
+        <tr><td>Health Insurance Card</td><td>…被保険者証 / 資格確認書 / 組合員証 (3), 保険者番号, 保険者名称 / 交付者名 (2), 健康保険 (1)</td></tr>
+        <tr><td>Special Permanent Resident Certificate</td><td>特別永住者 / SPECIAL PERMANENT (3), 住居地, 有効期間の満了日 (1)</td></tr>
+        <tr><td>Driving History Certificate</td><td>運転経歴 (3), 公安委員会 (1)</td></tr>
+        <tr><td>Basic Resident Register Card</td><td>住民基本台帳カード / 住基カード (3), 有効期限 (1)</td></tr>
+        <tr><td>Resident Record</td><td>住民票 (3), 世帯主, 住民となった日 (2), 住民票コード, 前住所 / 続柄 (1)</td></tr>
+        <tr><td>National Pension Handbook</td><td>年金手帳 / 基礎年金番号通知書 (3), 基礎年金番号 (2), 国民年金 / 日本年金機構 (1)</td></tr>
       </table>
-      <p>Có cặp giấy tờ in chung nhiều chữ, nên có <strong>điểm trừ</strong>: thấy <code>運転経歴</code> thì bằng lái bị trừ 8 (運転経歴証明書 in đúng
-        các dòng 公安委員会, 第…号, 免許の条件 của bằng lái); thấy <code>特別永住者</code> thì thẻ cư trú bị trừ 3 (chung 住居地, 国籍・地域).</p>
+      <p>Có cặp giấy tờ in chung nhiều chữ, nên có <strong>điểm trừ</strong>: thấy <code>運転経歴</code> thì Driver's License bị trừ 8 (運転経歴証明書 in đúng
+        các dòng 公安委員会, 第…号, 免許の条件 của Driver's License); thấy <code>特別永住者</code> thì Residence Card bị trừ 3 (chung 住居地, 国籍・地域).</p>
       <p>Chữ in trên nhiều loại (氏名, 住所, まで有効, 日本国) không được tính. Loại điểm cao nhất được chọn nếu đạt ≥ 3; loại thứ hai đạt
         ≥ 75% điểm loại nhất thì kết quả kèm cảnh báo "không chắc chắn".
-        Ảnh được cắt như thẻ trước khi nhận diện; nếu ra hộ chiếu thì đọc lại ảnh gốc chưa cắt (tốn thêm một lần OCR).</p>
+        Ảnh được cắt như thẻ trước khi nhận diện; nếu ra Passport thì đọc lại ảnh gốc chưa cắt (tốn thêm một lần OCR).</p>
       <p><strong>Không loại nào đạt 3 điểm</strong> (mất tiêu đề, ảnh mờ, chụp thiếu…) thì hệ thống <strong>đoán</strong>: cộng điểm vừa tìm được
         với dấu hiệu yếu là dạng con số in trên từng loại:</p>
       <table class="guide-table">
         <tr><th>Loại</th><th>Dấu hiệu để đoán (điểm)</th></tr>
-        <tr><td>Thẻ cư trú</td><td>số thẻ dạng 2 chữ + 8 số + 2 chữ, vd <code>AB12345678CD</code> (2)</td></tr>
-        <tr><td>My Number</td><td>個人番号 (1)</td></tr>
-        <tr><td>Bằng lái</td><td>dãy đúng 12 chữ số, 運転 / 免許 (1)</td></tr>
-        <tr><td>Hộ chiếu</td><td>số dạng 2 chữ + 7 số, chuỗi <code>&lt;&lt;&lt;</code> của MRZ (1)</td></tr>
-        <tr><td>Bảo hiểm y tế</td><td>記号, 保険 (1)</td></tr>
-        <tr><td>年金手帳</td><td>số dạng <code>1234-567890</code> (2), 年金 (1)</td></tr>
-        <tr><td>Các loại mới khác</td><td>永住 (特別永住者証明書), 経歴 (運転経歴証明書), 住基 / 台帳 (住基カード), 世帯, 本籍 / 筆頭者 (住民票) (1).
-          Số 特別永住者証明書 cùng dạng số thẻ cư trú nên không dùng để đoán (nghiêng về thẻ cư trú, phổ biến hơn).</td></tr>
+        <tr><td>Residence Card</td><td>số thẻ dạng 2 chữ + 8 số + 2 chữ, vd <code>AB12345678CD</code> (2)</td></tr>
+        <tr><td>My Number Card</td><td>個人番号 (1)</td></tr>
+        <tr><td>Driver's License</td><td>dãy đúng 12 chữ số, 運転 / 免許 (1)</td></tr>
+        <tr><td>Japanese Passport</td><td>số dạng 2 chữ + 7 số, chuỗi <code>&lt;&lt;&lt;</code> của MRZ (1)</td></tr>
+        <tr><td>Health Insurance Card</td><td>記号, 保険 (1)</td></tr>
+        <tr><td>National Pension Handbook</td><td>số dạng <code>1234-567890</code> (2), 年金 (1)</td></tr>
+        <tr><td>Other</td><td>永住 (Special Permanent Resident Certificate), 経歴 (Driving History Certificate), 住基 / 台帳 (Basic Resident Register Card), 世帯, 本籍 / 筆頭者 (Resident Record) (1).
+          Số 特別永住者証明書 cùng dạng số Residence Card nên không dùng để đoán (nghiêng về Residence Card, phổ biến hơn).</td></tr>
       </table>
       <p>Loại cao điểm nhất (và không hoà) được dùng để đọc, kết quả ghi <code>guessed: true</code> kèm cảnh báo. Không có dấu hiệu nào, hoặc hai loại
         hoà điểm, thì <strong>không báo lỗi</strong>: trả <code>document: null</code>, không có trường, chỉ có chữ OCR (<code>full_text</code>,
@@ -259,31 +259,31 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       <p>Cách đọc mặc định, dùng cho mọi loại giấy tờ. Trên văn bản phẳng, hệ thống tìm vị trí các nhãn in sẵn (chịu được lỗi OCR: thừa dấu cách,
         chữ giản thể…) và lấy <strong>đoạn chữ từ sau nhãn đến trước nhãn kế tiếp</strong>, rồi làm sạch theo kiểu dữ liệu của trường:</p>
       <ul>
-        <li><strong>Thẻ cư trú</strong>: <code>番号 AB12345678CD</code> → số thẻ, sửa ký tự hay nhầm theo vị trí (2 chữ + 8 số + 2 chữ: O→0, I→1…).
+        <li><strong>Residence Card</strong>: <code>番号 AB12345678CD</code> → số thẻ, sửa ký tự hay nhầm theo vị trí (2 chữ + 8 số + 2 chữ: O→0, I→1…).
           Nhãn tiếng Nhật đọc hỏng thì dùng nhãn tiếng Anh in bên dưới (NAME, DATE OF BIRTH…) để định vị, và trường đó bị gắn cờ.</li>
-        <li><strong>Bảo hiểm y tế</strong>: <code>保険者名称</code> / <code>交付者名</code> → phần còn lại của dòng; <code>交付年月日</code> → ngày ngay sau
+        <li><strong>Health Insurance Card</strong>: <code>保険者名称</code> / <code>交付者名</code> → phần còn lại của dòng; <code>交付年月日</code> → ngày ngay sau
           (hoặc ngày ngay trước chữ <code>交付</code>). Tên thẻ in 2 dòng (<code>国民健康保険</code> / <code>資格確認書</code>) được ghép lại.</li>
-        <li><strong>特別永住者証明書</strong>: số = 2 chữ + 8 số + 2 chữ (như thẻ cư trú, sửa ký tự theo vị trí); hạn = ngày sau
+        <li><strong>Special Permanent Resident Certificate</strong> (特別永住者証明書): số = 2 chữ + 8 số + 2 chữ (như Residence Card, sửa ký tự theo vị trí); hạn = ngày sau
           <code>有効期間の満了日</code> (hoặc trước <code>まで有効</code>).</li>
-        <li><strong>住基カード</strong>: hạn = ngày sau <code>有効期限</code>; nơi cấp như My Number. Thẻ ngừng cấp 12/2015, hạn tối đa 10 năm →
+        <li><strong>Basic Resident Register Card</strong> (住基カード): hạn = ngày sau <code>有効期限</code>; nơi cấp như My Number. Thẻ ngừng cấp 12/2015, hạn tối đa 10 năm →
           luôn cảnh báo hết hạn; hạn sau 12/2025 bị gắn cờ (không thể có).</li>
-        <li><strong>住民票</strong>: địa chỉ = phần sau nhãn <code>住所</code> (không phải <code>前住所</code>) đến nhãn kế tiếp (世帯主, 氏名…);
+        <li><strong>Resident Record</strong> (住民票): địa chỉ = phần sau nhãn <code>住所</code> (không phải <code>前住所</code>) đến nhãn kế tiếp (世帯主, 氏名…);
           ngày chứng nhận = ngày sau câu <code>…証明する</code>; nơi cấp = <code>○○市長</code> cuối trang.
           <strong>Số My Number bị che</strong> trước khi đọc: mọi dãy 12 chữ số trên 住民票 thành <code>************</code> trong chữ OCR, và
           dòng đó bị tô đen trên ảnh trả về. Trên các loại khác, dãy 12 chữ số chỉ bị che khi nằm cạnh / ngay dưới chữ <code>個人番号</code>.</li>
-        <li><strong>年金手帳 / 基礎年金番号通知書</strong>: số = dạng <code>1234-567890</code> sau nhãn <code>基礎年金番号</code>; ngày cấp chỉ lấy khi có
+        <li><strong>National Pension Handbook</strong> (年金手帳 / 基礎年金番号通知書): số = dạng <code>1234-567890</code> sau nhãn <code>基礎年金番号</code>; ngày cấp chỉ lấy khi có
           nhãn <code>交付</code> / <code>発行</code> (trên sổ còn ngày sinh, ngày tham gia… không phân biệt được).</li>
         <li><strong>Giấy tờ không có nhãn cho trường cần lấy</strong> thì đọc theo mẫu chữ:
           <ul>
-            <li>My Number: hạn = ngày có <code>まで有効</code> ngay sau; nơi cấp = cụm chữ kết thúc bằng <code>市長/区長/町長/村長</code>.</li>
-            <li>Bằng lái và 運転経歴証明書 (cùng mẫu): số = 12 chữ số trong <code>第 … 号</code>; ngày cấp = ngày sau <code>交付</code>, bỏ số tra cứu 5 chữ số theo sau.</li>
-            <li>Hộ chiếu: số in cạnh <code>旅券番号</code>, đối chiếu với 9 ký tự đầu dòng MRZ thứ hai.</li>
+            <li>My Number Card: hạn = ngày có <code>まで有効</code> ngay sau; nơi cấp = cụm chữ kết thúc bằng <code>市長/区長/町長/村長</code>.</li>
+            <li>Driver's License và Driving History Certificate (cùng mẫu): số = 12 chữ số trong <code>第 … 号</code>; ngày cấp = ngày sau <code>交付</code>, bỏ số tra cứu 5 chữ số theo sau.</li>
+            <li>Passport: số in cạnh <code>旅券番号</code>, đối chiếu với 9 ký tự đầu dòng MRZ thứ hai.</li>
           </ul></li>
         <li><strong>Ngày tháng</strong>: nhận cả năm dương lịch và niên hiệu (令和, 平成, 昭和, 元年, dạng <code>R5. 4. 1</code>), trả về <code>YYYY-MM-DD</code>.</li>
       </ul>
 
       <h2 id="g-zone">8. Lấy trường theo vị trí, và kết hợp</h2>
-      <p>Chỉ thẻ cư trú (mẫu cũ và mẫu 2026) có <strong>bản đồ vị trí (template)</strong>: toạ độ từng nhãn, từng ô giá trị và các dòng chữ cố định
+      <p>Chỉ Residence Card (mẫu cũ và mẫu 2026) có <strong>bản đồ vị trí (template)</strong>: toạ độ từng nhãn, từng ô giá trị và các dòng chữ cố định
         (mốc), đo trên thẻ mẫu chính thức. Các loại khác chạy như "theo nhãn" kèm cảnh báo.</p>
       <svg class="guide-flow" viewBox="0 0 980 200" role="img" aria-label="Đặt bản đồ mẫu lên ảnh: tìm mốc chữ, khớp, chiếu ô giá trị, lấy chữ trong ô">
         <defs><marker id="g-arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="flow-arrowhead"/></marker></defs>
@@ -307,7 +307,7 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       <table class="guide-table">
         <tr><th>Cách đọc</th><th>Khi nào dùng</th></tr>
         <tr><td>Theo nhãn (<code>label</code>)</td><td>Mặc định. Đúng cả khi bố cục lệch, miễn đọc được nhãn.</td></tr>
-        <tr><td>Theo vị trí (<code>zone</code>)</td><td>Nhãn đọc hỏng nhưng thẻ rõ; chỉ thẻ cư trú.</td></tr>
+        <tr><td>Theo vị trí (<code>zone</code>)</td><td>Nhãn đọc hỏng nhưng thẻ rõ; chỉ Residence Card.</td></tr>
         <tr><td>Kết hợp (<code>hybrid</code>)</td><td>Ưu tiên theo nhãn. Hai cách giống nhau → ghi <code>label+zone</code> (tin cậy hơn).
           Chỉ vị trí đọc được → lấy theo vị trí, gắn cờ. Hai cách khác nhau → giữ theo nhãn, gắn cờ, ghi chú giá trị theo vị trí.</td></tr>
       </table>
@@ -318,15 +318,15 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
         <li>Mỗi trường bị gắn <code>needs_review</code> khi: không đọc được, độ tin cậy OCR &lt; 0.85, đã tự sửa ký tự, có ghi chú (đoán, hai cách đọc khác nhau…),
           hoặc không qua kiểm tra chéo.</li>
         <li><strong>Chất lượng ảnh</strong> <code>low</code> khi độ tin cậy trung bình &lt; 0.9, hơn 20% dòng dưới 0.8, hoặc đọc được dưới 60% nhãn mong đợi;
-          khi đó các trường bị gắn cờ (thẻ cư trú: các trường chữ Hán, dễ sai nhất; loại khác: mọi trường đọc được), kèm lời khuyên chụp lại.</li>
+          khi đó các trường bị gắn cờ (Residence Card: các trường chữ Hán, dễ sai nhất; loại khác: mọi trường đọc được), kèm lời khuyên chụp lại.</li>
         <li><strong>Kiểm tra chéo</strong>:
           <ul>
-            <li>Hộ chiếu: chữ số kiểm tra của dòng MRZ.</li>
-            <li>Bằng lái: 2 số đầu phải là mã công an tỉnh.</li>
-            <li>My Number: thẻ hết hạn, hạn quá 10 năm.</li>
-            <li>Bảo hiểm, bằng lái, 運転経歴証明書, 年金手帳, 住民票: ngày cấp / chứng nhận không được ở tương lai.</li>
-            <li>特別永住者証明書, 住基カード: đã hết hạn → cảnh báo.</li>
-            <li>Thẻ cư trú: API chỉ trả số thẻ nên bỏ qua kiểm tra thứ tự các ngày; số thẻ vẫn được sửa và kiểm định dạng.</li>
+            <li>Passport: chữ số kiểm tra của dòng MRZ.</li>
+            <li>Driver's License: 2 số đầu phải là mã công an tỉnh.</li>
+            <li>My Number Card: thẻ hết hạn, hạn quá 10 năm.</li>
+            <li>Health Insurance Card, Driver's License, Driving History Certificate, National Pension Handbook, Resident Record: ngày cấp / chứng nhận không được ở tương lai.</li>
+            <li>Special Permanent Resident Certificate, Basic Resident Register Card: đã hết hạn → cảnh báo.</li>
+            <li>Residence Card: API chỉ trả số thẻ nên bỏ qua kiểm tra thứ tự các ngày; số thẻ vẫn được sửa và kiểm định dạng.</li>
           </ul></li>
       </ul>
 
@@ -356,9 +356,9 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
 
       <h2 id="g-limits">Giới hạn hiện tại</h2>
       <ul>
-        <li>Chỉ đọc mặt trước; chưa thử trên ảnh chụp giấy tờ thật của My Number, bằng lái, hộ chiếu, bảo hiểm và 5 loại mới (mới thử trên ảnh mẫu chính thức / dữ liệu viết tay).</li>
-        <li>Chỉ thẻ cư trú có bản đồ vị trí; các loại khác chỉ đọc theo nhãn / mẫu chữ.</li>
-        <li>特定在留カード (thẻ cư trú gộp My Number) chưa hỗ trợ: nhận ra được nhưng mọi trường đều bị gắn cờ.</li>
+        <li>Chỉ đọc mặt trước; chưa thử trên ảnh chụp giấy tờ thật của My Number Card, Driver's License, Passport, Health Insurance Card và 5 loại mới (mới thử trên ảnh mẫu chính thức / dữ liệu viết tay).</li>
+        <li>Chỉ Residence Card có bản đồ vị trí; các loại khác chỉ đọc theo nhãn / mẫu chữ.</li>
+        <li>特定在留カード (Residence Card gộp My Number) chưa hỗ trợ: nhận ra được nhưng mọi trường đều bị gắn cờ.</li>
         <li>Đoán loại giấy tờ (mục 6) chỉ dựa vào vài dấu hiệu yếu: có thể đoán sai, nên kết quả đoán luôn kèm cảnh báo; mới thử trên ảnh mẫu bị cắt, chưa thử ảnh thật.</li>
         <li>Ảnh quá nhỏ hoặc mờ: phóng to không khôi phục được chữ nhỏ; thẻ nhỏ trong ảnh điện thoại lớn mất chi tiết vì ảnh bị thu nhỏ trước khi cắt (xem mục 2).</li>
       </ul>
@@ -410,7 +410,7 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
           <strong>Hệ thống tích hợp nên đặt <code>false</code></strong>.</td></tr>
         <tr><td><code>crop</code></td><td><code>true</code></td><td>Tự tìm viền thẻ, cắt và nắn phẳng. Đặt <code>false</code> nếu ảnh đã được cắt sát thẻ sẵn.</td></tr>
         <tr><td><code>mode</code></td><td><code>label</code></td><td><code>label</code> (theo nhãn in sẵn), <code>zone</code> (theo vị trí trên mẫu thẻ),
-          <code>hybrid</code> (cả hai). <code>zone</code>/<code>hybrid</code> chỉ có tác dụng với thẻ cư trú; để mặc định là đủ.</td></tr>
+          <code>hybrid</code> (cả hai). <code>zone</code>/<code>hybrid</code> chỉ có tác dụng với Residence Card; để mặc định là đủ.</td></tr>
         <tr><td><code>engine</code></td><td><code>ppocr</code></td><td><code>ppocr</code> (PP-OCRv5). <code>vl</code> (PaddleOCR-VL) chỉ dùng khi máy chủ có chạy
           dịch vụ VL, chậm hơn nhiều; không thì trả 503.</td></tr>
       </table>
@@ -420,28 +420,28 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       <h2 id="a-docs">Loại giấy tờ và trường trả về</h2>
       <table class="guide-table">
         <tr><th><code>document</code></th><th>Giấy tờ</th><th><code>document_type</code></th><th>Trường (<code>fields</code>)</th></tr>
-        <tr><td><code>jp_residence</code></td><td>Thẻ cư trú 在留カード (mẫu 2012 và 2026)</td><td><code>residence_card</code></td>
-          <td><code>card_number</code>: số thẻ 12 ký tự, vd <code>AB12345678CD</code></td></tr>
-        <tr><td><code>jp_mynumber</code></td><td>Thẻ My Number マイナンバーカード, mặt trước</td><td><code>my_number_card</code></td>
-          <td><code>issuer</code>: nơi cấp, vd <code>千代田区長</code><br><code>expiry_date</code>: hạn thẻ</td></tr>
-        <tr><td><code>jp_driver_license</code></td><td>Bằng lái 運転免許証</td><td><code>driver_license</code></td>
-          <td><code>license_number</code>: 12 chữ số<br><code>issue_date</code>: ngày cấp (交付)</td></tr>
-        <tr><td><code>jp_passport</code></td><td>Hộ chiếu Nhật 旅券, trang thông tin (không cắt ảnh)</td><td><code>passport</code></td>
-          <td><code>passport_number</code>: 2 chữ + 7 số, vd <code>TR1234567</code> (kiểm bằng dòng MRZ)</td></tr>
-        <tr><td><code>jp_health_insurance</code></td><td>Thẻ bảo hiểm y tế 健康保険証 / 資格確認書</td><td><code>health_insurance_card</code></td>
-          <td><code>card_type</code>: tên thẻ, vd <code>国民健康保険被保険者証</code><br><code>insurer_name</code>: đơn vị bảo hiểm<br><code>issue_date</code>: ngày cấp</td></tr>
-        <tr><td><code>jp_special_permanent</code></td><td>Giấy chứng nhận vĩnh trú đặc biệt 特別永住者証明書</td><td><code>special_permanent_resident_certificate</code></td>
-          <td><code>certificate_number</code>: 12 ký tự cùng dạng số thẻ cư trú<br><code>expiry_date</code>: hạn (有効期間の満了日)</td></tr>
-        <tr><td><code>jp_driving_history</code></td><td>Giấy chứng nhận lịch sử lái xe 運転経歴証明書</td><td><code>driving_history_certificate</code></td>
-          <td><code>license_number</code>: 12 chữ số (số bằng lái đã trả lại)<br><code>issue_date</code>: ngày cấp (交付)</td></tr>
-        <tr><td><code>jp_juki_card</code></td><td>Thẻ 住民基本台帳カード (ngừng cấp 12/2015, mọi thẻ đã hết hạn → luôn có warning)</td><td><code>juki_card</code></td>
-          <td><code>issuer</code>: nơi cấp, vd <code>千代田区長</code><br><code>expiry_date</code>: hạn thẻ (有効期限)</td></tr>
-        <tr><td><code>jp_resident_record</code></td><td>Giấy chứng nhận cư trú 住民票の写し, cả trang (không cắt ảnh)</td><td><code>resident_record</code></td>
-          <td><code>issuer</code>: nơi chứng nhận, vd <code>千代田区長</code><br><code>certified_date</code>: ngày chứng nhận<br><code>address</code>: địa chỉ (住所)<br>
+        <tr><td><code>jp_residence</code></td><td>Residence Card 在留カード (mẫu 2012 và 2026)</td><td><code>residence_card</code></td>
+          <td><code>card_number</code> (Card number): 12 ký tự, vd <code>AB12345678CD</code></td></tr>
+        <tr><td><code>jp_mynumber</code></td><td>My Number Card マイナンバーカード, mặt trước</td><td><code>my_number_card</code></td>
+          <td><code>issuer</code> (Issuer): vd <code>千代田区長</code><br><code>expiry_date</code> (Expiry date)</td></tr>
+        <tr><td><code>jp_driver_license</code></td><td>Driver's License 運転免許証</td><td><code>driver_license</code></td>
+          <td><code>license_number</code> (License number): 12 chữ số<br><code>issue_date</code> (Date of issue): dòng 交付</td></tr>
+        <tr><td><code>jp_passport</code></td><td>Japanese Passport 旅券, trang thông tin (không cắt ảnh)</td><td><code>passport</code></td>
+          <td><code>passport_number</code> (Passport number): 2 chữ + 7 số, vd <code>TR1234567</code> (kiểm bằng dòng MRZ)</td></tr>
+        <tr><td><code>jp_health_insurance</code></td><td>Health Insurance Card 健康保険証 / 資格確認書</td><td><code>health_insurance_card</code></td>
+          <td><code>card_type</code> (Card type): vd <code>国民健康保険被保険者証</code><br><code>insurer_name</code> (Insurer name)<br><code>issue_date</code> (Date of issue)</td></tr>
+        <tr><td><code>jp_special_permanent</code></td><td>Special Permanent Resident Certificate 特別永住者証明書</td><td><code>special_permanent_resident_certificate</code></td>
+          <td><code>certificate_number</code> (Certificate number): 12 ký tự cùng dạng số Residence Card<br><code>expiry_date</code> (Expiry date): 有効期間の満了日</td></tr>
+        <tr><td><code>jp_driving_history</code></td><td>Driving History Certificate 運転経歴証明書</td><td><code>driving_history_certificate</code></td>
+          <td><code>license_number</code> (License number, surrendered): 12 chữ số<br><code>issue_date</code> (Date of issue): dòng 交付</td></tr>
+        <tr><td><code>jp_juki_card</code></td><td>Basic Resident Register Card 住民基本台帳カード (ngừng cấp 12/2015, mọi thẻ đã hết hạn → luôn có warning)</td><td><code>juki_card</code></td>
+          <td><code>issuer</code> (Issuer): vd <code>横浜市</code><br><code>expiry_date</code> (Expiry date): 有効期限</td></tr>
+        <tr><td><code>jp_resident_record</code></td><td>Resident Record 住民票の写し, cả trang (không cắt ảnh)</td><td><code>resident_record</code></td>
+          <td><code>issuer</code> (Issuer, certifying official): vd <code>千代田区長</code><br><code>certified_date</code> (Date of certification)<br><code>address</code> (Address): 住所<br>
           Số My Number (個人番号) <strong>bị che</strong> (<code>****</code>) trong chữ OCR và trên ảnh, không bao giờ trả về.</td></tr>
-        <tr><td><code>jp_pension_book</code></td><td>Sổ hưu trí 年金手帳 / 基礎年金番号通知書 (không cắt ảnh)</td><td><code>pension_book</code></td>
-          <td><code>basic_pension_number</code>: dạng <code>1234-567890</code><br><code>issue_date</code>: ngày cấp (交付年月日), nếu có in</td></tr>
-        <tr><td><code>auto</code></td><td>Tự nhận diện 1 trong các loại trên</td><td>theo loại nhận ra</td>
+        <tr><td><code>jp_pension_book</code></td><td>National Pension Handbook 年金手帳 / 基礎年金番号通知書 (không cắt ảnh)</td><td><code>pension_book</code></td>
+          <td><code>basic_pension_number</code> (Basic pension number): dạng <code>1234-567890</code><br><code>issue_date</code> (Date of issue): 交付年月日, nếu có in</td></tr>
+        <tr><td><code>auto</code></td><td>Auto-detect: 1 trong các loại trên</td><td>theo loại nhận ra</td>
           <td>Không nhận ra → <code>fields: {}</code> và chỉ có chữ OCR (vẫn 200, không lỗi)</td></tr>
       </table>
       <p>Mọi ngày tháng trả về dạng ISO <code>YYYY-MM-DD</code> (đã đổi từ niên hiệu 令和/平成/昭和). Chỉ đọc <strong>mặt trước</strong>.</p>
@@ -543,7 +543,7 @@ console.log(r.document, r.fields);</pre>
           Lúc khởi động, service cần nạp model (có thể mất vài chục giây) trước khi trả <code>ok</code>.</li>
         <li><strong>Tốc độ</strong>: khoảng 0.5–1 giây/ảnh trên GPU, vài giây trên CPU (chưa tính thời gian upload). Mỗi máy chủ OCR
           <strong>lần lượt từng ảnh</strong>: gửi nhiều request cùng lúc thì request sau phải chờ (GPU khoảng 2 ảnh/giây). Đặt timeout phía client ≥ 60 giây.</li>
-        <li><strong>Hộ chiếu với <code>auto</code></strong> thường phải đọc 2 lần (lần 2 trên ảnh nguyên), chậm gấp đôi; biết là hộ chiếu thì truyền <code>jp_passport</code>.</li>
+        <li><strong>Passport với <code>auto</code></strong> thường phải đọc 2 lần (lần 2 trên ảnh nguyên), chậm gấp đôi; biết là Passport thì truyền <code>jp_passport</code>.</li>
         <li><strong>Bảo mật</strong>: API <strong>không có xác thực</strong>. Đặt sau reverse proxy có HTTPS + mật khẩu / IP whitelist trước khi mở ra internet.</li>
         <li><strong>Dữ liệu cá nhân</strong>: ảnh xử lý trong bộ nhớ. Máy chủ chỉ lưu ảnh / kết quả đầy đủ nếu bật <code>DEBUG_SAVE_IMAGES</code> /
           <code>LOG_RESPONSES</code> (log 1 dòng mỗi request không chứa dữ liệu cá nhân).</li>
@@ -573,17 +573,17 @@ console.log(r.document, r.fields);</pre>
       <div class="options">
         <label>Giấy tờ
           <select id="document">
-            <option value="auto">Tự nhận diện</option>
-            <option value="jp_residence">Thẻ cư trú Nhật (在留カード)</option>
-            <option value="jp_mynumber">Thẻ My Number (個人番号カード)</option>
-            <option value="jp_driver_license">Bằng lái xe Nhật (運転免許証)</option>
-            <option value="jp_passport">Hộ chiếu Nhật (旅券)</option>
-            <option value="jp_health_insurance">Thẻ bảo hiểm y tế Nhật (健康保険証)</option>
-            <option value="jp_special_permanent">Giấy chứng nhận vĩnh trú đặc biệt (特別永住者証明書)</option>
-            <option value="jp_driving_history">Giấy chứng nhận lịch sử lái xe (運転経歴証明書)</option>
-            <option value="jp_juki_card">Thẻ đăng ký cư trú cơ bản (住基カード)</option>
-            <option value="jp_resident_record">Giấy chứng nhận cư trú (住民票の写し)</option>
-            <option value="jp_pension_book">Sổ / thông báo số hưu trí (年金手帳 / 基礎年金番号通知書)</option>
+            <option value="auto">Auto-detect</option>
+            <option value="jp_residence">Residence Card (在留カード)</option>
+            <option value="jp_mynumber">My Number Card (マイナンバーカード)</option>
+            <option value="jp_driver_license">Driver's License (運転免許証)</option>
+            <option value="jp_passport">Japanese Passport (旅券)</option>
+            <option value="jp_health_insurance">Health Insurance Card (健康保険証 / 資格確認書)</option>
+            <option value="jp_special_permanent">Special Permanent Resident Certificate (特別永住者証明書)</option>
+            <option value="jp_driving_history">Driving History Certificate (運転経歴証明書)</option>
+            <option value="jp_juki_card">Basic Resident Register Card (住基カード)</option>
+            <option value="jp_resident_record">Resident Record (住民票の写し)</option>
+            <option value="jp_pension_book">National Pension Handbook (年金手帳 / 基礎年金番号通知書)</option>
           </select>
         </label>
         <label><input id="crop" type="checkbox" checked> Tự cắt &amp; nắn thẻ</label>

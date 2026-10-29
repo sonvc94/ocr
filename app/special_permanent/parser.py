@@ -78,7 +78,7 @@ def parse_special_permanent(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not TITLE_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 特別永住者証明書 — ảnh có thể không phải giấy chứng nhận vĩnh trú đặc biệt.")
+        warnings.append("Không tìm thấy chữ 特別永住者証明書 — ảnh có thể không phải Special Permanent Resident Certificate.")
     fields = {"certificate_number": _number(doc), "expiry_date": _expiry_date(doc)}
     warnings += cross_check(fields)
     return build_result("special_permanent_resident_certificate", fields, doc, LABELS, mode, warnings)

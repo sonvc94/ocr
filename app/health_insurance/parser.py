@@ -101,6 +101,6 @@ def parse_health_insurance(
     warnings: list[str] = []
     fields = {"card_type": _card_type(doc), "insurer_name": _insurer_name(doc), "issue_date": _issue_date(doc)}
     if fields["card_type"].value is None:
-        warnings.append("Không tìm thấy tên thẻ (…被保険者証 / 資格確認書) — ảnh có thể không phải thẻ bảo hiểm y tế.")
+        warnings.append("Không tìm thấy tên thẻ (…被保険者証 / 資格確認書) — ảnh có thể không phải Health Insurance Card.")
     warnings += cross_check(fields)
     return build_result("health_insurance_card", fields, doc, LABELS, mode, warnings)

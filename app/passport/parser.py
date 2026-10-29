@@ -78,7 +78,7 @@ def _passport_number(doc: Document) -> Field:
     if printed:
         f.value, f.raw, score = printed[0], printed[1], printed[2]
         if not printed[3]:
-            f.notes.append("Không thấy nhãn 旅券番号 / Passport No., lấy dãy có dạng số hộ chiếu.")
+            f.notes.append("Không thấy nhãn 旅券番号 / Passport No., lấy dãy có dạng Passport number.")
         if mrz:
             if mrz[0] != printed[0]:
                 f.notes.append(f"MRZ đọc ra {mrz[0]}, sai check digit.")
@@ -98,10 +98,10 @@ def parse_passport(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not JAPAN_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 日本国 / JAPAN — có thể không phải hộ chiếu Nhật (chỉ hỗ trợ hộ chiếu Nhật).")
+        warnings.append("Không tìm thấy chữ 日本国 / JAPAN — có thể không phải Japanese Passport (chỉ hỗ trợ Japanese Passport).")
     fields = {"passport_number": _passport_number(doc)}
     number = fields["passport_number"]
     if number.value and not NUMBER_SHAPE.fullmatch(number.value):
-        number.notes.append("Không đúng dạng số hộ chiếu Nhật (2 chữ + 7 số).")
+        number.notes.append("Không đúng dạng Passport number Nhật (2 chữ + 7 số).")
         number.needs_review = True
     return build_result("passport", fields, doc, LABELS, mode, warnings)

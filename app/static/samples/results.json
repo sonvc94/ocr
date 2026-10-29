@@ -8,7 +8,7 @@
    "id": "residence_card_current",
    "src": "samples/isa/residence_card_current.jpg",
    "document": "jp_residence",
-   "title": "在留カード — mẫu hiện hành (cấp đến 13/06/2026)",
+   "title": "Residence Card (在留カード) — 2012 design (issued until 2026-06-13)",
    "description": "Thẻ mẫu chính thức (見本) mẫu cũ, ảnh gốc 509×320px trích từ tờ hướng dẫn của Cục Xuất nhập cảnh. API chỉ trả số thẻ.",
    "image": "/static/samples/residence_card_current.jpg",
    "processed_image": "/static/samples/residence_card_current_processed.jpg",
@@ -534,8 +534,8 @@
     },
     "timing_ms": {
      "preprocess": 185,
-     "ocr": 17633,
-     "parse": 11
+     "ocr": 15830,
+     "parse": 18
     }
    }
   },
@@ -546,7 +546,7 @@
    "id": "residence_card_new_2026",
    "src": "samples/isa/residence_card_new_2026.jpg",
    "document": "jp_residence",
-   "title": "在留カード — mẫu mới (cấp từ 14/06/2026)",
+   "title": "Residence Card (在留カード) — 2026 design (issued from 2026-06-14)",
    "description": "Mẫu mới in số thẻ ở phía dưới. Ảnh gốc 665×416px. API chỉ trả số thẻ.",
    "image": "/static/samples/residence_card_new_2026.jpg",
    "processed_image": "/static/samples/residence_card_new_2026_processed.jpg",
@@ -948,9 +948,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 39,
-     "ocr": 8564,
-     "parse": 11
+     "preprocess": 78,
+     "ocr": 8488,
+     "parse": 6
     }
    }
   },
@@ -961,7 +961,7 @@
    "id": "specified_residence_card_2026",
    "src": "samples/isa/specified_residence_card_2026.jpg",
    "document": "jp_residence",
-   "title": "特定在留カード — thẻ cư trú gộp My Number (từ 14/06/2026)",
+   "title": "Specified Residence Card (特定在留カード) — combined with My Number (from 2026-06-14)",
    "description": "Bố cục khác hoàn toàn, demo CHƯA hỗ trợ — đưa vào để thấy hệ thống cảnh báo thay vì trả kết quả sai một cách im lặng.",
    "image": "/static/samples/specified_residence_card_2026.jpg",
    "processed_image": "/static/samples/specified_residence_card_2026_processed.jpg",
@@ -987,7 +987,7 @@
      "advice": "Nên chụp/scan lại rõ hơn (chiều ngang thẻ ≥ 1500px, không lóa, không watermark) hoặc nhập tay các trường cần kiểm tra."
     },
     "warnings": [
-     "Đây là 特定在留カード (thẻ cư trú gộp My Number), bố cục khác hẳn — demo chưa hỗ trợ, kết quả không đáng tin."
+     "Đây là Specified Residence Card (特定在留カード, gộp My Number), bố cục khác hẳn — demo chưa hỗ trợ, kết quả không đáng tin."
     ],
     "mean_ocr_confidence": 0.9083,
     "labels_found": [
@@ -1332,9 +1332,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 56,
-     "ocr": 11455,
-     "parse": 11
+     "preprocess": 104,
+     "ocr": 8310,
+     "parse": 7
     }
    }
   },
@@ -1342,7 +1342,7 @@
    "id": "my_number_card",
    "src": "samples/official/my_number_card.jpg",
    "document": "jp_mynumber",
-   "title": "マイナンバーカード — thẻ My Number",
+   "title": "My Number Card (マイナンバーカード)",
    "description": "Ảnh mẫu 507×317px. Nơi cấp in là 「□□市長」 (chữ giữ chỗ) và bị dấu みほん đè lên nên OCR không đọc được; hạn thẻ đọc đúng.",
    "source_name": "Thành phố Kobe (神戸市)",
    "source_page": "https://www.city.kobe.lg.jp/a53715/mynumbercard.html",
@@ -1743,9 +1743,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 52,
-     "ocr": 9475,
-     "parse": 12
+     "preprocess": 21,
+     "ocr": 8113,
+     "parse": 6
     }
    }
   },
@@ -1753,8 +1753,8 @@
    "id": "driver_license",
    "src": "samples/official/driver_license.jpg",
    "document": "jp_driver_license",
-   "title": "運転免許証 — bằng lái xe",
-   "description": "Ảnh mẫu rất nhỏ (cắt phần thẻ, 338×225px, bỏ chú thích bên phải): đọc được số bằng lái, chữ 交付 và niên hiệu của ngày cấp bị đọc sai nên không lấy được ngày cấp.",
+   "title": "Driver's License (運転免許証)",
+   "description": "Ảnh mẫu rất nhỏ (cắt phần thẻ, 338×225px, bỏ chú thích bên phải): đọc được License number, chữ 交付 và niên hiệu của ngày cấp bị đọc sai nên không lấy được ngày cấp.",
    "source_name": "Cảnh sát tỉnh Kanagawa (神奈川県警察)",
    "source_page": "https://www.police.pref.kanagawa.jp/tetsuzuki/menkyo/mes83080.html",
    "image": "/static/samples/driver_license.jpg",
@@ -2152,9 +2152,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 16,
-     "ocr": 7817,
-     "parse": 15
+     "preprocess": 32,
+     "ocr": 6592,
+     "parse": 11
     }
    }
   },
@@ -2162,7 +2162,7 @@
    "id": "passport_2025",
    "src": "samples/official/passport_2025.jpg",
    "document": "jp_passport",
-   "title": "旅券 — hộ chiếu mẫu 2025 (nộp đơn từ 24/03/2025)",
+   "title": "Japanese Passport (旅券) — 2025 design (applications from 2025-03-24)",
    "description": "Trang thông tin cá nhân, ảnh 800×538px. Số in trên trang và số trong MRZ (đúng check digit) khớp nhau.",
    "source_name": "Tỉnh Kanagawa (神奈川県)",
    "source_page": "https://www.pref.kanagawa.jp/docs/h6d/passport/aboutpass.html",
@@ -2792,8 +2792,8 @@
     },
     "timing_ms": {
      "preprocess": 0,
-     "ocr": 12979,
-     "parse": 10
+     "ocr": 10941,
+     "parse": 9
     }
    }
   },
@@ -2801,7 +2801,7 @@
    "id": "passport_2020",
    "src": "samples/official/passport_2020.jpg",
    "document": "jp_passport",
-   "title": "旅券 — hộ chiếu mẫu trước 2025",
+   "title": "Japanese Passport (旅券) — design before 2025",
    "description": "Trang thông tin cá nhân, ảnh 800×512px.",
    "source_name": "Tỉnh Kanagawa (神奈川県)",
    "source_page": "https://www.pref.kanagawa.jp/docs/h6d/passport/aboutpass.html",
@@ -3371,8 +3371,8 @@
     },
     "timing_ms": {
      "preprocess": 0,
-     "ocr": 10750,
-     "parse": 8
+     "ocr": 9758,
+     "parse": 7
     }
    }
   },
@@ -3380,7 +3380,7 @@
    "id": "health_insurance_shikaku_kakuninsho",
    "src": "samples/official/health_insurance_shikaku_kakuninsho.jpg",
    "document": "jp_health_insurance",
-   "title": "国民健康保険 資格確認書 — thay thẻ bảo hiểm y tế",
+   "title": "Health Insurance Card — National Health Insurance 資格確認書 (国民健康保険)",
    "description": "Mẫu cho người dưới 70 tuổi của bảo hiểm y tế quốc dân, ảnh 752×469px. Đơn vị cấp in ở 交付者名.",
    "source_name": "Thành phố Nagoya (名古屋市)",
    "source_page": "https://www.city.nagoya.jp/kurashi/hoken/1011736/1011750/1011753.html",
@@ -3745,9 +3745,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 15,
-     "ocr": 7731,
-     "parse": 11
+     "preprocess": 28,
+     "ocr": 7050,
+     "parse": 7
     }
    }
   },
@@ -3758,7 +3758,7 @@
    "id": "special_permanent_resident",
    "src": "samples/official/special_permanent_resident.jpg",
    "document": "jp_special_permanent",
-   "title": "特別永住者証明書 — mẫu hiện hành (cấp đến 13/06/2026)",
+   "title": "Special Permanent Resident Certificate (特別永住者証明書) — current design (issued until 2026-06-13)",
    "description": "Ảnh mẫu 522×332px cắt từ tờ hướng dẫn của Cục Xuất nhập cảnh. Lấy số giấy chứng nhận và hạn.",
    "image": "/static/samples/special_permanent_resident.jpg",
    "processed_image": "/static/samples/special_permanent_resident_processed.jpg",
@@ -4196,8 +4196,8 @@
     },
     "timing_ms": {
      "preprocess": 46,
-     "ocr": 9215,
-     "parse": 9
+     "ocr": 8212,
+     "parse": 6
     }
    }
   },
@@ -4208,7 +4208,7 @@
    "id": "special_permanent_resident_2026",
    "src": "samples/official/special_permanent_resident_2026.jpg",
    "document": "jp_special_permanent",
-   "title": "特別永住者証明書 — mẫu mới (cấp từ 14/06/2026)",
+   "title": "Special Permanent Resident Certificate (特別永住者証明書) — 2026 design (issued from 2026-06-14)",
    "description": "Mẫu mới in số ở dải phía dưới, ảnh 684×436px cùng tờ hướng dẫn.",
    "image": "/static/samples/special_permanent_resident_2026.jpg",
    "processed_image": "/static/samples/special_permanent_resident_2026_processed.jpg",
@@ -4604,9 +4604,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 83,
-     "ocr": 9482,
-     "parse": 11
+     "preprocess": 98,
+     "ocr": 8371,
+     "parse": 9
     }
    }
   },
@@ -4614,8 +4614,8 @@
    "id": "driving_history",
    "src": "samples/official/driving_history.jpg",
    "document": "jp_driving_history",
-   "title": "運転経歴証明書 — giấy chứng nhận lịch sử lái xe",
-   "description": "Hình minh hoạ mẫu mới (vẽ từ PDF, cắt mặt trước). Cùng mẫu với bằng lái: số bằng lái đã trả lại (第…号) và ngày cấp (交付).",
+   "title": "Driving History Certificate (運転経歴証明書)",
+   "description": "Hình minh hoạ mẫu mới (vẽ từ PDF, cắt mặt trước). Cùng mẫu với Driver's License: License number đã trả lại (第…号) và ngày cấp (交付).",
    "source_name": "Tỉnh Okayama (岡山県)",
    "source_page": "https://www.pref.okayama.jp/uploaded/life/963605_9262306_misc.pdf",
    "image": "/static/samples/driving_history.jpg",
@@ -5132,9 +5132,9 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 23,
-     "ocr": 7841,
-     "parse": 9
+     "preprocess": 24,
+     "ocr": 8105,
+     "parse": 13
     }
    }
   },
@@ -5142,7 +5142,7 @@
    "id": "juki_card",
    "src": "samples/official/juki_card.jpg",
    "document": "jp_juki_card",
-   "title": "住民基本台帳カード — thẻ 住基 (có ảnh)",
+   "title": "Basic Resident Register Card (住民基本台帳カード) — photo type",
    "description": "Sơ đồ mẫu thẻ của Bộ Nội vụ (vẽ từ PDF, khung ảnh để trống); nơi cấp là chữ giữ chỗ △△市. Thẻ ngừng cấp 12/2015, mọi thẻ đã hết hạn.",
    "source_name": "Bộ Nội vụ và Truyền thông (総務省)",
    "source_page": "https://www.soumu.go.jp/main_sosiki/kenkyu/kouteki_kojin/pdf/080916_1_si7.pdf",
@@ -5369,8 +5369,8 @@
      ]
     },
     "timing_ms": {
-     "preprocess": 37,
-     "ocr": 5969,
+     "preprocess": 31,
+     "ocr": 5743,
      "parse": 3
     }
    }
@@ -5379,7 +5379,7 @@
    "id": "resident_record",
    "src": "samples/official/resident_record.jpg",
    "document": "jp_resident_record",
-   "title": "住民票の写し — giấy chứng nhận cư trú (cả trang)",
+   "title": "Resident Record (住民票の写し) — full page",
    "description": "Mẫu bố cục chuẩn từ 26/05/2025, ảnh 760×1083px. Địa chỉ đọc được; ngày chứng nhận là chữ giữ chỗ (令和●年●月●●日) nên không lấy. Số My Number trên mẫu đã ghi 【省略】; nếu có số thật sẽ bị che.",
    "source_name": "Thành phố Kobe (神戸市)",
    "source_page": "https://www.city.kobe.lg.jp/a53715/20250507_system-std.html",
@@ -6008,7 +6008,7 @@
     },
     "timing_ms": {
      "preprocess": 0,
-     "ocr": 11368,
+     "ocr": 10981,
      "parse": 8
     }
    }
@@ -6017,7 +6017,7 @@
    "id": "pension_notice",
    "src": "samples/official/pension_notice.jpg",
    "document": "jp_pension_book",
-   "title": "基礎年金番号通知書 — thông báo số hưu trí cơ bản (thay 年金手帳)",
+   "title": "National Pension Handbook — Basic Pension Number Notice (基礎年金番号通知書, replaces 年金手帳)",
    "description": "Hình minh hoạ: số in là XXXX-XXXXXX, ngày cấp 令和X年X月X日 (chữ giữ chỗ) nên không có giá trị nào để lấy — đúng là không bịa ra số.",
    "source_name": "Bộ Y tế, Lao động và Phúc lợi / Cơ quan Hưu trí Nhật (厚生労働省・日本年金機構)",
    "source_page": "https://www.city.adachi.tokyo.jp/koreiryo/kurashi/hoken/nenkin-oshirase20220218.html",
@@ -6224,7 +6224,7 @@
     },
     "timing_ms": {
      "preprocess": 0,
-     "ocr": 5542,
+     "ocr": 5539,
      "parse": 2
     }
    }

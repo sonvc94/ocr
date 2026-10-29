@@ -45,19 +45,19 @@ class RevalidatedStaticFiles(StaticFiles):
 API_DESCRIPTION = """
 OCR mặt trước giấy tờ Nhật: gửi 1 ảnh, nhận các trường đã trích xuất dạng JSON.
 
-| `document` | Giấy tờ | Trường trả về (`fields`) |
+| `document` | Document type | Trường trả về (`fields`) |
 |---|---|---|
-| `jp_residence` | 在留カード thẻ cư trú | `card_number` |
-| `jp_mynumber` | マイナンバーカード | `issuer`, `expiry_date` |
-| `jp_driver_license` | 運転免許証 bằng lái | `license_number`, `issue_date` |
-| `jp_passport` | 旅券 hộ chiếu Nhật | `passport_number` |
-| `jp_health_insurance` | 健康保険証 / 資格確認書 | `card_type`, `insurer_name`, `issue_date` |
-| `jp_special_permanent` | 特別永住者証明書 | `certificate_number`, `expiry_date` |
-| `jp_driving_history` | 運転経歴証明書 | `license_number`, `issue_date` |
-| `jp_juki_card` | 住民基本台帳カード (đã ngừng cấp, mọi thẻ đã hết hạn) | `issuer`, `expiry_date` |
-| `jp_resident_record` | 住民票の写し (cả trang, số My Number bị che) | `issuer`, `certified_date`, `address` |
-| `jp_pension_book` | 年金手帳 / 基礎年金番号通知書 | `basic_pension_number`, `issue_date` |
-| `auto` | tự nhận diện | theo loại nhận ra; không nhận ra → `fields: {}` + chữ OCR (không lỗi) |
+| `jp_residence` | Residence Card (在留カード) | `card_number` |
+| `jp_mynumber` | My Number Card (マイナンバーカード) | `issuer`, `expiry_date` |
+| `jp_driver_license` | Driver's License (運転免許証) | `license_number`, `issue_date` |
+| `jp_passport` | Japanese Passport (旅券) | `passport_number` |
+| `jp_health_insurance` | Health Insurance Card (健康保険証 / 資格確認書) | `card_type`, `insurer_name`, `issue_date` |
+| `jp_special_permanent` | Special Permanent Resident Certificate (特別永住者証明書) | `certificate_number`, `expiry_date` |
+| `jp_driving_history` | Driving History Certificate (運転経歴証明書) | `license_number`, `issue_date` |
+| `jp_juki_card` | Basic Resident Register Card (住民基本台帳カード; đã ngừng cấp, mọi thẻ đã hết hạn) | `issuer`, `expiry_date` |
+| `jp_resident_record` | Resident Record (住民票の写し; cả trang, số My Number bị che) | `issuer`, `certified_date`, `address` |
+| `jp_pension_book` | National Pension Handbook (年金手帳 / 基礎年金番号通知書) | `basic_pension_number`, `issue_date` |
+| `auto` | Auto-detect | theo loại nhận ra; không nhận ra → `fields: {}` + chữ OCR (không lỗi) |
 
 Hướng dẫn tích hợp đầy đủ (ví dụ curl / Python / JavaScript, cách đọc kết quả, mã lỗi): tab **API** trên trang chủ.
 """
@@ -114,13 +114,13 @@ def health():
 )
 def extract(
     file: UploadFile = File(..., description="Ảnh giấy tờ (JPEG / PNG / WEBP, tối đa 10MB), gửi dạng `multipart/form-data`."),
-    crop: bool = Query(True, description="Tự tìm viền thẻ, cắt và nắn phẳng (hộ chiếu không cắt)."),
+    crop: bool = Query(True, description="Tự tìm viền thẻ, cắt và nắn phẳng (Japanese Passport, Resident Record, National Pension Handbook không cắt)."),
     include_image: bool = Query(True, description="Trả kèm ảnh đã xử lý (base64, vài trăm KB). Tích hợp hệ thống nên đặt `false`."),
     engine: str = Query("ppocr", pattern=f"^({'|'.join(pipeline.ENGINES)})$",
                         description="`ppocr` (PP-OCRv5, mặc định) hoặc `vl` (PaddleOCR-VL, cần dịch vụ VL chạy riêng, chậm hơn nhiều)."),
     mode: str = Query("label", pattern=f"^({'|'.join(pipeline.MODES)})$",
                       description="`label` (theo nhãn in sẵn, mặc định), `zone` (theo vị trí trên mẫu thẻ), `hybrid` (cả hai). "
-                                  "`zone`/`hybrid` chỉ có tác dụng với thẻ cư trú."),
+                                  "`zone`/`hybrid` chỉ có tác dụng với Residence Card."),
     document: str = Query("jp_residence", pattern=f"^({'|'.join(pipeline.DOCUMENT_CHOICES)})$",
                           description="Loại giấy tờ, hoặc `auto` để tự nhận diện. Mặc định `jp_residence` (giữ tương thích client cũ)."),
 ):

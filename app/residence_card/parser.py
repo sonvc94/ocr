@@ -74,7 +74,7 @@ def parse_residence_card(
     warnings: list[str] = []
 
     if not RESIDENCE_CARD_TITLE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 在留カード / RESIDENCE CARD — ảnh có thể không phải thẻ cư trú.")
+        warnings.append("Không tìm thấy chữ 在留カード / RESIDENCE CARD — ảnh có thể không phải Residence Card.")
 
     fields, guessed = extract_fields(doc, labels)
 
@@ -98,7 +98,7 @@ def parse_residence_card(
             fields[key] = Field(notes=["Mẫu thẻ từ 14/06/2026 không in mục này (chỉ lưu trong chip IC)."], needs_review=False)
             guessed.discard(key)
     elif design == "specified_2026":
-        warnings.append("Đây là 特定在留カード (thẻ cư trú gộp My Number), bố cục khác hẳn — demo chưa hỗ trợ, kết quả không đáng tin.")
+        warnings.append("Đây là Specified Residence Card (特定在留カード, gộp My Number), bố cục khác hẳn — demo chưa hỗ trợ, kết quả không đáng tin.")
 
     for key, f in fields.items():
         if f.value is None or f.source == "zone":

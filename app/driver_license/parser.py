@@ -81,7 +81,7 @@ def cross_check(fields: dict[str, Field], today: dt.date | None = None) -> list[
     if number.value and int(number.value[:2]) not in COMMISSION_CODES:
         number.notes.append("2 số đầu không phải mã công an tỉnh (公安委員会) nào.")
         number.needs_review = True
-        warnings.append(f"Số bằng lái bắt đầu bằng {number.value[:2]}: không phải mã tỉnh hợp lệ, có thể đọc sai.")
+        warnings.append(f"License number bắt đầu bằng {number.value[:2]}: không phải mã tỉnh hợp lệ, có thể đọc sai.")
     if issued.value and dt.date.fromisoformat(issued.value) > (today or dt.date.today()):
         issued.notes.append("Ngày cấp ở tương lai.")
         issued.needs_review = True
@@ -98,9 +98,9 @@ def parse_driver_license(
     warnings: list[str] = []
     # 運転免許証 is printed vertically next to the photo and often not read; 公安委員会 is printed on every license.
     if not TITLE_RE.search(doc.text) and not LABELS["commission"].search(doc.text):
-        warnings.append("Không tìm thấy chữ 運転免許証 / 公安委員会 — ảnh có thể không phải bằng lái xe Nhật.")
+        warnings.append("Không tìm thấy chữ 運転免許証 / 公安委員会 — ảnh có thể không phải Driver's License.")
     if HISTORY_TITLE_RE.search(doc.text):
-        warnings.append("Ảnh có chữ 運転経歴 — có thể là 運転経歴証明書, không phải bằng lái (chọn loại giấy tờ đó).")
+        warnings.append("Ảnh có chữ 運転経歴 — có thể là Driving History Certificate (運転経歴証明書), không phải Driver's License (chọn loại giấy tờ đó).")
     fields = {"license_number": _license_number(doc), "issue_date": _issue_date(doc)}
     warnings += cross_check(fields)
     return build_result("driver_license", fields, doc, LABELS, mode, warnings)
@@ -114,7 +114,7 @@ def parse_driving_history(
     doc = Document(boxes, normalize)
     warnings: list[str] = []
     if not HISTORY_TITLE_RE.search(doc.text):
-        warnings.append("Không tìm thấy chữ 運転経歴証明書 — ảnh có thể không phải giấy chứng nhận lịch sử lái xe.")
+        warnings.append("Không tìm thấy chữ 運転経歴証明書 — ảnh có thể không phải Driving History Certificate.")
     fields = {"license_number": _license_number(doc), "issue_date": _issue_date(doc)}
     warnings += cross_check(fields)
     labels = {**LABELS, "title": HISTORY_TITLE_RE}

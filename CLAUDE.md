@@ -211,8 +211,13 @@ không import nhau).
   届出日 → fallback chỉ khi không có `証明する` và ngày ≤ 30 ký tự trước nơi cấp); 基礎年金番号通知書 / trang 年金手帳 chỉ có chữ giữ chỗ / để trống
   → `None` (không bịa). Tự nhận diện đúng cả 10 (trang 年金手帳 trống chỉ đoán). Chưa có ảnh 年金手帳 / 住民票 có số thật.
   Chưa thử ảnh chụp giấy tờ thật.
-- `static/`: UI HTML/JS thuần. Chọn ảnh (chọn file, kéo thả, dán, camera) chỉ xem trước (`selectFile`), **không tự gửi**: người dùng chọn
-  giấy tờ (mặc định "Tự nhận diện" = `auto`, trạng thái ghi loại đã nhận) /tuỳ chọn rồi bấm "Nhận dạng" (`#submit` → `upload(selectedFile)`); ảnh giữ lại để đổi tuỳ chọn và chạy lại (yêu cầu 28/10/2026).
+- `static/`: UI HTML/JS thuần. **Tên loại giấy tờ và tên trường hiển thị bằng tiếng Anh** (yêu cầu 29/10/2026), kèm chữ Nhật in trên giấy tờ:
+  `FIELD_LABELS`/`DESIGN_LABELS` (`app.js`), cột tên trường + `title` trong `docs.js`, `<option>` chọn giấy tờ, `title` mẫu trong `build_demo.py`,
+  bảng tab API / OpenAPI `API_DESCRIPTION`, bảng tab "Luồng xử lý", cảnh báo của parser (`ảnh có thể không phải Driver's License`). Bộ tên dùng chung:
+  Residence Card, My Number Card, Driver's License, Japanese Passport, Health Insurance Card, Special Permanent Resident Certificate,
+  Driving History Certificate, Basic Resident Register Card, Resident Record, National Pension Handbook, Auto-detect. Chữ giải thích, trạng thái,
+  cảnh báo khác vẫn tiếng Việt. Thêm loại giấy tờ / trường mới thì đặt tên tiếng Anh theo bộ này. Chọn ảnh (chọn file, kéo thả, dán, camera) chỉ xem trước (`selectFile`), **không tự gửi**: người dùng chọn
+  giấy tờ (mặc định "Auto-detect" = `auto`, trạng thái ghi loại đã nhận) /tuỳ chọn rồi bấm "Nhận dạng" (`#submit` → `upload(selectedFile)`); ảnh giữ lại để đổi tuỳ chọn và chạy lại (yêu cầu 28/10/2026).
   "Chạy lại trực tiếp" ở tab mẫu vẫn chạy ngay (mẫu đã có `document`). (chọn loại giấy tờ `document`, nhớ trong localStorage; engine VL khoá chọn `mode`; chọn `mode`, vẽ `zones_px`
   khi bật "Hiện ô template"; tên trường hiển thị theo `document_type`). Nút "Chụp ảnh bằng camera": `getUserMedia` (camera sau, xin
   độ phân giải tối đa, khung ngắm tỉ lệ ID-1, chụp ra JPEG rồi đi qua cùng luồng upload); chỉ chạy ở secure context (https/localhost) →
