@@ -40,7 +40,7 @@ curl -F file=@samples/synthetic_photo.jpg "localhost:8000/api/extract?include_im
 
 | Query param | Mặc định | Ý nghĩa |
 |---|---|---|
-| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không nhận ra → 422; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書) |
+| `document` | `jp_residence` | `auto` (tự nhận diện loại giấy tờ từ chữ OCR; không chắc thì đoán; không đoán được vẫn trả 200 với chữ OCR, xem dưới; UI mặc định dùng `auto`) hoặc chọn loại: giấy tờ Nhật `jp_residence` (thẻ cư trú, chỉ số thẻ), `jp_mynumber` (My Number), `jp_driver_license` (bằng lái), `jp_passport` (hộ chiếu Nhật, không tự cắt ảnh), `jp_health_insurance` (thẻ bảo hiểm y tế / 資格確認書) |
 | `crop` | `true` | Tự tìm viền thẻ, cắt và nắn phẳng (kể cả thẻ nhạt màu, trong bao nhựa, bị che 1 góc, thẻ nhỏ trên nền vân gỗ) |
 | `include_image` | `true` | Trả kèm ảnh đã xử lý (base64) để hiển thị |
 | `engine` | `ppocr` | `ppocr` (PP-OCRv5, trong container) hoặc `vl` (PaddleOCR-VL, cần `vl_service` đang chạy, nếu không trả 503) |
@@ -62,7 +62,9 @@ Các trường (`document_type` cho biết loại thẻ):
 - Các loại `my_number_card`, `driver_license`, `passport`, `health_insurance_card` đọc theo nhãn/mẫu chữ, chưa có template: `zone`/`hybrid` chạy như `label` kèm warning.
 
 Mọi kết quả có `document` (loại đã đọc). Với `document=auto` có thêm `document_detection`: `detected`, `confident`
-(false khi loại thứ hai gần điểm → kèm warning), `scores` theo từng loại.
+(false khi loại thứ hai gần điểm → kèm warning), `guessed` (true khi không thấy tiêu đề/nhãn đủ chắc, loại được đoán theo dạng số
+in trên giấy tờ → kèm warning), `scores` theo từng loại, `guess_scores` (điểm dùng để đoán). Không nhận diện cũng không đoán được →
+**không trả lỗi**: `document`/`document_type` = `null`, `fields` = `{}`, chữ OCR ở `full_text` và `ocr.lines`, kèm warning.
 
 `source`: `label` (theo nhãn), `zone` (theo vị trí), `label+zone` (hai cách cho cùng kết quả). `layout` cho biết mode,
 kết quả khớp mẫu thẻ vào ảnh (`registration`: số mốc dùng, sai số, góc xoay; `null` nếu không khớp được → chỉ dùng kết quả

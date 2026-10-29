@@ -3,6 +3,10 @@
 Each document has printed words (title, labels, the passport's machine-readable zone) with a weight; the document
 with the highest total wins. Words printed on several documents (氏名, 住所, まで有効, 日本国…) are left out.
 All documents use the same Japanese OCR, so one OCR pass is enough to decide (pipeline.extract).
+
+When no document reaches MIN_SCORE (title not read, blurry photo…), the document is guessed from the weak evidence
+left: the markers that were found plus the shape of the numbers printed (GUESS_HINTS). No evidence, or a tie → None
+and pipeline.extract returns the OCR text only (never an error).
 """
 
 from __future__ import annotations
@@ -59,14 +63,33 @@ MARKERS: dict[str, list[tuple[re.Pattern, int]]] = {
 }
 
 
+# Used only to guess when no document reached MIN_SCORE: values whose shape belongs to one document.
+GUESS_HINTS: dict[str, list[tuple[re.Pattern, int]]] = {
+    "jp_residence": [(_(r"(?<![A-Z0-9])[A-Z]{2}\s?\d{8}\s?[A-Z]{2}(?![A-Z0-9])"), 2)],  # card number AB12345678CD
+    "jp_mynumber": [(_(r"個\s*人\s*番\s*号"), 1)],
+    "jp_driver_license": [(_(r"(?<!\d)\d{12}(?!\d)"), 1), (_(r"運\s*転|免\s*許"), 1)],
+    "jp_passport": [(_(r"(?<![A-Z0-9])[A-Z]{2}\d{7}(?![A-Z0-9])"), 1), (_(r"<<<"), 1)],
+    "jp_health_insurance": [(_(r"記\s*号"), 1), (_(r"保\s*険"), 1)],
+}
+
+
 @dataclass
 class Detection:
-    document: str | None  # None when nothing reached MIN_SCORE
+    document: str | None  # None when nothing was found, not even a guess
     scores: dict[str, int]
     confident: bool
+    guessed: bool = False  # no document reached MIN_SCORE; `document` is the best guess from weak evidence
+    guess_scores: dict[str, int] | None = None  # scores + GUESS_HINTS, when no document reached MIN_SCORE
 
     def to_dict(self) -> dict:
-        return {"requested": "auto", "detected": self.document, "confident": self.confident, "scores": self.scores}
+        return {
+            "requested": "auto",
+            "detected": self.document,
+            "confident": self.confident,
+            "guessed": self.guessed,
+            "scores": self.scores,
+            "guess_scores": self.guess_scores,
+        }
 
 
 def detect_document(boxes: list[OcrBox]) -> Detection:
@@ -75,6 +98,14 @@ def detect_document(boxes: list[OcrBox]) -> Detection:
     scores = {doc: sum(w for p, w in markers if p.search(text)) for doc, markers in MARKERS.items()}
     ranked = sorted(scores, key=scores.get, reverse=True)
     best, runner_up = scores[ranked[0]], scores[ranked[1]]
-    if best < MIN_SCORE:
-        return Detection(None, scores, False)
-    return Detection(ranked[0], scores, runner_up < best * AMBIGUOUS_RATIO)
+    if best >= MIN_SCORE:
+        return Detection(ranked[0], scores, runner_up < best * AMBIGUOUS_RATIO)
+    return _guess(text, scores)
+
+
+def _guess(text: str, scores: dict[str, int]) -> Detection:
+    guess = {doc: scores[doc] + sum(w for p, w in GUESS_HINTS[doc] if p.search(text)) for doc in MARKERS}
+    ranked = sorted(guess, key=guess.get, reverse=True)
+    if guess[ranked[0]] == 0 or guess[ranked[0]] == guess[ranked[1]]:
+        return Detection(None, scores, False, guess_scores=guess)
+    return Detection(ranked[0], scores, False, guessed=True, guess_scores=guess)

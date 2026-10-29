@@ -43,7 +43,7 @@
         <g class="flow-node"><rect x="435" y="10" width="190" height="88" rx="10"/><text x="530" y="42">Tìm viền thẻ</text><text x="530" y="64" class="flow-sub">cắt + nắn phẳng</text><text x="530" y="82" class="flow-sub">về 1600×1009px</text></g>
         <g class="flow-node"><rect x="650" y="10" width="190" height="88" rx="10"/><text x="745" y="42">Đọc chữ (OCR)</text><text x="745" y="64" class="flow-sub">xoay 90°/180°/270°</text><text x="745" y="82" class="flow-sub">nắn nghiêng 1–30°</text></g>
         <g class="flow-node"><rect x="865" y="10" width="190" height="88" rx="10"/><text x="960" y="42">Gom dòng</text><text x="960" y="64" class="flow-sub">ghép nhãn với giá trị</text><text x="960" y="82" class="flow-sub">chịu nghiêng ±10°</text></g>
-        <g class="flow-node"><rect x="865" y="150" width="190" height="88" rx="10"/><text x="960" y="182">Nhận diện loại</text><text x="960" y="204" class="flow-sub">khi chọn</text><text x="960" y="222" class="flow-sub">"Tự nhận diện"</text></g>
+        <g class="flow-node"><rect x="865" y="150" width="190" height="88" rx="10"/><text x="960" y="182">Nhận diện loại</text><text x="960" y="204" class="flow-sub">tiêu đề · nhãn → đoán</text><text x="960" y="222" class="flow-sub">không ra: chỉ chữ OCR</text></g>
         <g class="flow-node"><rect x="650" y="150" width="190" height="88" rx="10"/><text x="745" y="182">Trích trường</text><text x="745" y="204" class="flow-sub">theo nhãn</text><text x="745" y="222" class="flow-sub">theo vị trí</text></g>
         <g class="flow-node"><rect x="435" y="150" width="190" height="88" rx="10"/><text x="530" y="182">Kiểm tra</text><text x="530" y="204" class="flow-sub">kiểm tra chéo</text><text x="530" y="222" class="flow-sub">chất lượng · gắn cờ</text></g>
         <g class="flow-node"><rect x="220" y="150" width="190" height="88" rx="10"/><text x="315" y="182">JSON</text><text x="315" y="204" class="flow-sub">trường + độ tin cậy</text><text x="315" y="222" class="flow-sub">cảnh báo</text></g>
@@ -227,8 +227,21 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
         <tr><td>Bảo hiểm y tế</td><td>…被保険者証 / 資格確認書 / 組合員証 (3), 保険者番号, 保険者名称 / 交付者名 (2), 健康保険 (1)</td></tr>
       </table>
       <p>Chữ in trên nhiều loại (氏名, 住所, まで有効, 日本国) không được tính. Loại điểm cao nhất được chọn nếu đạt ≥ 3; loại thứ hai đạt
-        ≥ 75% điểm loại nhất thì kết quả kèm cảnh báo "không chắc chắn"; không loại nào đạt thì báo lỗi để người dùng chọn tay.
+        ≥ 75% điểm loại nhất thì kết quả kèm cảnh báo "không chắc chắn".
         Ảnh được cắt như thẻ trước khi nhận diện; nếu ra hộ chiếu thì đọc lại ảnh gốc chưa cắt (tốn thêm một lần OCR).</p>
+      <p><strong>Không loại nào đạt 3 điểm</strong> (mất tiêu đề, ảnh mờ, chụp thiếu…) thì hệ thống <strong>đoán</strong>: cộng điểm vừa tìm được
+        với dấu hiệu yếu là dạng con số in trên từng loại:</p>
+      <table class="guide-table">
+        <tr><th>Loại</th><th>Dấu hiệu để đoán (điểm)</th></tr>
+        <tr><td>Thẻ cư trú</td><td>số thẻ dạng 2 chữ + 8 số + 2 chữ, vd <code>AB12345678CD</code> (2)</td></tr>
+        <tr><td>My Number</td><td>個人番号 (1)</td></tr>
+        <tr><td>Bằng lái</td><td>dãy đúng 12 chữ số, 運転 / 免許 (1)</td></tr>
+        <tr><td>Hộ chiếu</td><td>số dạng 2 chữ + 7 số, chuỗi <code>&lt;&lt;&lt;</code> của MRZ (1)</td></tr>
+        <tr><td>Bảo hiểm y tế</td><td>記号, 保険 (1)</td></tr>
+      </table>
+      <p>Loại cao điểm nhất (và không hoà) được dùng để đọc, kết quả ghi <code>guessed: true</code> kèm cảnh báo. Không có dấu hiệu nào, hoặc hai loại
+        hoà điểm, thì <strong>không báo lỗi</strong>: trả <code>document: null</code>, không có trường, chỉ có chữ OCR (<code>full_text</code>,
+        <code>ocr.lines</code>); giao diện mở sẵn tab "Dòng OCR".</p>
 
       <h2 id="g-label">7. Lấy trường theo nhãn</h2>
       <p>Cách đọc mặc định, dùng cho mọi loại giấy tờ. Trên văn bản phẳng, hệ thống tìm vị trí các nhãn in sẵn (chịu được lỗi OCR: thừa dấu cách,
@@ -297,7 +310,8 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
       <h2 id="g-output">10. Kết quả trả về</h2>
 <pre>{
   "document": "jp_passport",                       // loại đã đọc
-  "document_detection": { "detected": "jp_passport", "confident": true, "scores": {…} },  // khi document=auto
+  "document_detection": { "detected": "jp_passport", "confident": true,     // khi document=auto
+                          "guessed": false, "scores": {…}, "guess_scores": null },
   "fields": {
     "passport_number": { "value": "ZZ1000001", "raw": "ZZ1000001", "confidence": 0.99,
                          "needs_review": false, "notes": [], "source": "label" }
@@ -307,12 +321,22 @@ cạnh dài &lt; 1200px   → phóng lên 1600px (bicubic: nội suy từ 4×4 �
   "ocr": { "card_cropped": false, "deskew_deg": 0.0, "original_size": [800, 538], "image_size": [1600, 1076], "lines": […] },
   "timing_ms": { "preprocess": 3, "ocr": 9800, "parse": 2 }
 }</pre>
+      <p>Tự nhận diện mà không nhận ra / không đoán được loại giấy tờ thì <strong>vẫn trả kết quả, không báo lỗi</strong>, chỉ có chữ OCR:</p>
+<pre>{
+  "document": null, "document_type": null,
+  "document_detection": { "detected": null, "confident": false, "guessed": false, "scores": {…}, "guess_scores": {…} },
+  "fields": {},
+  "full_text": "Meeting notes 2026\nBuy milk and coffee\n…",   // chữ OCR đã gom theo dòng
+  "warnings": ["Không nhận diện được loại giấy tờ … chỉ trả chữ OCR (full_text, ocr.lines) …"],
+  "ocr": { …, "lines": [ { "text": "Meeting notes 2026", "score": 0.99, "box": […] }, … ] }
+}</pre>
 
       <h2 id="g-limits">Giới hạn hiện tại</h2>
       <ul>
         <li>Chỉ đọc mặt trước; chưa thử trên ảnh chụp giấy tờ thật của My Number, bằng lái, hộ chiếu, bảo hiểm (mới thử trên ảnh mẫu chính thức).</li>
         <li>Chỉ thẻ cư trú có bản đồ vị trí; các loại khác chỉ đọc theo nhãn / mẫu chữ.</li>
         <li>特定在留カード (thẻ cư trú gộp My Number) chưa hỗ trợ: nhận ra được nhưng mọi trường đều bị gắn cờ.</li>
+        <li>Đoán loại giấy tờ (mục 6) chỉ dựa vào vài dấu hiệu yếu: có thể đoán sai, nên kết quả đoán luôn kèm cảnh báo; mới thử trên ảnh mẫu bị cắt, chưa thử ảnh thật.</li>
         <li>Ảnh quá nhỏ hoặc mờ: phóng to không khôi phục được chữ nhỏ; thẻ nhỏ trong ảnh điện thoại lớn mất chi tiết vì ảnh bị thu nhỏ trước khi cắt (xem mục 2).</li>
       </ul>
     </article>

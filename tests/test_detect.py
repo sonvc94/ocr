@@ -45,7 +45,23 @@ def box(text: str, y: float = 0) -> OcrBox:
 
 def test_nothing_recognisable():
     d = detect_document([box("氏名 山田 太郎"), box("住所 東京都千代田区", 60), box("2030年1月1日まで有効", 120)])
-    assert d.document is None and not d.confident
+    assert d.document is None and not d.confident and not d.guessed
+
+
+def test_guess_from_card_number_shape():
+    # title and labels not read, only the residence card number
+    d = detect_document([box("氏名 NGUYEN VAN A"), box("AB12345678CD", 60)])
+    assert d.document == "jp_residence" and d.guessed and not d.confident
+
+
+def test_guess_from_one_label():
+    d = detect_document([box("氏名 山田 太郎"), box("在留資格 留学", 60)])  # 2 < MIN_SCORE
+    assert d.document == "jp_residence" and d.guessed
+
+
+def test_no_guess_on_a_tie():
+    d = detect_document([box("記号 123"), box("301234567890", 60)])  # 記号 1 vs 12 digits 1
+    assert d.document is None
 
 
 def test_close_scores_are_not_confident():
@@ -90,10 +106,21 @@ def test_auto_passport_rereads_uncropped_image(monkeypatch):
     assert not result["ocr"]["card_cropped"] and img.shape == (800, 1200, 3)
 
 
-def test_auto_unknown_raises(monkeypatch):
-    stub_pipeline(monkeypatch, [["氏名 山田 太郎"]])
-    with pytest.raises(pipeline.UnknownDocument):
-        pipeline.extract(np.zeros((800, 1200, 3), np.uint8), (1200, 800), document="auto")
+def test_auto_unknown_returns_ocr_text(monkeypatch):
+    stub_pipeline(monkeypatch, [["氏名 山田 太郎", "住所 東京都千代田区"]])
+    result, _ = pipeline.extract(np.zeros((800, 1200, 3), np.uint8), (1200, 800), document="auto")
+    assert result["document"] is None and result["document_type"] is None and result["fields"] == {}
+    assert "山田" in result["full_text"] and len(result["ocr"]["lines"]) == 2
+    assert result["document_detection"]["detected"] is None
+    assert result["warnings"] == [pipeline.UNKNOWN_WARNING]
+
+
+def test_auto_guess_parses_with_guessed_document(monkeypatch):
+    stub_pipeline(monkeypatch, [["氏名 NGUYEN VAN A", "AB12345678CD"]])
+    result, _ = pipeline.extract(np.zeros((800, 1200, 3), np.uint8), (1200, 800), document="auto")
+    assert result["document"] == "jp_residence" and result["document_detection"]["guessed"]
+    assert result["fields"]["card_number"]["value"] == "AB12345678CD"
+    assert any("đoán" in w for w in result["warnings"])
 
 
 def test_explicit_document_has_no_detection(monkeypatch):

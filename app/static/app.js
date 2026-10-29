@@ -112,13 +112,20 @@ function render(r) {
   const found = fields.filter((f) => f.value).length;
   const review = fields.filter((f) => f.needs_review).length;
   const det = r.document_detection;
-  const detected = det
-    ? `Tự nhận diện: ${$("document").querySelector(`option[value="${det.detected}"]`)?.textContent || det.detected}` +
-      `${det.confident ? "" : " (không chắc chắn)"} · `
-    : "";
-  setStatus(
-    `${detected}Xong trong ${(total / 1000).toFixed(1)}s — trích được ${found}/${fields.length} trường, ${review} trường cần kiểm tra lại.`,
-  );
+  const detected = !det
+    ? ""
+    : `Tự nhận diện: ${$("document").querySelector(`option[value="${det.detected}"]`)?.textContent || det.detected}` +
+      `${det.guessed ? " (đoán, không thấy tiêu đề)" : det.confident ? "" : " (không chắc chắn)"} · `;
+  if (!r.document) {
+    setStatus(
+      `Không nhận diện được loại giấy tờ — chỉ có chữ OCR (${r.ocr.lines.length} dòng). Xong trong ${(total / 1000).toFixed(1)}s.`,
+      "error",
+    );
+  } else {
+    setStatus(
+      `${detected}Xong trong ${(total / 1000).toFixed(1)}s — trích được ${found}/${fields.length} trường, ${review} trường cần kiểm tra lại.`,
+    );
+  }
 
   $("warnings").innerHTML = warningsHtml(r);
 
@@ -149,6 +156,8 @@ function render(r) {
     `</table>`;
 
   $("tabs").hidden = false;
+  // Nothing recognised: the OCR text is the whole result, open its tab
+  if (!r.document) document.querySelector('#tabs button[data-tab="lines"]').click();
 }
 
 function warningsHtml(r) {
@@ -205,6 +214,7 @@ function fieldsTableHtml(fields, documentType) {
       return `<tr><th>${esc(vi)}<span class="jp">${esc(jp)}</span></th><td>${val}${badge}${source}${raw}${notes}</td></tr>`;
     })
     .join("");
+  if (!rows) return `<p class="sub">Không nhận diện được loại giấy tờ nên không có trường nào; xem tab "Dòng OCR" hoặc <code>full_text</code> trong JSON.</p>`;
   return `<table>${rows}</table>`;
 }
 

@@ -19,10 +19,10 @@ def log_result(request_id: str, filename: str | None, result: dict) -> None:
     missing = [k for k, f in fields.items() if f["value"] is None]
     review = [k for k, f in fields.items() if f["needs_review"] and f["value"] is not None]
     logger.info(
-        "extract id=%s doc=%s model=%s file=%s size=%s quality=%s found=%d/%d missing=%s review=%s anchored=%s timing=%s",
+        "extract id=%s doc=%s model=%s file=%s size=%s quality=%s found=%d/%d missing=%s review=%s anchored=%s detect=%s timing=%s",
         request_id, result["document_type"], result["ocr"]["model"], filename, result["ocr"]["original_size"], result["quality"]["level"],
         len(fields) - len(missing), len(fields), missing, review,
-        result["labels_from_english_anchor"], result["timing_ms"],
+        result["labels_from_english_anchor"], _detection_summary(result.get("document_detection")), result["timing_ms"],
     )
     if not config.LOG_RESPONSES:
         return
@@ -31,6 +31,17 @@ def log_result(request_id: str, filename: str | None, result: dict) -> None:
     config.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with _log_lock, config.LOG_FILE.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def _detection_summary(det: dict | None) -> str | None:
+    """document=auto only: how the document was chosen, with the scores when it was not certain."""
+    if det is None:
+        return None
+    if det["detected"] is None:
+        how = "none"
+    else:
+        how = "guessed" if det["guessed"] else "confident" if det["confident"] else "uncertain"
+    return how if how == "confident" else f"{how} {det['guess_scores'] or det['scores']}"
 
 
 def save_image(request_id: str, kind: str, data: bytes, suffix: str) -> None:

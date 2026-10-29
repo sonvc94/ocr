@@ -61,22 +61,25 @@ Hướng phụ thuộc một chiều: `main` → `pipeline` → (`preprocess`, `
 không import nhau).
 - `main.py`: chỉ lo HTTP: `/`, `/api/health` (model theo ngôn ngữ, `device` thật đang chạy), `/api/zones?document=` (template toạ độ),
   `POST /api/extract?crop=&include_image=&engine=ppocr|vl&mode=label|zone|hybrid&document=auto|<khoá của pipeline.DOCUMENTS>`
-  (`vl` + `zone`/`hybrid` → 422; `auto` không nhận ra → 422 + log điểm). API mặc định vẫn `jp_residence` (không đổi hành vi client cũ), UI mặc định `auto`. `/api/zones` chỉ có template cho `jp_residence`; loại khác trả `{}`. Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
+  (`vl` + `zone`/`hybrid` → 422; `auto` không bao giờ trả lỗi vì không nhận ra, xem `pipeline`). API mặc định vẫn `jp_residence` (không đổi hành vi client cũ), UI mặc định `auto`. `/api/zones` chỉ có template cho `jp_residence`; loại khác trả `{}`. Giới hạn 10MB, 415 khi không đọc được ảnh, 503 khi engine=vl mà không gọi được vl_service.
   Lúc khởi động nạp sẵn mọi model trong `ppocr_model.MODELS` (hiện chỉ `ja`).
 - `pipeline.extract(img, original_size, crop, engine, mode, document)`: `DOCUMENTS` = loại giấy tờ → (hàm parse, ngôn ngữ OCR, có cắt thẻ ID-1 không).
   `jp_residence` = `partial(parse_residence_card, keys=("card_number",))`. `jp_passport` không cắt: trang hộ chiếu là ID-3, chụp mở
   2 trang thì tỉ lệ gần bằng 1 trang → dễ cắt nhầm cả cuốn; MRZ/nhãn đọc được trên ảnh nguyên. Mọi loại đều cho phép engine=vl. Mọi kết quả có `document` (loại đã parse).
   `document=auto` (`DOCUMENT_CHOICES`): cắt thẻ ID-1 → OCR `ja` (`_ocr`) → `detect.detect_document` → nếu ra hộ chiếu mà ảnh đã bị cắt thì OCR lại
-  ảnh gốc (như `jp_passport`; 2 lần OCR) → parse; thêm `document_detection` (`detected`, `confident`, `scores`), không chắc → warning;
-  không loại nào đạt ngưỡng → `UnknownDocument`. Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
+  ảnh gốc (như `jp_passport`; 2 lần OCR) → parse; thêm `document_detection` (`detected`, `confident`, `guessed`, `scores`, `guess_scores`),
+  không chắc / đoán → warning. Không nhận ra cũng không đoán được → **không lỗi** (yêu cầu 29/10/2026): `_ocr_text_only` trả cùng dạng kết quả
+  (`build_result`) với `document`/`document_type` `null`, `fields` `{}`, `full_text` + `ocr.lines`, warning `UNKNOWN_WARNING`; UI mở tab "Dòng OCR". Cắt/nắn → OCR → parse (truyền kích thước ảnh đã xử lý + `card_cropped`) → gắn `ocr` (engine, model, card_cropped,
   deskew_deg, size, lines) + `timing_ms` (preprocess không tính bước decode ảnh). API và `scripts/build_demo.py` cùng dùng.
 - `detect.py`: `MARKERS` = loại giấy tờ → [(regex chữ in, điểm)]: tiêu đề 3 (在留カード, 個人番号カード, 運転免許証, 公安委員会, MRZ `P<JPN` / dòng 2,
   …被保険者証/資格確認書), nhãn riêng 1–2 (在留資格, 電子証明書, 第…号, 旅券番号, 保険者番号…). Bỏ chữ in trên nhiều loại (氏名, 住所, まで有効, 日本国).
   So trên text đã gom dòng (`Document` + `jp_normalize`: OCR hay tách `個人番号`|`カード` thành 2 khung). Chọn điểm cao nhất nếu ≥ `MIN_SCORE` 3;
-  `confident` khi điểm nhì < 75% điểm nhất. 特定在留カード có thêm `特定在留` để thắng My Number. Kiểm trên OCR thật của 9 ảnh mẫu (`tests/test_detect.py`)
+  `confident` khi điểm nhì < 75% điểm nhất. 特定在留カード có thêm `特定在留` để thắng My Number.
+  Không loại nào ≥ 3 → `_guess`: điểm + `GUESS_HINTS` (dạng số: số thẻ cư trú `AB12345678CD` 2, 12 chữ số, `XX1234567`, `<<<`, 個人番号, 記号/保険… 1);
+  cao nhất > 0 và không hoà → `guessed=True` (không bao giờ `confident`); không thì `None`. Thử: ảnh cắt chỉ còn dòng số thẻ cư trú → đoán đúng. Kiểm trên OCR thật của 9 ảnh mẫu (`tests/test_detect.py`)
   + API trên 8 ảnh mẫu (`samples/results/*.ppocr.auto.json`): đúng hết, đều `confident`.
 - `config.py`: biến môi trường của app (log, VL). Riêng `OCR_MODEL_SIZE`/`OCR_ENABLE_MKLDNN`/`OCR_DEVICE` đọc trong `ocr/ppocr_model.py`.
-- `request_log.py`: log 1 dòng tóm tắt/request (không có PII, có `doc=` loại thẻ). `LOG_RESPONSES=1` → ghi full kết quả vào `logs/extract.jsonl`;
+- `request_log.py`: log 1 dòng tóm tắt/request (không có PII, có `doc=` loại thẻ, `detect=` confident|uncertain|guessed|none + điểm). `LOG_RESPONSES=1` → ghi full kết quả vào `logs/extract.jsonl`;
   `DEBUG_SAVE_IMAGES=1` → lưu ảnh gốc + ảnh đã xử lý vào `logs/images/`. Cả hai chứa PII, compose đang bật mặc định.
 - `preprocess.py`: OpenCV tìm 4 góc thẻ (`find_card`) và warp (`normalize_card`). `find_card` có 3 lần quét:
   (1) Canny 50/150 + `RETR_EXTERNAL`, sai lệch tỉ lệ < 0.25; (2) nếu lần 1 không thấy: Canny 20/60 + đóng khe hở
@@ -214,13 +217,20 @@ không import nhau).
   `logs/vl_service.log`; `DOMAIN` → Caddy HTTPS (Let's Encrypt, camera trong trang cần secure context), `BASIC_AUTH_*` → mật khẩu
   (API không có auth). Cuối script gọi health, cảnh báo nếu `device` không phải GPU. Chạy lại được (cập nhật sau `git pull`).
   Chưa chạy thử trên EC2 thật (viết 28/10/2026). Hướng dẫn: `deploy/aws-ec2-gpu/README.md`. Đổi requirements/env/service → sửa cả 2 file.
+- Đã deploy tay (28/10/2026) lên container GPU thuê `n2.ckey.vn` (SSH cổng 2185 → 22; container 7681 → ngoài **2186**; RTX 5060 Ti 8GB,
+  RAM 7.6GB, Ubuntu 24.04, s6-overlay, không systemd/Docker → không dùng được `install.sh`). Làm theo các bước của `install.sh`:
+  code ở `/root/ocr` (clone từ `git bundle` gửi qua scp, vì server không có quyền đọc repo private), `.venv` python3.12 +
+  `paddlepaddle-gpu==3.2.2` từ index **cu129** (Blackwell sm_120 cần CUDA ≥ 12.8; venv ~7.6GB), không cài VL (RAM ít).
+  Service s6 `/etc/services.d/ocr-app/run` (uvicorn `0.0.0.0:7681`, env `/etc/ocr/ocr.env`, log `/root/ocr/logs/app.log`);
+  ttyd (terminal web, vốn ở 7681) tắt bằng `/etc/services.d/ttyd/down`. Không có auth/HTTPS (camera trong trang không chạy).
+  Cập nhật: gửi bundle mới, `git pull` từ bundle, `s6-svc -r /run/service/ocr-app`. OCR ~0.7s/ảnh trên GPU.
 
 ### scripts/, tests/
 - `make_sample.py` sinh thẻ giả; `build_demo.py` chạy pipeline trên mọi ảnh mẫu chính thức (`SAMPLES`: `src`, `document`, nguồn từng ảnh)
   → `static/samples/` (ảnh + `results.json`, tab "Mẫu chính thức" và ví dụ trong tab "Giấy tờ hỗ trợ"); `build_howto.py` đặt thẻ mẫu ISA
   vào ảnh giả lập (ảnh chụp sát `closeup_tilt` cắt mất 2 ký tự cuối số thẻ → số thẻ sai nhưng bị gắn cờ, đúng như mong đợi) (xiên, nền cùng màu, chụp sát nghiêng), chạy pipeline thật, ghi ảnh + `summary.json` vào `static/howto`; `download_models.py` tải model khi build.
-- `test_detect.py`: nhận diện trên OCR ảnh mẫu chính thức, không nhận ra / không chắc, chữ giản thể; `pipeline.extract(document="auto")` với
-  `_ocr`/`normalize_card` giả (hộ chiếu OCR lại ảnh gốc, `UnknownDocument`).
+- `test_detect.py`: nhận diện trên OCR ảnh mẫu chính thức, không nhận ra / không chắc / đoán / hoà không đoán, chữ giản thể; `pipeline.extract(document="auto")` với
+  `_ocr`/`normalize_card` giả (hộ chiếu OCR lại ảnh gốc, đoán rồi đọc, không nhận ra → chỉ chữ OCR).
 - `test_jp_documents.py`: bằng lái, hộ chiếu (MRZ đúng/sai check digit, `«` thay `<`), bảo hiểm (協会けんぽ, 国保 với `R5. 4. 1`, 資格確認書),
   `jp_residence` chỉ trả `card_number`, hộ chiếu không cắt thẻ; OCR thật của ảnh mẫu chính thức (`official_*_ocr.json`).
 - `test_my_number_card.py`: thẻ My Number trên box viết tay (nơi cấp kana, địa chỉ chứa `区長`, thiếu `まで有効`, kiểm tra chéo hạn thẻ).

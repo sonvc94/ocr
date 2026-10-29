@@ -7,6 +7,8 @@ from functools import partial
 
 import numpy as np
 
+from .card_core.layout import Document, drop_non_text
+from .card_core.pattern_card import build_result, jp_normalize
 from .detect import detect_document
 from .driver_license import parse_driver_license
 from .health_insurance import parse_health_insurance
@@ -35,14 +37,10 @@ AUTO = "auto"
 DOCUMENT_CHOICES = (AUTO, *DOCUMENTS)
 
 
-class UnknownDocument(ValueError):
-    """document=auto and no document's printed words were found."""
-
-    def __init__(self, scores: dict[str, int]):
-        super().__init__(
-            "Không nhận ra loại giấy tờ (không thấy tiêu đề / nhãn của loại nào). Hãy chụp rõ hơn hoặc chọn loại giấy tờ bằng tay."
-        )
-        self.scores = scores
+UNKNOWN_WARNING = (
+    "Không nhận diện được loại giấy tờ (không thấy tiêu đề / nhãn / dạng số của loại nào): chỉ trả chữ OCR "
+    "(full_text, ocr.lines). Hãy chụp rõ hơn hoặc chọn loại giấy tờ bằng tay."
+)
 
 
 VL_WARNING = (
@@ -61,8 +59,9 @@ def extract(
 ) -> tuple[dict, np.ndarray]:
     """Return the result and the processed image its boxes refer to.
 
-    document="auto" detects the document from the OCR text (detect.py) and adds `document_detection` to the result;
-    raises UnknownDocument when nothing matches. Every result carries the `document` that was parsed.
+    document="auto" detects (or guesses) the document from the OCR text (detect.py) and adds `document_detection`
+    to the result. Nothing to go on → no error: `document`/`document_type` null, no fields, the OCR text only.
+    Every result carries the `document` that was parsed.
 
     mode=zone/hybrid need per-line boxes, which only engine=ppocr gives (VL boxes are whole blocks).
     Raises vl_client.VlUnavailable when engine="vl" and the VL service cannot be reached.
@@ -82,13 +81,11 @@ def extract(
     detection = None
     if document == AUTO:
         detection = detect_document(boxes)
-        if detection.document is None:
-            raise UnknownDocument(detection.scores)
         document = detection.document
-        if cropped and not DOCUMENTS[document][2]:  # passport: read the uncropped image like document=jp_passport
+        if document is not None and cropped and not DOCUMENTS[document][2]:  # passport: read the uncropped image like document=jp_passport
             img, cropped = original, False
             boxes, img, deskew, model, vl_resp = _ocr(img, engine, lang)
-    parse = DOCUMENTS[document][0]
+    parse = DOCUMENTS[document][0] if document is not None else _ocr_text_only
     t2 = time.perf_counter()
     h, w = img.shape[:2]
     result = parse(boxes, page_size=(w, h), cropped=cropped, mode=mode)
@@ -99,7 +96,12 @@ def extract(
     result["document"] = document
     if detection is not None:
         result["document_detection"] = detection.to_dict()
-        if not detection.confident:
+        if detection.guessed:
+            result["warnings"].append(
+                f"Không thấy tiêu đề / nhãn đủ chắc, loại giấy tờ được đoán theo dấu hiệu yếu (điểm đoán: {detection.guess_scores}); "
+                "kiểm tra lại hoặc chọn bằng tay."
+            )
+        elif document is not None and not detection.confident:
             result["warnings"].append(
                 f"Tự nhận diện không chắc chắn (điểm: {detection.scores}); kiểm tra lại loại giấy tờ hoặc chọn bằng tay."
             )
@@ -119,6 +121,11 @@ def extract(
         "parse": round((t3 - t2) * 1000),
     }
     return result, img
+
+
+def _ocr_text_only(boxes, page_size=None, cropped=False, mode="label") -> dict:
+    """document=auto that matched nothing: the same result shape as the parsers, without fields."""
+    return build_result(None, {}, Document(drop_non_text(boxes), jp_normalize), {}, "label", [UNKNOWN_WARNING])
 
 
 def _ocr(img: np.ndarray, engine: str, lang: str):
